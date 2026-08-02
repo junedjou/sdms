@@ -1,0 +1,119 @@
+version: '3.9'
+
+# ============================================================
+# SDMS Docker Compose — untuk deployment server (bukan XAMPP)
+# Untuk XAMPP lokal: TIDAK perlu file ini, cukup npm run dev
+# ============================================================
+
+services:
+
+  # ── MariaDB ────────────────────────────────────────────────
+  mariadb:
+    image: mariadb:10.11
+    container_name: sdms_mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-sdms_db_password}
+      MYSQL_DATABASE: ${DB_NAME:-sdms_master}
+      MYSQL_USER: ${DB_USER:-sdms_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-sdms_db_password}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3306:3306"
+    networks:
+      - sdms_net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: sdms_redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - sdms_net
+
+  # ── Backend API ──────────────────────────────────────────
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: sdms_backend
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-sdms_user}
+      DB_PASSWORD: ${DB_PASSWORD:-sdms_db_password}
+      DB_NAME: ${DB_NAME:-sdms_master}
+      REDIS_ENABLED: "true"
+      REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost}
+    volumes:
+      - backend_logs:/app/logs
+    networks:
+      - sdms_net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── Frontend (served by nginx) ───────────────────────────
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: sdms_frontend
+    restart: unless-stopped
+    networks:
+      - sdms_net
+
+  # ── Caddy Reverse Proxy ──────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: sdms_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - sdms_net
+
+networks:
+  sdms_net:
+    driver: bridge
+
+volumes:
+  mariadb_data:
+  redis_data:
+  backend_logs:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,39 @@
+# ── Dependencies ─────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+
+# ── Build output ──────────────────────────────────────────────
+frontend/dist/
+frontend/.vite/
+
+# ── Environment & secrets ─────────────────────────────────────
+.env
+.env.local
+.env.*.local
+backend/.env
+# Boleh push .env.example (template, tanpa nilai sensitif)
+!.env.example
+!backend/.env.example
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+backend/logs/
+
+# ── OS & editor ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/settings.json
+.idea/
+
+# ── Backup files ─────────────────────────────────────────────
+backup/files/
+*.sql.gz
+*.tar.gz
+
+# ── Misc ─────────────────────────────────────────────────────
+*.swp
+*.swo
+.cache/

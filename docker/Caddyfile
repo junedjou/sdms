@@ -1,0 +1,56 @@
+# ============================================================
+# SDMS — Caddyfile
+# Ganti sdms.sekolah.sch.id dengan domain Anda
+# Caddy otomatis urus HTTPS/TLS via Let's Encrypt
+# ============================================================
+
+sdms.sekolah.sch.id {
+
+    # ── API Backend ─────────────────────────────────────────
+    handle /api/* {
+        reverse_proxy backend:3000 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # ── Health Check ────────────────────────────────────────
+    handle /health {
+        reverse_proxy backend:3000
+    }
+
+    # ── Frontend (Vue SPA) ──────────────────────────────────
+    handle {
+        reverse_proxy frontend:80
+    }
+
+    # ── Security Headers ────────────────────────────────────
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # ── Logging ─────────────────────────────────────────────
+    log {
+        output file /var/log/caddy/sdms.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+        format json
+    }
+}
+
+# ── Development / localhost (tanpa HTTPS) ─────────────────
+# Uncomment blok ini jika deploy di lokal dengan IP langsung:
+# :80 {
+#     handle /api/* {
+#         reverse_proxy backend:3000
+#     }
+#     handle {
+#         reverse_proxy frontend:80
+#     }
+# }

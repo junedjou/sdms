@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   SDMS Design System — Global Styles
+   ============================================================ */
+
+@layer base {
+  *, *::before, *::after {
+    @apply box-border;
+  }
+
+  html {
+    @apply scroll-smooth antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  body {
+    @apply font-sans text-slate-800 bg-surface-50 text-sm leading-relaxed;
+  }
+
+  /* ── Custom Scrollbar ──────────────────────────────────── */
+  ::-webkit-scrollbar        { @apply w-1.5 h-1.5; }
+  ::-webkit-scrollbar-track  { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb  { @apply bg-slate-200 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-300; }
+
+  /* ── Focus ring default ────────────────────────────────── */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-1;
+  }
+}
+
+@layer components {
+
+  /* ====================================================
+     BUTTONS
+     ==================================================== */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
+           transition-all duration-150 cursor-pointer select-none
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-primary-600 text-white shadow-sm
+           hover:bg-primary-700 active:bg-primary-800
+           focus-visible:ring-primary-500;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-slate-700 border border-slate-200 shadow-sm
+           hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100
+           focus-visible:ring-primary-500;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white shadow-sm
+           hover:bg-red-700 active:bg-red-800
+           focus-visible:ring-red-500;
+  }
+  .btn-ghost {
+    @apply btn text-slate-600
+           hover:bg-slate-100 hover:text-slate-800 active:bg-slate-200
+           focus-visible:ring-slate-400;
+  }
+  .btn-success {
+    @apply btn bg-emerald-600 text-white shadow-sm
+           hover:bg-emerald-700 active:bg-emerald-800
+           focus-visible:ring-emerald-500;
+  }
+  .btn-sm  { @apply px-3 py-1.5 text-xs rounded-lg; }
+  .btn-lg  { @apply px-6 py-3 text-base rounded-2xl; }
+  .btn-icon { @apply p-2 rounded-lg; }
+
+  /* ====================================================
+     FORM ELEMENTS
+     ==================================================== */
+  .form-input {
+    @apply block w-full rounded-xl border-slate-200 bg-white shadow-inner-sm
+           text-sm text-slate-800 placeholder:text-slate-400
+           transition duration-150
+           focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20
+           hover:border-slate-300;
+  }
+  .form-select {
+    @apply form-input pr-9 cursor-pointer;
+  }
+  .form-textarea {
+    @apply form-input resize-none;
+  }
+  .form-label {
+    @apply block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide;
+  }
+  .form-error {
+    @apply flex items-center gap-1.5 text-xs text-red-600 mt-1.5;
+  }
+  .form-hint {
+    @apply text-xs text-slate-400 mt-1;
+  }
+  .form-group {
+    @apply space-y-0;
+  }
+
+  /* ====================================================
+     CARD
+     ==================================================== */
+  .card {
+    @apply bg-white rounded-2xl shadow-card border border-slate-100/80;
+  }
+  .card-elevated {
+    @apply bg-white rounded-2xl shadow-card-md border border-slate-100/80;
+  }
+  .card-header {
+    @apply px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3;
+  }
+  .card-body {
+    @apply px-5 py-4;
+  }
+  .card-footer {
+    @apply px-5 py-3 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl;
+  }
+
+  /* ====================================================
+     BADGE
+     ==================================================== */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+  .badge-blue    { @apply badge bg-blue-50   text-blue-700   ring-1 ring-blue-100; }
+  .badge-indigo  { @apply badge bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100; }
+  .badge-green   { @apply badge bg-emerald-50  text-emerald-700  ring-1 ring-emerald-100; }
+  .badge-yellow  { @apply badge bg-amber-50  text-amber-700  ring-1 ring-amber-100; }
+  .badge-red     { @apply badge bg-red-50    text-red-700    ring-1 ring-red-100; }
+  .badge-gray    { @apply badge bg-slate-100 text-slate-600  ring-1 ring-slate-200; }
+  .badge-purple  { @apply badge bg-violet-50 text-violet-700 ring-1 ring-violet-100; }
+
+  /* ====================================================
+     TABLE
+     ==================================================== */
+  .table-wrapper {
+    @apply w-full overflow-x-auto rounded-2xl border border-slate-100/80;
+  }
+  .table {
+    @apply w-full text-sm text-left border-collapse;
+  }
+  .table thead {
+    @apply bg-slate-50 border-b border-slate-100;
+  }
+  .table th {
+    @apply px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap;
+  }
+  .table td {
+    @apply px-4 py-3 text-slate-700 border-b border-slate-50;
+  }
+  .table tbody tr {
+    @apply hover:bg-slate-50/80 transition-colors duration-100;
+  }
+  .table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  /* ====================================================
+     PAGE STRUCTURE
+     ==================================================== */
+  .page-header {
+    @apply flex items-start justify-between gap-4 mb-6;
+  }
+  .page-title {
+    @apply text-xl font-bold text-slate-900 tracking-tight;
+  }
+  .page-subtitle {
+    @apply text-sm text-slate-500 mt-0.5;
+  }
+
+  /* ====================================================
+     STAT CARD
+     ==================================================== */
+  .stat-card {
+    @apply card p-5 flex items-center gap-4;
+  }
+  .stat-icon {
+    @apply w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0;
+  }
+
+  /* ====================================================
+     SKELETON / LOADING
+     ==================================================== */
+  .skeleton {
+    @apply bg-slate-100 rounded-lg animate-pulse;
+  }
+
+  /* ====================================================
+     DIVIDER
+     ==================================================== */
+  .divider {
+    @apply border-t border-slate-100 my-4;
+  }
+
+  /* ====================================================
+     SEARCH INPUT
+     ==================================================== */
+  .search-input {
+    @apply form-input pl-9 py-2 text-sm;
+  }
+
+  /* ====================================================
+     EMPTY STATE
+     ==================================================== */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+}
+
+@layer utilities {
+  /* Line clamp */
+  .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+  .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+
+  /* Glassmorphism */
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/30;
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-indigo-500 bg-clip-text text-transparent;
+  }
+
+  /* Smooth transitions */
+  .transition-base { @apply transition-all duration-150 ease-in-out; }
+  .transition-slow  { @apply transition-all duration-300 ease-in-out; }
+
+  /* No scrollbar (hide, keep functional) */
+  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
+  /* Misc */
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+}

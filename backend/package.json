@@ -1,0 +1,45 @@
+{
+  "name": "sdms-backend",
+  "version": "1.0.0",
+  "description": "School Data Management System - Backend API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "migrate": "node migrations/run.js",
+    "seed": "node seeds/run.js",
+    "lint": "eslint src/**/*.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "compression": "^1.7.4",
+    "dotenv": "^16.4.5",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.12.0",
+    "sequelize": "^6.37.3",
+    "mongoose": "^8.5.1",
+    "mysql2": "^3.10.3",
+    "ioredis": "^5.4.1",
+    "joi": "^17.13.3",
+    "morgan": "^1.10.0",
+    "winston": "^3.13.0",
+    "uuid": "^10.0.0",
+    "dayjs": "^1.11.12",
+    "axios": "^1.7.3",
+    "eventemitter3": "^5.0.1",
+    "bull": "^4.16.0",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4",
+    "eslint": "^9.8.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
