@@ -108,23 +108,31 @@ if [ "$SKIP_BUILD" = true ]; then
 fi
 
 # ── 3. Update backend dependencies ──────────────────────────
-if [ "$DEPS_BACKEND_CHANGED" = true ]; then
-  head "Update Backend Dependencies"
+if [ "$DEPS_BACKEND_CHANGED" = true ] || [ ! -d "$APP_DIR/backend/node_modules" ]; then
+  head "Install Backend Dependencies"
   cd "$APP_DIR/backend"
-  info "package.json berubah — install ulang..."
+  if [ ! -d "node_modules" ]; then
+    info "node_modules belum ada — install pertama kali..."
+  else
+    info "package.json berubah — install ulang..."
+  fi
   npm install --omit=dev --silent
-  ok "Backend dependencies diupdate"
+  ok "Backend dependencies terinstall"
 fi
 
 # ── 4. Update frontend dependencies + rebuild ───────────────
-if [ "$FRONTEND_CHANGED" = true ] && [ "$SKIP_BUILD" = false ]; then
+if ([ "$FRONTEND_CHANGED" = true ] || [ ! -d "$APP_DIR/frontend/node_modules" ]) && [ "$SKIP_BUILD" = false ]; then
   head "Build Frontend"
   cd "$APP_DIR/frontend"
 
-  if [ "$DEPS_FRONTEND_CHANGED" = true ]; then
-    info "package.json berubah — install ulang..."
+  if [ ! -d "node_modules" ] || [ "$DEPS_FRONTEND_CHANGED" = true ]; then
+    if [ ! -d "node_modules" ]; then
+      info "node_modules belum ada — install pertama kali..."
+    else
+      info "package.json berubah — install ulang..."
+    fi
     npm install --silent
-    ok "Frontend dependencies diupdate"
+    ok "Frontend dependencies terinstall"
   fi
 
   info "Build Vue app..."
