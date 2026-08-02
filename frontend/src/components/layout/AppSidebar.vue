@@ -15,7 +15,9 @@
       uiStore.sidebarOpen ? 'w-64' : 'w-[70px]',
       uiStore.sidebarMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
     ]"
-    style="background: linear-gradient(180deg, #0f172a 0%, #0d1424 50%, #0a1020 100%);"
+    :style="{
+      background: `linear-gradient(180deg, ${settingsStore.get('sidebar_bg')} 0%, ${settingsStore.get('sidebar_bg')}ee 100%)`,
+    }"
   >
     <!-- ── Logo / Brand ─────────────────────────────────────── -->
     <div
@@ -24,8 +26,11 @@
         uiStore.sidebarOpen ? 'px-4 gap-3' : 'px-0 justify-center',
       ]"
     >
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary-900/40">
-        <AcademicCapIcon class="w-5 h-5 text-white" />
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden"
+        :style="{ background: settingsStore.get('sidebar_accent') }">
+        <img v-if="settingsStore.get('logo_url')" :src="settingsStore.get('logo_url')"
+          class="w-full h-full object-contain" alt="Logo" />
+        <AcademicCapIcon v-else class="w-5 h-5 text-white" />
       </div>
       <Transition name="label">
         <div v-if="uiStore.sidebarOpen" class="overflow-hidden min-w-0">
@@ -128,9 +133,10 @@
                 'flex items-center rounded-xl text-sm transition-all duration-150',
                 uiStore.sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center py-2.5',
                 isActive(item.to)
-                  ? 'bg-primary-600 text-white shadow-lg shadow-primary-900/40 font-medium'
+                  ? 'text-white shadow-lg font-medium'
                   : 'text-white/55 hover:text-white hover:bg-white/[0.06]',
               ]"
+              :style="isActive(item.to) ? { background: settingsStore.get('sidebar_accent') } : {}"
               :title="!uiStore.sidebarOpen ? item.label : ''"
             >
               <component :is="item.icon" class="w-[18px] h-[18px] flex-shrink-0" />
@@ -175,17 +181,19 @@ import { ref, computed } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { useUIStore } from '@/stores/ui.store';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import { getInitials, getAvatarColor } from '@/utils/helpers';
 import {
   HomeIcon, UserGroupIcon, AcademicCapIcon,
   Squares2X2Icon, UsersIcon,
   ChevronDownIcon, CircleStackIcon,
-  RectangleStackIcon,
+  RectangleStackIcon, Cog6ToothIcon,
 } from '@heroicons/vue/24/outline';
 
-const uiStore   = useUIStore();
-const authStore = useAuthStore();
-const route     = useRoute();
+const uiStore       = useUIStore();
+const authStore     = useAuthStore();
+const settingsStore = useSettingsStore();
+const route         = useRoute();
 
 const expandedItems = ref(['master']);
 
@@ -230,9 +238,10 @@ const allMenu = [
   {
     label: 'Administrasi',
     items: [
-      { name: 'users',   label: 'Manajemen User',  to: '/users',         icon: UsersIcon,      permission: 'user:view' },
-      { name: 'profile', label: 'Profil Saya',     to: '/profile',       icon: UserGroupIcon },
-      { name: 'backup',  label: 'Backup Database', to: '/system/backup', icon: CircleStackIcon, role: 'super_admin' },
+      { name: 'users',    label: 'Manajemen User',  to: '/users',           icon: UsersIcon,      permission: 'user:view' },
+      { name: 'profile',  label: 'Profil Saya',     to: '/profile',         icon: UserGroupIcon },
+      { name: 'backup',   label: 'Backup Database', to: '/system/backup',   icon: CircleStackIcon, role: 'super_admin' },
+      { name: 'settings', label: 'Pengaturan',      to: '/system/settings', icon: Cog6ToothIcon,   role: 'super_admin' },
     ],
   },
 ];

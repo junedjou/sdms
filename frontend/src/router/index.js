@@ -21,7 +21,8 @@ const UserListView    = () => import('@/views/users/UserListView.vue');
 const ProfileView     = () => import('@/views/users/ProfileView.vue');
 
 // System
-const BackupView      = () => import('@/views/system/BackupView.vue');
+const BackupView    = () => import('@/views/system/BackupView.vue');
+const SettingsView  = () => import('@/views/system/SettingsView.vue');
 
 // Layouts
 const AppLayout = () => import('@/components/layout/AppLayout.vue');
@@ -125,6 +126,12 @@ const routes = [
         name: 'Backup',
         component: BackupView,
         meta: { title: 'Backup Database', role: 'super_admin' },
+      },
+      {
+        path: 'system/settings',
+        name: 'Settings',
+        component: SettingsView,
+        meta: { title: 'Pengaturan Tampilan', role: 'super_admin' },
       },
     ],
   },

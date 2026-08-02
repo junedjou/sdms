@@ -176,3 +176,10 @@ export const gatewayService = {
   backupList:  ()     => api.get('/gateway/backup/list'),
   deleteBackup: (file) => api.delete(`/gateway/backup/${file}`),
 };
+
+export const settingsService = {
+  get:        ()       => api.get('/settings'),
+  save:       (data)   => api.put('/settings', { settings: data }),
+  uploadLogo: (fd)     => api.post('/settings/logo', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteLogo: ()       => api.delete('/settings/logo'),
+};

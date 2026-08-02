@@ -4,7 +4,7 @@
     <!-- ── Panel kiri: Branding (desktop only) ───────────────── -->
     <div
       class="hidden lg:flex lg:w-5/12 xl:w-1/2 flex-col relative overflow-hidden"
-      style="background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 40%, #0c0a1e 100%);"
+      :style="{ background: settingsStore.loginBg }"
     >
       <!-- ── Latar dekoratif ──────────────────────────────────── -->
       <div class="absolute inset-0 pointer-events-none overflow-hidden">
@@ -32,13 +32,14 @@
 
         <!-- Logo -->
         <div class="flex items-center gap-3.5">
-          <div class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-900/60 flex-shrink-0"
-            style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
-            <AcademicCapIcon class="w-6 h-6 text-white" />
+          <div class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-900/60 flex-shrink-0 overflow-hidden"
+            :style="{ background: settingsStore.get('sidebar_accent') }">
+            <img v-if="settingsStore.get('logo_url')" :src="settingsStore.get('logo_url')" class="w-full h-full object-contain" alt="Logo" />
+            <AcademicCapIcon v-else class="w-6 h-6 text-white" />
           </div>
           <div>
-            <p class="text-base font-bold text-white tracking-wide">SDMS</p>
-            <p class="text-[11px] text-white/40 tracking-wider uppercase">School Data Management System</p>
+            <p class="text-base font-bold text-white tracking-wide">{{ settingsStore.get('app_name') || 'SDMS' }}</p>
+            <p class="text-[11px] text-white/40 tracking-wider uppercase">{{ settingsStore.get('app_subtitle') }}</p>
           </div>
         </div>
 
@@ -49,19 +50,19 @@
           <div class="inline-flex w-fit items-center gap-2 px-3.5 py-1.5 rounded-full border"
             style="background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.3);">
             <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-            <span class="text-xs font-semibold text-indigo-300 tracking-widest uppercase">Platform Terpadu</span>
+            <span class="text-xs font-semibold text-indigo-300 tracking-widest uppercase">{{ settingsStore.get('login_badge') }}</span>
           </div>
 
           <!-- Headline -->
           <div class="space-y-3">
             <h1 class="text-4xl xl:text-5xl font-black text-white leading-[1.1] tracking-tight">
-              Satu Data.<br />
+              {{ settingsStore.get('login_headline') }}<br />
               <span style="background: linear-gradient(90deg, #818cf8 0%, #c084fc 50%, #60a5fa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                Satu Sistem.
+                {{ settingsStore.get('login_headline2') }}
               </span>
             </h1>
             <p class="text-sm text-white/50 leading-relaxed max-w-xs">
-              Kelola seluruh data akademik sekolah — guru, siswa, pegawai, kelas, dan aplikasi terhubung — dalam satu platform terintegrasi.
+              {{ settingsStore.get('login_description') }}
             </p>
           </div>
 
@@ -89,7 +90,7 @@
 
         <!-- Footer -->
         <div class="flex items-center justify-between">
-          <p class="text-[11px] text-white/20">&copy; {{ year }} SDMS — SMK Negeri 1 Kras</p>
+          <p class="text-[11px] text-white/20">&copy; {{ year }} {{ settingsStore.get('school_name') || 'SDMS' }}</p>
           <div class="flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span class="text-[11px] text-white/30">Sistem Aktif</span>
@@ -232,6 +233,7 @@
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import {
   AcademicCapIcon, UserIcon, LockClosedIcon,
   EyeIcon, EyeSlashIcon, ExclamationCircleIcon,
@@ -240,9 +242,10 @@ import {
   Squares2X2Icon, RectangleStackIcon,
 } from '@heroicons/vue/24/outline';
 
-const authStore = useAuthStore();
-const router    = useRouter();
-const route     = useRoute();
+const authStore     = useAuthStore();
+const settingsStore = useSettingsStore();
+const router        = useRouter();
+const route         = useRoute();
 
 const form         = ref({ username: '', password: '' });
 const errors       = ref({ username: '', password: '' });

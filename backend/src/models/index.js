@@ -18,6 +18,7 @@ const SiswaKelas      = require('./SiswaKelas');
 const MataPelajaran   = require('./MataPelajaran');
 const KalenderAkademik = require('./KalenderAkademik');
 const { AuditLog }   = require('../middleware/auditLog');
+const AppSetting     = require('./AppSetting');
 
 // ============================================================
 // ASOSIASI / RELASI
@@ -109,21 +110,9 @@ const syncModels = async () => {
 module.exports = {
   masterDB,
   syncModels,
-  // Export semua model
-  Role,
-  Permission,
-  RolePermission,
-  User,
-  Jurusan,
-  TahunPelajaran,
-  Semester,
-  Guru,
-  Pegawai,
-  OrangTua,
-  Siswa,
-  Kelas,
-  SiswaKelas,
-  MataPelajaran,
-  KalenderAkademik,
-  AuditLog,
+  Role, Permission, RolePermission, User,
+  Jurusan, TahunPelajaran, Semester,
+  Guru, Pegawai, OrangTua, Siswa,
+  Kelas, SiswaKelas, MataPelajaran,
+  KalenderAkademik, AuditLog, AppSetting,
 };

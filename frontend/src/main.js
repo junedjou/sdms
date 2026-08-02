@@ -8,14 +8,11 @@ import router from './router';
 import '@/assets/main.css';
 
 const app = createApp(App);
+const pinia = createPinia();
 
-// Pinia store
-app.use(createPinia());
-
-// Router
+app.use(pinia);
 app.use(router);
 
-// Toast notifications
 app.use(Toast, {
   position: POSITION.TOP_RIGHT,
   timeout: 3500,
@@ -28,3 +25,8 @@ app.use(Toast, {
 });
 
 app.mount('#app');
+
+// Load settings setelah app mount agar CSS vars diterapkan
+import { useSettingsStore } from '@/stores/settings.store';
+const settingsStore = useSettingsStore();
+settingsStore.load();

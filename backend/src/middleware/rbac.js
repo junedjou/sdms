@@ -92,8 +92,13 @@ const requireAllPermissions = (...permissions) => {
 const superAdminOnly = requireRole('super_admin');
 
 /**
+ * Alias isSuperAdmin untuk middleware settings
+ */
+const isSuperAdmin = superAdminOnly;
+
+/**
  * Admin atau super admin
  */
 const adminOnly = requireRole('super_admin', 'admin');
 
-module.exports = { requireRole, requirePermission, requireAllPermissions, superAdminOnly, adminOnly };
+module.exports = { requireRole, requirePermission, requireAllPermissions, superAdminOnly, isSuperAdmin, adminOnly };
