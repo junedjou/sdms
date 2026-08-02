@@ -141,6 +141,7 @@ const getPegawai = async (req, res) => {
 const createPegawai = async (req, res) => {
   const pegawai = await Pegawai.create(req.body);
   await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'CREATE', resource: 'pegawai', resourceId: pegawai.id, description: `Pegawai ${pegawai.nama} dibuat` });
+  syncEvent('pegawai.created', pegawai.toJSON());
   return created(res, pegawai, 'Data pegawai berhasil ditambahkan');
 };
 
@@ -149,6 +150,7 @@ const updatePegawai = async (req, res) => {
   if (!pegawai) return notFound(res, 'Data pegawai tidak ditemukan');
   await pegawai.update(req.body);
   await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'UPDATE', resource: 'pegawai', resourceId: pegawai.id, description: `Pegawai ${pegawai.nama} diperbarui` });
+  syncEvent('pegawai.updated', pegawai.toJSON());
   return success(res, pegawai, 'Data pegawai berhasil diperbarui');
 };
 
@@ -156,6 +158,7 @@ const deletePegawai = async (req, res) => {
   const pegawai = await Pegawai.findByPk(req.params.id);
   if (!pegawai) return notFound(res, 'Data pegawai tidak ditemukan');
   await pegawai.update({ is_active: false });
+  syncEvent('pegawai.deleted', { id: pegawai.id });
   return success(res, null, 'Data pegawai berhasil dinonaktifkan');
 };
 
@@ -219,6 +222,7 @@ const getKelas = async (req, res) => {
 
 const createKelas = async (req, res) => {
   const kelas = await Kelas.create(req.body);
+  syncEvent('kelas.created', kelas.toJSON());
   return created(res, kelas, 'Kelas berhasil dibuat');
 };
 
@@ -226,6 +230,7 @@ const updateKelas = async (req, res) => {
   const kelas = await Kelas.findByPk(req.params.id);
   if (!kelas) return notFound(res, 'Kelas tidak ditemukan');
   await kelas.update(req.body);
+  syncEvent('kelas.updated', kelas.toJSON());
   return success(res, kelas, 'Kelas berhasil diperbarui');
 };
 
@@ -244,6 +249,7 @@ const createMapel = async (req, res) => {
   const dup = await MataPelajaran.findOne({ where: { kode: req.body.kode } });
   if (dup) return conflict(res, 'Kode mata pelajaran sudah ada');
   const mapel = await MataPelajaran.create(req.body);
+  syncEvent('mapel.created', mapel.toJSON());
   return created(res, mapel, 'Mata pelajaran berhasil ditambahkan');
 };
 
@@ -251,6 +257,7 @@ const updateMapel = async (req, res) => {
   const mapel = await MataPelajaran.findByPk(req.params.id);
   if (!mapel) return notFound(res, 'Mata pelajaran tidak ditemukan');
   await mapel.update(req.body);
+  syncEvent('mapel.updated', mapel.toJSON());
   return success(res, mapel, 'Mata pelajaran berhasil diperbarui');
 };
 

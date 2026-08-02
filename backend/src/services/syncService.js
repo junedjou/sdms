@@ -36,49 +36,75 @@ const SYNC_TARGETS = [
     url: config.apps.lms,
     webhookPath: '/api/webhooks/sdms',
     secret: process.env.LMS_WEBHOOK_SECRET || 'sdms_lms_secret',
-    events: ['siswa.created', 'siswa.updated', 'siswa.deleted', 'guru.created', 'guru.updated', 'kelas.updated'],
+    events: [
+      'siswa.created', 'siswa.updated', 'siswa.deleted',
+      'guru.created', 'guru.updated', 'guru.deleted',
+      'pegawai.created', 'pegawai.updated', 'pegawai.deleted',
+      'kelas.created', 'kelas.updated',
+      'mapel.created', 'mapel.updated',
+    ],
   },
   {
     name: 'Jurnal',
     url: config.apps.jurnal,
     webhookPath: '/api/webhooks/sdms',
     secret: process.env.JURNAL_WEBHOOK_SECRET || 'sdms_jurnal_secret',
-    events: ['guru.created', 'guru.updated', 'guru.deleted', 'kelas.updated', 'mapel.updated'],
+    events: [
+      'guru.created', 'guru.updated', 'guru.deleted',
+      'pegawai.created', 'pegawai.updated', 'pegawai.deleted',
+      'kelas.created', 'kelas.updated',
+      'mapel.created', 'mapel.updated',
+    ],
   },
   {
     name: 'Piket',
     url: config.apps.piket,
     webhookPath: '/api/webhooks/sdms',
     secret: process.env.PIKET_WEBHOOK_SECRET || 'sdms_piket_secret',
-    events: ['siswa.created', 'siswa.updated', 'siswa.deleted', 'kelas.updated', 'guru.updated'],
+    events: [
+      'siswa.created', 'siswa.updated', 'siswa.deleted',
+      'guru.created', 'guru.updated', 'guru.deleted',
+      'kelas.created', 'kelas.updated',
+    ],
   },
   {
     name: 'Sholat',
     url: config.apps.sholat,
     webhookPath: '/api/webhooks/sdms',
     secret: process.env.SHOLAT_WEBHOOK_SECRET || 'sdms_sholat_secret',
-    events: ['siswa.created', 'siswa.updated', 'siswa.deleted', 'kelas.updated'],
+    events: [
+      'siswa.created', 'siswa.updated', 'siswa.deleted',
+      'kelas.created', 'kelas.updated',
+    ],
   },
   {
     name: 'Kegiatan',
     url: config.apps.kegiatan,
     webhookPath: '/api/webhooks/sdms',
     secret: process.env.KEGIATAN_WEBHOOK_SECRET || 'sdms_kegiatan_secret',
-    events: ['guru.updated', 'siswa.updated'],
+    events: [
+      'guru.updated', 'siswa.updated',
+      'pegawai.updated',
+    ],
   },
   {
     name: 'Kelulusan',
     url: config.apps.kelulusan,
     webhookPath: '/api/webhooks/sdms',
     secret: process.env.KELULUSAN_WEBHOOK_SECRET || 'sdms_kelulusan_secret',
-    events: ['siswa.created', 'siswa.updated', 'siswa.deleted'],
+    events: [
+      'siswa.created', 'siswa.updated', 'siswa.deleted',
+    ],
   },
   {
     name: 'Website',
     url: config.apps.website,
     webhookPath: '/api/webhooks/sdms',
     secret: process.env.WEBSITE_WEBHOOK_SECRET || 'sdms_website_secret',
-    events: ['guru.created', 'guru.updated', 'guru.deleted'],
+    events: [
+      'guru.created', 'guru.updated', 'guru.deleted',
+      'pegawai.created', 'pegawai.updated', 'pegawai.deleted',
+    ],
   },
 ];
 
