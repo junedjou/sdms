@@ -34,7 +34,7 @@
       >
         <span v-if="deleting" class="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
         <TrashIcon v-else class="w-3.5 h-3.5" />
-        Hapus {{ count }} data
+        Hapus Permanen {{ count }} data
       </button>
     </div>
   </Transition>

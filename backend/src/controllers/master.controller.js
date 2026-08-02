@@ -346,47 +346,48 @@ const getIds = (req, res) => {
 
 const bulkDeleteGuru = async (req, res) => {
   const ids = getIds(req, res); if (!ids) return;
-  await Guru.update({ is_active: false }, { where: { id: ids } });
+  // Hard delete — hapus permanen dari database
+  await Guru.destroy({ where: { id: ids } });
   ids.forEach(id => syncEvent('guru.deleted', { id }));
-  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'guru', description: `Bulk delete ${ids.length} guru` });
-  return success(res, { deleted: ids.length }, `${ids.length} guru berhasil dinonaktifkan`);
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'guru', description: `Bulk delete permanen ${ids.length} guru` });
+  return success(res, { deleted: ids.length }, `${ids.length} guru berhasil dihapus permanen`);
 };
 
 const bulkDeleteSiswa = async (req, res) => {
   const ids = getIds(req, res); if (!ids) return;
-  await Siswa.update({ status: 'Keluar' }, { where: { id: ids } });
+  await Siswa.destroy({ where: { id: ids } });
   ids.forEach(id => syncEvent('siswa.deleted', { id }));
-  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'siswa', description: `Bulk delete ${ids.length} siswa` });
-  return success(res, { deleted: ids.length }, `${ids.length} siswa berhasil dinonaktifkan`);
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'siswa', description: `Bulk delete permanen ${ids.length} siswa` });
+  return success(res, { deleted: ids.length }, `${ids.length} siswa berhasil dihapus permanen`);
 };
 
 const bulkDeletePegawai = async (req, res) => {
   const ids = getIds(req, res); if (!ids) return;
-  await Pegawai.update({ is_active: false }, { where: { id: ids } });
+  await Pegawai.destroy({ where: { id: ids } });
   ids.forEach(id => syncEvent('pegawai.deleted', { id }));
-  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'pegawai', description: `Bulk delete ${ids.length} pegawai` });
-  return success(res, { deleted: ids.length }, `${ids.length} pegawai berhasil dinonaktifkan`);
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'pegawai', description: `Bulk delete permanen ${ids.length} pegawai` });
+  return success(res, { deleted: ids.length }, `${ids.length} pegawai berhasil dihapus permanen`);
 };
 
 const bulkDeleteJurusan = async (req, res) => {
   const ids = getIds(req, res); if (!ids) return;
-  await Jurusan.update({ is_active: false }, { where: { id: ids } });
-  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'jurusan', description: `Bulk delete ${ids.length} jurusan` });
-  return success(res, { deleted: ids.length }, `${ids.length} jurusan berhasil dinonaktifkan`);
+  await Jurusan.destroy({ where: { id: ids } });
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'jurusan', description: `Bulk delete permanen ${ids.length} jurusan` });
+  return success(res, { deleted: ids.length }, `${ids.length} jurusan berhasil dihapus permanen`);
 };
 
 const bulkDeleteKelas = async (req, res) => {
   const ids = getIds(req, res); if (!ids) return;
-  await Kelas.update({ is_active: false }, { where: { id: ids } });
-  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'kelas', description: `Bulk delete ${ids.length} kelas` });
-  return success(res, { deleted: ids.length }, `${ids.length} kelas berhasil dinonaktifkan`);
+  await Kelas.destroy({ where: { id: ids } });
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'kelas', description: `Bulk delete permanen ${ids.length} kelas` });
+  return success(res, { deleted: ids.length }, `${ids.length} kelas berhasil dihapus permanen`);
 };
 
 const bulkDeleteMapel = async (req, res) => {
   const ids = getIds(req, res); if (!ids) return;
-  await MataPelajaran.update({ is_active: false }, { where: { id: ids } });
-  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'mapel', description: `Bulk delete ${ids.length} mapel` });
-  return success(res, { deleted: ids.length }, `${ids.length} mata pelajaran berhasil dinonaktifkan`);
+  await MataPelajaran.destroy({ where: { id: ids } });
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'mapel', description: `Bulk delete permanen ${ids.length} mapel` });
+  return success(res, { deleted: ids.length }, `${ids.length} mata pelajaran berhasil dihapus permanen`);
 };
 
 module.exports = {
