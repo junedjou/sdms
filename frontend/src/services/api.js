@@ -90,39 +90,57 @@ export const userService = {
 
 export const masterService = {
   // Guru
-  guruList:   (params) => api.get('/master/guru', { params }),
-  guruById:   (id)     => api.get(`/master/guru/${id}`),
-  guruCreate: (data)   => api.post('/master/guru', data),
-  guruUpdate: (id, d)  => api.put(`/master/guru/${id}`, d),
-  guruDelete: (id)     => api.delete(`/master/guru/${id}`),
+  guruList:     (params) => api.get('/master/guru', { params }),
+  guruById:     (id)     => api.get(`/master/guru/${id}`),
+  guruCreate:   (data)   => api.post('/master/guru', data),
+  guruUpdate:   (id, d)  => api.put(`/master/guru/${id}`, d),
+  guruDelete:   (id)     => api.delete(`/master/guru/${id}`),
+  guruExport:   ()       => api.get('/master/guru/export', { responseType: 'blob' }),
+  guruTemplate: ()       => api.get('/master/guru/template', { responseType: 'blob' }),
+  guruImport:   (fd)     => api.post('/master/guru/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
   // Siswa
-  siswaList:   (params) => api.get('/master/siswa', { params }),
-  siswaById:   (id)     => api.get(`/master/siswa/${id}`),
-  siswaCreate: (data)   => api.post('/master/siswa', data),
-  siswaUpdate: (id, d)  => api.put(`/master/siswa/${id}`, d),
-  siswaDelete: (id)     => api.delete(`/master/siswa/${id}`),
+  siswaList:     (params) => api.get('/master/siswa', { params }),
+  siswaById:     (id)     => api.get(`/master/siswa/${id}`),
+  siswaCreate:   (data)   => api.post('/master/siswa', data),
+  siswaUpdate:   (id, d)  => api.put(`/master/siswa/${id}`, d),
+  siswaDelete:   (id)     => api.delete(`/master/siswa/${id}`),
+  siswaExport:   ()       => api.get('/master/siswa/export', { responseType: 'blob' }),
+  siswaTemplate: ()       => api.get('/master/siswa/template', { responseType: 'blob' }),
+  siswaImport:   (fd)     => api.post('/master/siswa/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
   // Pegawai
-  pegawaiList:   (params) => api.get('/master/pegawai', { params }),
-  pegawaiCreate: (data)   => api.post('/master/pegawai', data),
-  pegawaiUpdate: (id, d)  => api.put(`/master/pegawai/${id}`, d),
-  pegawaiDelete: (id)     => api.delete(`/master/pegawai/${id}`),
+  pegawaiList:     (params) => api.get('/master/pegawai', { params }),
+  pegawaiCreate:   (data)   => api.post('/master/pegawai', data),
+  pegawaiUpdate:   (id, d)  => api.put(`/master/pegawai/${id}`, d),
+  pegawaiDelete:   (id)     => api.delete(`/master/pegawai/${id}`),
+  pegawaiExport:   ()       => api.get('/master/pegawai/export', { responseType: 'blob' }),
+  pegawaiTemplate: ()       => api.get('/master/pegawai/template', { responseType: 'blob' }),
+  pegawaiImport:   (fd)     => api.post('/master/pegawai/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
   // Jurusan
-  jurusanList:   (params) => api.get('/master/jurusan', { params }),
-  jurusanCreate: (data)   => api.post('/master/jurusan', data),
-  jurusanUpdate: (id, d)  => api.put(`/master/jurusan/${id}`, d),
+  jurusanList:     (params) => api.get('/master/jurusan', { params }),
+  jurusanCreate:   (data)   => api.post('/master/jurusan', data),
+  jurusanUpdate:   (id, d)  => api.put(`/master/jurusan/${id}`, d),
+  jurusanExport:   ()       => api.get('/master/jurusan/export', { responseType: 'blob' }),
+  jurusanTemplate: ()       => api.get('/master/jurusan/template', { responseType: 'blob' }),
+  jurusanImport:   (fd)     => api.post('/master/jurusan/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
   // Kelas
-  kelasList:   (params) => api.get('/master/kelas', { params }),
-  kelasCreate: (data)   => api.post('/master/kelas', data),
-  kelasUpdate: (id, d)  => api.put(`/master/kelas/${id}`, d),
+  kelasList:     (params) => api.get('/master/kelas', { params }),
+  kelasCreate:   (data)   => api.post('/master/kelas', data),
+  kelasUpdate:   (id, d)  => api.put(`/master/kelas/${id}`, d),
+  kelasExport:   ()       => api.get('/master/kelas/export', { responseType: 'blob' }),
+  kelasTemplate: ()       => api.get('/master/kelas/template', { responseType: 'blob' }),
+  kelasImport:   (fd)     => api.post('/master/kelas/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
   // Mapel
-  mapelList:   (params) => api.get('/master/mapel', { params }),
-  mapelCreate: (data)   => api.post('/master/mapel', data),
-  mapelUpdate: (id, d)  => api.put(`/master/mapel/${id}`, d),
+  mapelList:     (params) => api.get('/master/mapel', { params }),
+  mapelCreate:   (data)   => api.post('/master/mapel', data),
+  mapelUpdate:   (id, d)  => api.put(`/master/mapel/${id}`, d),
+  mapelExport:   ()       => api.get('/master/mapel/export', { responseType: 'blob' }),
+  mapelTemplate: ()       => api.get('/master/mapel/template', { responseType: 'blob' }),
+  mapelImport:   (fd)     => api.post('/master/mapel/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
   // Tahun Pelajaran & Semester
   tahunPelajaranList:   ()     => api.get('/master/tahun-pelajaran'),

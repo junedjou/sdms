@@ -6,9 +6,21 @@
         <h1 class="page-title">Data Jurusan</h1>
         <p class="page-subtitle">Kelola program keahlian / kompetensi sekolah</p>
       </div>
-      <button v-if="authStore.hasPermission('jurusan:create')" @click="openForm()" class="btn-primary">
-        <PlusIcon class="w-4 h-4" /> Tambah Jurusan
-      </button>
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+        <div class="flex items-center gap-1.5">
+          <button @click="doExport" :disabled="exporting" class="btn-secondary btn-sm gap-1.5">
+            <ArrowDownTrayIcon class="w-3.5 h-3.5" />
+            <span class="hidden sm:inline">{{ exporting ? 'Exporting...' : 'Export' }}</span>
+          </button>
+          <button v-if="authStore.hasPermission('jurusan:create')" @click="showImport = true" class="btn-secondary btn-sm gap-1.5">
+            <ArrowUpTrayIcon class="w-3.5 h-3.5" />
+            <span class="hidden sm:inline">Import</span>
+          </button>
+        </div>
+        <button v-if="authStore.hasPermission('jurusan:create')" @click="openForm()" class="btn-primary">
+          <PlusIcon class="w-4 h-4" /> Tambah Jurusan
+        </button>
+      </div>
     </div>
 
     <!-- Loading skeleton -->
@@ -66,6 +78,8 @@
     </div>
 
     <BaseEmpty v-else title="Belum ada jurusan" subtitle="Klik Tambah Jurusan untuk mulai menambahkan data" />
+
+    <ImportExcelModal v-model="showImport" title="Jurusan" :import-fn="importFn" @download-template="doTemplate" @imported="handleImported" />
 
     <!-- Form Modal -->
     <BaseModal v-model="showForm" :title="editItem ? 'Edit Jurusan' : 'Tambah Jurusan'" size="md">
@@ -126,15 +140,25 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useMasterStore } from '@/stores/master.store';
 import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast';
+import { useExcelIO } from '@/composables/useExcelIO';
 import BaseModal from '@/components/common/BaseModal.vue';
 import BaseConfirm from '@/components/common/BaseConfirm.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, UserGroupIcon } from '@heroicons/vue/24/outline';
+import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
+import { PlusIcon, PencilSquareIcon, TrashIcon, UserGroupIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 
 const authStore   = useAuthStore();
 const masterStore = useMasterStore();
 const uiStore     = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Jurusan' }]);
+
+const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
+  exportFn:   masterService.jurusanExport,
+  templateFn: masterService.jurusanTemplate,
+  importFn:   masterService.jurusanImport,
+  label:      'jurusan',
+  onImported: () => { fetchData(); masterStore.fetchJurusan(); },
+});
 
 const items       = ref([]);
 const loading     = ref(true);

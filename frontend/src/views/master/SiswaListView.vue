@@ -5,9 +5,21 @@
         <h1 class="page-title">Data Siswa</h1>
         <p class="page-subtitle">Kelola data peserta didik sekolah</p>
       </div>
-      <button v-if="authStore.hasPermission('siswa:create')" @click="openForm()" class="btn-primary">
-        <PlusIcon class="w-4 h-4" /> Tambah Siswa
-      </button>
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+        <div class="flex items-center gap-1.5">
+          <button @click="doExport" :disabled="exporting" class="btn-secondary btn-sm gap-1.5">
+            <ArrowDownTrayIcon class="w-3.5 h-3.5" />
+            <span class="hidden sm:inline">{{ exporting ? 'Exporting...' : 'Export' }}</span>
+          </button>
+          <button v-if="authStore.hasPermission('siswa:create')" @click="showImport = true" class="btn-secondary btn-sm gap-1.5">
+            <ArrowUpTrayIcon class="w-3.5 h-3.5" />
+            <span class="hidden sm:inline">Import</span>
+          </button>
+        </div>
+        <button v-if="authStore.hasPermission('siswa:create')" @click="openForm()" class="btn-primary">
+          <PlusIcon class="w-4 h-4" /> Tambah Siswa
+        </button>
+      </div>
     </div>
 
     <!-- Filter -->
@@ -88,6 +100,14 @@
       </template>
       <BaseEmpty v-else :title="search ? 'Siswa tidak ditemukan' : 'Belum ada data siswa'" :icon="search ? 'search' : 'inbox'" />
     </div>
+
+    <ImportExcelModal
+      v-model="showImport"
+      title="Siswa"
+      :import-fn="importFn"
+      @download-template="doTemplate"
+      @imported="handleImported"
+    />
 
     <!-- Form Modal -->
     <BaseModal v-model="showForm" :title="editItem ? 'Edit Data Siswa' : 'Tambah Siswa'" size="lg">
@@ -174,14 +194,24 @@ import { useMasterStore } from '@/stores/master.store';
 import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast';
 import { debounce, getInitials, statusBadgeClass } from '@/utils/helpers';
+import { useExcelIO } from '@/composables/useExcelIO';
 import BaseModal from '@/components/common/BaseModal.vue';
 import BaseConfirm from '@/components/common/BaseConfirm.vue';
 import BasePagination from '@/components/common/BasePagination.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
+import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
+import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore(); const masterStore = useMasterStore(); const uiStore = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Data Siswa' }]);
+
+const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
+  exportFn:   masterService.siswaExport,
+  templateFn: masterService.siswaTemplate,
+  importFn:   masterService.siswaImport,
+  label:      'siswa',
+  onImported: () => fetchData(),
+});
 
 const items = ref([]); const loading = ref(true);
 const page = ref(1); const limit = 10; const total = ref(0);

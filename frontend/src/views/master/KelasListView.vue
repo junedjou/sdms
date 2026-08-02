@@ -2,7 +2,19 @@
   <div class="space-y-5 animate-fade-in">
     <div class="page-header">
       <div><h1 class="page-title">Data Kelas</h1><p class="page-subtitle">Pengelolaan rombongan belajar</p></div>
-      <button v-if="authStore.hasPermission('kelas:create')" @click="openForm()" class="btn-primary"><PlusIcon class="w-4 h-4" /> Tambah Kelas</button>
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+        <div class="flex items-center gap-1.5">
+          <button @click="doExport" :disabled="exporting" class="btn-secondary btn-sm gap-1.5">
+            <ArrowDownTrayIcon class="w-3.5 h-3.5" />
+            <span class="hidden sm:inline">{{ exporting ? 'Exporting...' : 'Export' }}</span>
+          </button>
+          <button v-if="authStore.hasPermission('kelas:create')" @click="showImport = true" class="btn-secondary btn-sm gap-1.5">
+            <ArrowUpTrayIcon class="w-3.5 h-3.5" />
+            <span class="hidden sm:inline">Import</span>
+          </button>
+        </div>
+        <button v-if="authStore.hasPermission('kelas:create')" @click="openForm()" class="btn-primary"><PlusIcon class="w-4 h-4" /> Tambah Kelas</button>
+      </div>
     </div>
 
     <div class="card p-4 flex gap-3">
@@ -40,6 +52,7 @@
       <BaseEmpty v-else title="Belum ada kelas" subtitle="Tambahkan data kelas terlebih dahulu" />
     </div>
 
+    <ImportExcelModal v-model="showImport" title="Kelas" :import-fn="importFn" @download-template="doTemplate" @imported="handleImported" />
     <BaseModal v-model="showForm" :title="editItem ? 'Edit Kelas' : 'Tambah Kelas'" size="md">
       <form class="grid grid-cols-2 gap-4">
         <div class="form-group col-span-2">
@@ -94,11 +107,21 @@ import { ref, computed, onMounted } from 'vue';
 import { masterService } from '@/services/api';
 import { useAuthStore } from '@/stores/auth.store'; import { useMasterStore } from '@/stores/master.store'; import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast';
+import { useExcelIO } from '@/composables/useExcelIO';
 import BaseModal from '@/components/common/BaseModal.vue'; import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import BaseConfirm from '@/components/common/BaseConfirm.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
+import { PlusIcon, PencilSquareIcon, TrashIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 const authStore = useAuthStore(); const masterStore = useMasterStore(); const uiStore = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Kelas' }]);
+
+const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
+  exportFn:   masterService.kelasExport,
+  templateFn: masterService.kelasTemplate,
+  importFn:   masterService.kelasImport,
+  label:      'kelas',
+  onImported: () => fetchData(),
+});
 
 const items = ref([]); const loading = ref(true); const filterTP = ref(masterStore.tahunAktif?.id || '');
 const showForm = ref(false); const editItem = ref(null); const formLoading = ref(false);
