@@ -115,7 +115,7 @@ const pushWebhook = async (target, envelope) => {
   const endpointUrl = `${target.url}${target.webhookPath}`;
   try {
     await axios.post(endpointUrl, envelope, {
-      timeout: 5000,
+      timeout: 15000,   // 15 detik — cukup untuk koneksi HTTPS internal
       headers: {
         'Content-Type': 'application/json',
         'X-SDMS-Event': envelope.event,

@@ -160,7 +160,7 @@ router.post('/sync/test',
       const axiosLib = require('axios');
       const startMs  = Date.now();
       await axiosLib.post(endpointUrl, envelope, {
-        timeout: 5000,
+        timeout: 15000,   // 15 detik untuk koneksi internal via Caddy/HTTPS
         headers: {
           'Content-Type':   'application/json',
           'X-SDMS-Event':   event,
