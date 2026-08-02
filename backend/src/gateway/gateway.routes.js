@@ -138,6 +138,51 @@ router.post('/sync/bulk',
   })
 );
 
+// POST /api/v1/gateway/sync/test — test kirim 1 event ke target tertentu
+router.post('/sync/test',
+  authenticate, adminOnly,
+  asyncHandler(async (req, res) => {
+    const { target, event = 'ping' } = req.body;
+    if (!target) return badRequest(res, 'Parameter target wajib diisi (contoh: LMS)');
+
+    const { pushWebhook: _push } = require('../services/syncService');
+    const found = SYNC_TARGETS.find(t => t.name.toLowerCase() === target.toLowerCase());
+    if (!found) return badRequest(res, `Target '${target}' tidak ditemukan. Tersedia: ${SYNC_TARGETS.map(t => t.name).join(', ')}`);
+
+    const envelope = {
+      event,
+      payload: { message: 'Test webhook dari SDMS', timestamp: new Date().toISOString() },
+      meta: { timestamp: new Date().toISOString(), source: 'sdms-core', type: 'test' },
+    };
+
+    const endpointUrl = `${found.url}${found.webhookPath}`;
+    try {
+      const axiosLib = require('axios');
+      const startMs  = Date.now();
+      await axiosLib.post(endpointUrl, envelope, {
+        timeout: 5000,
+        headers: {
+          'Content-Type':   'application/json',
+          'X-SDMS-Event':   event,
+          'X-SDMS-Secret':  found.secret,
+          'X-SDMS-Timestamp': envelope.meta.timestamp,
+        },
+      });
+      return success(res, {
+        target: found.name, url: endpointUrl,
+        event, latency_ms: Date.now() - startMs,
+        status: 'delivered',
+      }, `Test webhook berhasil dikirim ke ${found.name}`);
+    } catch (err) {
+      return success(res, {
+        target: found.name, url: endpointUrl,
+        event, status: 'failed',
+        error: err.message,
+      }, `Gagal kirim ke ${found.name}: ${err.message}`);
+    }
+  })
+);
+
 router.get('/apps',
   authenticate,
   asyncHandler(async (req, res) => success(res, getAppList()))
