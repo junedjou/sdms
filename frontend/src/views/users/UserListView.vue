@@ -40,10 +40,21 @@
         <div class="table-container border-0">
           <table class="table">
             <thead>
-              <tr><th>User</th><th>Username</th><th>Role</th><th>Login Terakhir</th><th>Status</th><th class="text-right">Aksi</th></tr>
+              <tr>
+                <th class="w-10">
+                  <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    :checked="isAllSelected" :indeterminate="isPartialSelected" @change="toggleAll" />
+                </th>
+                <th>User</th><th>Username</th><th>Role</th><th>Login Terakhir</th><th>Status</th><th class="text-right">Aksi</th>
+              </tr>
             </thead>
             <tbody>
-              <tr v-for="item in items" :key="item.id">
+              <tr v-for="item in items" :key="item.id" :class="isSelected(item.id) ? 'bg-primary-50/50' : ''">
+                <td>
+                  <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    :checked="isSelected(item.id)" @change="toggleOne(item.id)"
+                    :disabled="item.id === authStore.user?.id" />
+                </td>
                 <td>
                   <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
@@ -85,7 +96,12 @@
           </table>
         </div>
         <div class="px-4 py-3 border-t border-gray-50">
-          <BasePagination :current-page="page" :total-pages="totalPages" :total="total" :limit="limit" @change="(p) => { page = p; fetchData(); }" />
+          <BasePagination
+            :current-page="page" :total-pages="totalPages"
+            :total="total" :limit="limit"
+            @change="(p) => { page = p; fetchData(); }"
+            @limit-change="(l) => { limit = l; page = 1; fetchData(); }"
+          />
         </div>
       </template>
       <BaseEmpty v-else :title="search ? 'User tidak ditemukan' : 'Belum ada user'" :icon="search ? 'search' : 'inbox'" />
@@ -98,6 +114,26 @@
       :import-fn="userService.import"
       @download-template="doTemplate"
       @imported="(count) => { notify.success(`${count} user berhasil diimport`); fetchData(); }"
+    />
+
+    <!-- Bulk delete confirm -->
+    <BaseConfirm
+      v-model="showBulkConfirm"
+      title="Hapus Massal User"
+      :message="`Hapus permanen ${selected.length} user yang dipilih? Tindakan ini tidak bisa dibatalkan.`"
+      confirm-label="Ya, Hapus Semua"
+      :danger-mode="true"
+      :loading="bulkDeleting"
+      @confirm="executeBulkDelete"
+    />
+
+    <!-- Floating bulk bar -->
+    <BulkDeleteBar
+      :count="selected.length"
+      label="user"
+      :deleting="bulkDeleting"
+      @delete="showBulkConfirm = true"
+      @clear="clearSelected"
     />
 
     <!-- Form Modal: Tambah / Edit User -->
@@ -180,6 +216,7 @@ import BaseConfirm from '@/components/common/BaseConfirm.vue';
 import BasePagination from '@/components/common/BasePagination.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
+import BulkDeleteBar from '@/components/common/BulkDeleteBar.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, KeyIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
@@ -211,12 +248,49 @@ const doTemplate = async () => {
 };
 
 const items = ref([]); const loading = ref(true); const roles = ref([]);
-const page = ref(1); const limit = 10; const total = ref(0);
-const totalPages = computed(() => Math.ceil(total.value / limit));
+const page = ref(1); const limit = ref(10); const total = ref(0);
+const totalPages = computed(() => Math.ceil(total.value / limit.value));
 const search = ref(''); const filterRole = ref('');
 const showForm    = ref(false); const editItem  = ref(null); const formLoading = ref(false);
 const showConfirm = ref(false); const deleteTarget = ref(null);
 const showResetPw = ref(false); const resetTarget  = ref(null); const newPassword = ref('');
+
+// ── Bulk delete ───────────────────────────────────────────────
+const selected        = ref([]);
+const showBulkConfirm = ref(false);
+const bulkDeleting    = ref(false);
+const isAllSelected   = computed(() => items.value.length > 0 && items.value.every(i => selected.value.includes(i.id)));
+const isPartialSelected = computed(() => selected.value.length > 0 && !isAllSelected.value);
+const isSelected      = (id) => selected.value.includes(id);
+const toggleAll       = () => {
+  if (isAllSelected.value) {
+    const pageIds = items.value.map(i => i.id);
+    selected.value = selected.value.filter(id => !pageIds.includes(id));
+  } else {
+    const merged = new Set([...selected.value, ...items.value.map(i => i.id)]);
+    selected.value = Array.from(merged);
+  }
+};
+const toggleOne = (id) => {
+  const idx = selected.value.indexOf(id);
+  if (idx > -1) selected.value.splice(idx, 1);
+  else selected.value.push(id);
+};
+const clearSelected = () => { selected.value = []; };
+const executeBulkDelete = async () => {
+  bulkDeleting.value = true;
+  try {
+    await Promise.all(selected.value.map(id => userService.delete(id)));
+    notify.success(`${selected.value.length} user berhasil dihapus`);
+    clearSelected();
+    showBulkConfirm.value = false;
+    fetchData();
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal menghapus user');
+  } finally {
+    bulkDeleting.value = false;
+  }
+};
 
 const roleBadge = (name) => ({ super_admin: 'badge-red', admin: 'badge-blue', guru: 'badge-green', pegawai: 'badge-yellow', siswa: 'badge-gray', operator: 'badge-gray' }[name] || 'badge-gray');
 
@@ -226,7 +300,7 @@ const form = ref(emptyForm());
 const fetchData = async () => {
   loading.value = true;
   try {
-    const res = await userService.list({ page: page.value, limit, search: search.value, role: filterRole.value || undefined });
+    const res = await userService.list({ page: page.value, limit: limit.value, search: search.value, role: filterRole.value || undefined });
     items.value = res.data.data || [];
     total.value = res.data.meta?.total || 0;
   } catch { notify.error('Gagal memuat data user'); } finally { loading.value = false; }

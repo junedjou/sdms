@@ -1,9 +1,11 @@
 <template>
-  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm text-slate-500">
+  <div class="flex flex-col gap-3 text-sm text-slate-500">
 
-    <!-- Kiri: info + selector limit -->
-    <div class="flex items-center gap-3 flex-wrap">
-      <span class="text-slate-500">
+    <!-- Baris atas: info data + selector limit -->
+    <div class="flex flex-wrap items-center justify-between gap-2">
+
+      <!-- Info: menampilkan X-Y dari Z -->
+      <span class="text-slate-500 whitespace-nowrap">
         Menampilkan
         <span class="font-semibold text-slate-700">{{ from }}–{{ to }}</span>
         dari
@@ -11,21 +13,21 @@
         data
       </span>
 
-      <!-- Selector jumlah per halaman -->
-      <div class="flex items-center gap-1.5">
-        <span class="text-slate-400 text-xs">Tampilkan</span>
+      <!-- Selector per halaman -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <span class="text-slate-400 text-xs whitespace-nowrap">Tampilkan</span>
         <select
           :value="limit"
           @change="$emit('limit-change', parseInt($event.target.value))"
-          class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-colors"
+          class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 min-w-[64px] bg-white text-slate-700 cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-colors appearance-none"
         >
           <option v-for="opt in limitOptions" :key="opt" :value="opt">{{ opt }}</option>
         </select>
-        <span class="text-slate-400 text-xs">per halaman</span>
+        <span class="text-slate-400 text-xs whitespace-nowrap">per halaman</span>
       </div>
     </div>
 
-    <!-- Kanan: navigasi halaman -->
+    <!-- Baris bawah: navigasi halaman -->
     <div v-if="totalPages > 1" class="flex items-center gap-1">
       <!-- Prev -->
       <button
@@ -38,18 +40,18 @@
       </button>
 
       <!-- Page buttons -->
-      <template v-for="page in visiblePages" :key="page">
-        <span v-if="page === '...'" class="w-8 h-8 flex items-center justify-center text-slate-400">···</span>
+      <template v-for="pg in visiblePages" :key="pg">
+        <span v-if="pg === '...'" class="w-8 h-8 flex items-center justify-center text-slate-400">···</span>
         <button
           v-else
-          @click="$emit('change', page)"
+          @click="$emit('change', pg)"
           :class="[
             'w-8 h-8 rounded-lg border text-xs font-medium transition-colors',
-            page === currentPage
+            pg === currentPage
               ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
               : 'border-slate-200 hover:bg-slate-50 text-slate-600',
           ]"
-        >{{ page }}</button>
+        >{{ pg }}</button>
       </template>
 
       <!-- Next -->
@@ -62,6 +64,7 @@
         <ChevronRightIcon class="w-3.5 h-3.5" />
       </button>
     </div>
+
   </div>
 </template>
 
@@ -100,5 +103,4 @@ const visiblePages = computed(() => {
   }
 
   return pages;
-});
-</script>
+});</script>
