@@ -169,13 +169,22 @@ fi
 pm2 save --force > /dev/null
 ok "PM2 process list disimpan"
 
-# ── 7. Reload Nginx ──────────────────────────────────────────
+# ── 7. Reload Nginx — hanya jika config berubah ──────────────
 head "Reload Nginx"
-if nginx -t 2>/dev/null; then
-  systemctl reload nginx
-  ok "Nginx di-reload"
+NGINX_CHANGED=false
+if echo "$CHANGED_FILES" | grep -q "nginx\|Caddyfile\|deploy/"; then
+  NGINX_CHANGED=true
+fi
+
+if [ "$NGINX_CHANGED" = true ]; then
+  if nginx -t 2>/dev/null; then
+    systemctl reload nginx
+    ok "Nginx di-reload (config berubah)"
+  else
+    info "Konfigurasi Nginx error — skip reload. Cek: nginx -t"
+  fi
 else
-  err "Konfigurasi Nginx error — tidak di-reload. Cek: nginx -t"
+  ok "Nginx tidak disentuh (tidak ada perubahan config)"
 fi
 
 # ── 8. Health check ──────────────────────────────────────────

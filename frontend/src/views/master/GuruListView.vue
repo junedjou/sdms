@@ -45,6 +45,10 @@
           <table class="table">
             <thead>
               <tr>
+                <th class="w-10">
+                  <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    :checked="isAllSelected" :indeterminate="isPartialSelected" @change="toggleAll" />
+                </th>
                 <th>Nama</th>
                 <th>NIP / NIY</th>
                 <th>Jurusan</th>
@@ -55,7 +59,11 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in items" :key="item.id">
+              <tr v-for="item in items" :key="item.id" :class="isSelected(item.id) ? 'bg-primary-50/50' : ''">
+                <td>
+                  <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    :checked="isSelected(item.id)" @change="toggleOne(item.id)" />
+                </td>
                 <td>
                   <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
@@ -108,6 +116,26 @@
       :import-fn="importFn"
       @download-template="doTemplate"
       @imported="handleImported"
+    />
+
+    <!-- Bulk delete confirm -->
+    <BaseConfirm
+      v-model="showBulkConfirm"
+      title="Hapus Massal Guru"
+      :message="`Nonaktifkan ${selected.length} guru yang dipilih? Tindakan ini tidak dapat dibatalkan.`"
+      confirm-label="Ya, Hapus Semua"
+      :danger-mode="true"
+      :loading="bulkDeleting"
+      @confirm="executeBulkDelete"
+    />
+
+    <!-- Floating bulk action bar -->
+    <BulkDeleteBar
+      :count="selected.length"
+      label="guru"
+      :deleting="bulkDeleting"
+      @delete="openBulkConfirm"
+      @clear="clearSelected"
     />
 
     <!-- Form Modal -->
@@ -214,11 +242,13 @@ import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast';
 import { debounce, getInitials, getAvatarColor } from '@/utils/helpers';
 import { useExcelIO } from '@/composables/useExcelIO';
+import { useBulkDelete } from '@/composables/useBulkDelete';
 import BaseModal from '@/components/common/BaseModal.vue';
 import BaseConfirm from '@/components/common/BaseConfirm.vue';
 import BasePagination from '@/components/common/BasePagination.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
+import BulkDeleteBar from '@/components/common/BulkDeleteBar.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 
 const authStore   = useAuthStore();
@@ -232,6 +262,14 @@ const { exporting, showImport, doExport, doTemplate, importFn, handleImported } 
   importFn:   masterService.guruImport,
   label:      'guru',
   onImported: () => fetchData(),
+});
+
+const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggleOne,
+  clearSelected, openBulkConfirm, executeBulkDelete, bulkDeleting, showBulkConfirm,
+} = useBulkDelete({
+  items,
+  deleteFn: masterService.guruBulkDelete,
+  onDeleted: (count) => { notify.success(`${count} guru berhasil dihapus`); fetchData(); },
 });
 
 const items = ref([]); const loading = ref(true);

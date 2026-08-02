@@ -33,8 +33,16 @@
       <div
         v-for="item in items"
         :key="item.id"
-        class="card p-5 hover:shadow-md transition-all duration-200 group"
+        class="card p-5 hover:shadow-md transition-all duration-200 group relative"
+        :class="isSelected(item.id) ? 'ring-2 ring-primary-400 bg-primary-50/30' : ''"
       >
+        <!-- Checkbox -->
+        <input
+          type="checkbox"
+          class="absolute top-3 left-3 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer z-10"
+          :checked="isSelected(item.id)"
+          @change="toggleOne(item.id)"
+        />
         <!-- Top row -->
         <div class="flex items-start justify-between mb-3">
           <div class="w-12 h-12 rounded-xl bg-primary-50 border-2 border-primary-100 flex items-center justify-center">
@@ -80,6 +88,8 @@
     <BaseEmpty v-else title="Belum ada jurusan" subtitle="Klik Tambah Jurusan untuk mulai menambahkan data" />
 
     <ImportExcelModal v-model="showImport" title="Jurusan" :import-fn="importFn" @download-template="doTemplate" @imported="handleImported" />
+    <BaseConfirm v-model="showBulkConfirm" title="Hapus Massal Jurusan" :message="`Nonaktifkan ${selected.length} jurusan yang dipilih?`" confirm-label="Ya, Hapus Semua" :danger-mode="true" :loading="bulkDeleting" @confirm="executeBulkDelete" />
+    <BulkDeleteBar :count="selected.length" label="jurusan" :deleting="bulkDeleting" @delete="openBulkConfirm" @clear="clearSelected" />
 
     <!-- Form Modal -->
     <BaseModal v-model="showForm" :title="editItem ? 'Edit Jurusan' : 'Tambah Jurusan'" size="md">
@@ -141,10 +151,12 @@ import { useMasterStore } from '@/stores/master.store';
 import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast';
 import { useExcelIO } from '@/composables/useExcelIO';
+import { useBulkDelete } from '@/composables/useBulkDelete';
 import BaseModal from '@/components/common/BaseModal.vue';
 import BaseConfirm from '@/components/common/BaseConfirm.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
+import BulkDeleteBar from '@/components/common/BulkDeleteBar.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, UserGroupIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 
 const authStore   = useAuthStore();
@@ -158,6 +170,14 @@ const { exporting, showImport, doExport, doTemplate, importFn, handleImported } 
   importFn:   masterService.jurusanImport,
   label:      'jurusan',
   onImported: () => { fetchData(); masterStore.fetchJurusan(); },
+});
+
+const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggleOne,
+  clearSelected, openBulkConfirm, executeBulkDelete, bulkDeleting, showBulkConfirm,
+} = useBulkDelete({
+  items,
+  deleteFn: masterService.jurusanBulkDelete,
+  onDeleted: (count) => { notify.success(`${count} jurusan berhasil dihapus`); fetchData(); masterStore.fetchJurusan(); },
 });
 
 const items       = ref([]);

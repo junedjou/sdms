@@ -49,6 +49,10 @@
           <table class="table">
             <thead>
               <tr>
+                <th class="w-10">
+                  <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    :checked="isAllSelected" :indeterminate="isPartialSelected" @change="toggleAll" />
+                </th>
                 <th>Nama</th>
                 <th>NISN / NIS</th>
                 <th>Jurusan</th>
@@ -59,7 +63,11 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in items" :key="item.id">
+              <tr v-for="item in items" :key="item.id" :class="isSelected(item.id) ? 'bg-primary-50/50' : ''">
+                <td>
+                  <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    :checked="isSelected(item.id)" @change="toggleOne(item.id)" />
+                </td>
                 <td>
                   <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
@@ -108,6 +116,8 @@
       @download-template="doTemplate"
       @imported="handleImported"
     />
+    <BaseConfirm v-model="showBulkConfirm" title="Hapus Massal Siswa" :message="`Nonaktifkan ${selected.length} siswa yang dipilih?`" confirm-label="Ya, Hapus Semua" :danger-mode="true" :loading="bulkDeleting" @confirm="executeBulkDelete" />
+    <BulkDeleteBar :count="selected.length" label="siswa" :deleting="bulkDeleting" @delete="openBulkConfirm" @clear="clearSelected" />
 
     <!-- Form Modal -->
     <BaseModal v-model="showForm" :title="editItem ? 'Edit Data Siswa' : 'Tambah Siswa'" size="lg">
@@ -195,11 +205,13 @@ import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast';
 import { debounce, getInitials, statusBadgeClass } from '@/utils/helpers';
 import { useExcelIO } from '@/composables/useExcelIO';
+import { useBulkDelete } from '@/composables/useBulkDelete';
 import BaseModal from '@/components/common/BaseModal.vue';
 import BaseConfirm from '@/components/common/BaseConfirm.vue';
 import BasePagination from '@/components/common/BasePagination.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
+import BulkDeleteBar from '@/components/common/BulkDeleteBar.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore(); const masterStore = useMasterStore(); const uiStore = useUIStore();
@@ -211,6 +223,14 @@ const { exporting, showImport, doExport, doTemplate, importFn, handleImported } 
   importFn:   masterService.siswaImport,
   label:      'siswa',
   onImported: () => fetchData(),
+});
+
+const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggleOne,
+  clearSelected, openBulkConfirm, executeBulkDelete, bulkDeleting, showBulkConfirm,
+} = useBulkDelete({
+  items,
+  deleteFn: masterService.siswaBulkDelete,
+  onDeleted: (count) => { notify.success(`${count} siswa berhasil dihapus`); fetchData(); },
 });
 
 const items = ref([]); const loading = ref(true);

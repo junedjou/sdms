@@ -21,9 +21,13 @@
       <template v-else-if="items.length">
         <div class="table-container border-0">
           <table class="table">
-            <thead><tr><th>Kode</th><th>Nama</th><th>Kelompok</th><th>Jurusan</th><th>JPM</th><th class="text-right">Aksi</th></tr></thead>
+            <thead><tr>
+              <th class="w-10"><input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer" :checked="isAllSelected" :indeterminate="isPartialSelected" @change="toggleAll" /></th>
+              <th>Kode</th><th>Nama</th><th>Kelompok</th><th>Jurusan</th><th>JPM</th><th class="text-right">Aksi</th>
+            </tr></thead>
             <tbody>
-              <tr v-for="item in items" :key="item.id">
+              <tr v-for="item in items" :key="item.id" :class="isSelected(item.id) ? 'bg-primary-50/50' : ''">
+                <td><input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer" :checked="isSelected(item.id)" @change="toggleOne(item.id)" /></td>
                 <td class="font-mono text-xs font-semibold text-primary-700">{{ item.kode }}</td>
                 <td class="font-medium text-gray-900">{{ item.nama }}</td>
                 <td><span v-if="item.kelompok" class="badge-gray">{{ item.kelompok }}</span><span v-else class="text-gray-400">—</span></td>
@@ -39,6 +43,8 @@
     </div>
 
     <ImportExcelModal v-model="showImport" title="Mata Pelajaran" :import-fn="importFn" @download-template="doTemplate" @imported="handleImported" />
+    <BaseConfirm v-model="showBulkConfirm" title="Hapus Massal Mapel" :message="`Nonaktifkan ${selected.length} mata pelajaran yang dipilih?`" confirm-label="Ya, Hapus Semua" :danger-mode="true" :loading="bulkDeleting" @confirm="executeBulkDelete" />
+    <BulkDeleteBar :count="selected.length" label="mapel" :deleting="bulkDeleting" @delete="openBulkConfirm" @clear="clearSelected" />
     <BaseModal v-model="showForm" :title="editItem ? 'Edit Mapel' : 'Tambah Mapel'" size="md">
       <form class="grid grid-cols-2 gap-4">
         <div class="form-group"><label class="form-label">Kode <span class="text-red-500">*</span></label><input v-model="form.kode" type="text" class="form-input" required /></div>
@@ -61,8 +67,11 @@ import { masterService } from '@/services/api';
 import { useAuthStore } from '@/stores/auth.store'; import { useMasterStore } from '@/stores/master.store'; import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast';
 import { useExcelIO } from '@/composables/useExcelIO';
+import { useBulkDelete } from '@/composables/useBulkDelete';
 import BaseModal from '@/components/common/BaseModal.vue'; import BaseEmpty from '@/components/common/BaseEmpty.vue';
+import BaseConfirm from '@/components/common/BaseConfirm.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
+import BulkDeleteBar from '@/components/common/BulkDeleteBar.vue';
 import { PlusIcon, PencilSquareIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore(); const masterStore = useMasterStore(); const uiStore = useUIStore();
@@ -74,6 +83,14 @@ const { exporting, showImport, doExport, doTemplate, importFn, handleImported } 
   importFn:   masterService.mapelImport,
   label:      'mapel',
   onImported: () => fetchData(),
+});
+
+const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggleOne,
+  clearSelected, openBulkConfirm, executeBulkDelete, bulkDeleting, showBulkConfirm,
+} = useBulkDelete({
+  items,
+  deleteFn: masterService.mapelBulkDelete,
+  onDeleted: (count) => { notify.success(`${count} mata pelajaran berhasil dihapus`); fetchData(); },
 });
 const items = ref([]); const loading = ref(true); const showForm = ref(false); const editItem = ref(null); const formLoading = ref(false);
 const emptyForm = () => ({ kode: '', nama: '', kelompok: '', jurusan_id: '', jam_per_minggu: '' });

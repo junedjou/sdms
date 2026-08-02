@@ -328,19 +328,80 @@ const deleteKalender = async (req, res) => {
   return success(res, null, 'Kalender berhasil dihapus');
 };
 
+// ============================================================
+// BULK DELETE
+// ============================================================
+
+/**
+ * Helper: validasi array ids dari request body
+ */
+const getIds = (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    badRequest(res, 'ids harus berupa array dan tidak boleh kosong');
+    return null;
+  }
+  return ids;
+};
+
+const bulkDeleteGuru = async (req, res) => {
+  const ids = getIds(req, res); if (!ids) return;
+  await Guru.update({ is_active: false }, { where: { id: ids } });
+  ids.forEach(id => syncEvent('guru.deleted', { id }));
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'guru', description: `Bulk delete ${ids.length} guru` });
+  return success(res, { deleted: ids.length }, `${ids.length} guru berhasil dinonaktifkan`);
+};
+
+const bulkDeleteSiswa = async (req, res) => {
+  const ids = getIds(req, res); if (!ids) return;
+  await Siswa.update({ status: 'Keluar' }, { where: { id: ids } });
+  ids.forEach(id => syncEvent('siswa.deleted', { id }));
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'siswa', description: `Bulk delete ${ids.length} siswa` });
+  return success(res, { deleted: ids.length }, `${ids.length} siswa berhasil dinonaktifkan`);
+};
+
+const bulkDeletePegawai = async (req, res) => {
+  const ids = getIds(req, res); if (!ids) return;
+  await Pegawai.update({ is_active: false }, { where: { id: ids } });
+  ids.forEach(id => syncEvent('pegawai.deleted', { id }));
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'pegawai', description: `Bulk delete ${ids.length} pegawai` });
+  return success(res, { deleted: ids.length }, `${ids.length} pegawai berhasil dinonaktifkan`);
+};
+
+const bulkDeleteJurusan = async (req, res) => {
+  const ids = getIds(req, res); if (!ids) return;
+  await Jurusan.update({ is_active: false }, { where: { id: ids } });
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'jurusan', description: `Bulk delete ${ids.length} jurusan` });
+  return success(res, { deleted: ids.length }, `${ids.length} jurusan berhasil dinonaktifkan`);
+};
+
+const bulkDeleteKelas = async (req, res) => {
+  const ids = getIds(req, res); if (!ids) return;
+  await Kelas.update({ is_active: false }, { where: { id: ids } });
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'kelas', description: `Bulk delete ${ids.length} kelas` });
+  return success(res, { deleted: ids.length }, `${ids.length} kelas berhasil dinonaktifkan`);
+};
+
+const bulkDeleteMapel = async (req, res) => {
+  const ids = getIds(req, res); if (!ids) return;
+  await MataPelajaran.update({ is_active: false }, { where: { id: ids } });
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'BULK_DELETE', resource: 'mapel', description: `Bulk delete ${ids.length} mapel` });
+  return success(res, { deleted: ids.length }, `${ids.length} mata pelajaran berhasil dinonaktifkan`);
+};
+
 module.exports = {
   // Guru
-  getGuru, getGuruById, createGuru, updateGuru, deleteGuru,
+  getGuru, getGuruById, createGuru, updateGuru, deleteGuru, bulkDeleteGuru,
   // Siswa
-  getSiswa, getSiswaById, createSiswa, updateSiswa, deleteSiswa,
+  getSiswa, getSiswaById, createSiswa, updateSiswa, deleteSiswa, bulkDeleteSiswa,
   // Pegawai
-  getPegawai, createPegawai, updatePegawai, deletePegawai,
+  getPegawai, createPegawai, updatePegawai, deletePegawai, bulkDeletePegawai,
   // Jurusan
-  getJurusan, createJurusan, updateJurusan,
+  getJurusan, createJurusan, updateJurusan, bulkDeleteJurusan,
   // Kelas
-  getKelas, createKelas, updateKelas,
+  getKelas, createKelas, updateKelas, bulkDeleteKelas,
   // Mapel
-  getMapel, createMapel, updateMapel,
+  getMapel, createMapel, updateMapel, bulkDeleteMapel,
   // Tahun Pelajaran & Semester
   getTahunPelajaran, createTahunPelajaran, setTahunAktif,
   getSemester, createSemester,

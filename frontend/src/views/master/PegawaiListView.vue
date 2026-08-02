@@ -22,9 +22,13 @@
       <template v-else-if="items.length">
         <div class="table-container border-0">
           <table class="table">
-            <thead><tr><th>Nama</th><th>NIP</th><th>Jabatan</th><th>Unit Kerja</th><th>Status</th><th class="text-right">Aksi</th></tr></thead>
+            <thead><tr>
+              <th class="w-10"><input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer" :checked="isAllSelected" :indeterminate="isPartialSelected" @change="toggleAll" /></th>
+              <th>Nama</th><th>NIP</th><th>Jabatan</th><th>Unit Kerja</th><th>Status</th><th class="text-right">Aksi</th>
+            </tr></thead>
             <tbody>
-              <tr v-for="item in items" :key="item.id">
+              <tr v-for="item in items" :key="item.id" :class="isSelected(item.id) ? 'bg-primary-50/50' : ''">
+                <td><input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer" :checked="isSelected(item.id)" @change="toggleOne(item.id)" /></td>
                 <td><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" :class="getAvatarColor(item.nama)">{{ getInitials(item.nama) }}</div><p class="font-medium text-gray-900">{{ item.nama }}</p></div></td>
                 <td class="font-mono text-xs text-gray-600">{{ item.nip || '—' }}</td>
                 <td class="text-gray-700">{{ item.jabatan || '—' }}</td>
@@ -44,6 +48,8 @@
     </div>
 
     <ImportExcelModal v-model="showImport" title="Pegawai" :import-fn="importFn" @download-template="doTemplate" @imported="handleImported" />
+    <BaseConfirm v-model="showBulkConfirm" title="Hapus Massal Pegawai" :message="`Nonaktifkan ${selected.length} pegawai yang dipilih?`" confirm-label="Ya, Hapus Semua" :danger-mode="true" :loading="bulkDeleting" @confirm="executeBulkDelete" />
+    <BulkDeleteBar :count="selected.length" label="pegawai" :deleting="bulkDeleting" @delete="openBulkConfirm" @clear="clearSelected" />
     <BaseModal v-model="showForm" :title="editItem ? 'Edit Pegawai' : 'Tambah Pegawai'" size="lg">
       <form class="grid grid-cols-2 gap-4">
         <div class="form-group col-span-2"><label class="form-label">Nama Lengkap <span class="text-red-500">*</span></label><input v-model="form.nama" type="text" class="form-input" required /></div>
@@ -70,8 +76,10 @@ import { masterService } from '@/services/api';
 import { useAuthStore } from '@/stores/auth.store'; import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast'; import { debounce, getInitials, getAvatarColor } from '@/utils/helpers';
 import { useExcelIO } from '@/composables/useExcelIO';
+import { useBulkDelete } from '@/composables/useBulkDelete';
 import BaseModal from '@/components/common/BaseModal.vue'; import BaseConfirm from '@/components/common/BaseConfirm.vue'; import BasePagination from '@/components/common/BasePagination.vue'; import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
+import BulkDeleteBar from '@/components/common/BulkDeleteBar.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore(); const uiStore = useUIStore();
@@ -83,6 +91,14 @@ const { exporting, showImport, doExport, doTemplate, importFn, handleImported } 
   importFn:   masterService.pegawaiImport,
   label:      'pegawai',
   onImported: () => fetchData(),
+});
+
+const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggleOne,
+  clearSelected, openBulkConfirm, executeBulkDelete, bulkDeleting, showBulkConfirm,
+} = useBulkDelete({
+  items,
+  deleteFn: masterService.pegawaiBulkDelete,
+  onDeleted: (count) => { notify.success(`${count} pegawai berhasil dihapus`); fetchData(); },
 });
 const items = ref([]); const loading = ref(true); const page = ref(1); const limit = 10; const total = ref(0);
 const totalPages = computed(() => Math.ceil(total.value / limit));
