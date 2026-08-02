@@ -28,6 +28,9 @@ const startServer = async () => {
     app.listen(PORT, () => {
       logger.info(`Server berjalan di port ${PORT} [${config.app.env}]`);
       logger.info(`API Base URL: ${config.app.url}/api/v1`);
+
+      // Kirim sinyal 'ready' ke PM2 untuk zero-downtime reload
+      if (process.send) process.send('ready');
     });
   } catch (err) {
     logger.error(`Gagal menjalankan server: ${err.message}`);

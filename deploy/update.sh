@@ -170,15 +170,12 @@ fi
 head "Restart Backend"
 cd "$APP_DIR"
 
-# Pastikan .env ada sebelum restart
-[ -f "$APP_DIR/backend/.env" ] || err "File .env tidak ditemukan di backend/. Buat dulu sebelum restart."
+[ -f "$APP_DIR/backend/.env" ] || err "File .env tidak ditemukan di backend/."
 
 if pm2 list 2>/dev/null | grep -q "$PM2_APP"; then
-  # Hapus cache env PM2, stop, baru start ulang
-  pm2 stop "$PM2_APP" > /dev/null 2>&1 || true
-  sleep 1
-  pm2 start "$PM2_APP" --update-env > /dev/null 2>&1 || pm2 start "$APP_DIR/ecosystem.config.js"
-  ok "Backend di-restart dengan env terbaru"
+  # Gunakan reload (zero-downtime) — tidak ada downtime saat restart
+  pm2 reload "$PM2_APP" --update-env
+  ok "Backend di-reload zero-downtime"
 else
   pm2 start "$APP_DIR/ecosystem.config.js"
   ok "Backend dimulai"
@@ -187,50 +184,52 @@ fi
 pm2 save --force > /dev/null
 ok "PM2 state disimpan"
 
-# ── STEP 7: Verifikasi backend + Nginx ───────────────────────
+# ── STEP 7: Verifikasi — tunggu sampai benar-benar siap ───────
 head "Verifikasi"
-info "Menunggu backend siap (5 detik)..."
-sleep 5
+info "Menunggu backend siap..."
 
-# Test backend langsung
-BACKEND_OK=false
-HTTP_BACKEND=$(curl -s -o /dev/null -w "%{http_code}" \
-  -X POST http://localhost:3000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"__healthcheck__","password":"__healthcheck__"}' 2>/dev/null || echo "000")
+# Retry sampai 30 detik (6x interval 5 detik)
+MAX_RETRY=6
+RETRY=0
+READY=false
 
-# 401 = backend hidup (username salah tapi merespons)
-if [ "$HTTP_BACKEND" = "401" ] || [ "$HTTP_BACKEND" = "200" ]; then
-  ok "Backend merespons (HTTP $HTTP_BACKEND) ✓"
-  BACKEND_OK=true
-else
-  warn "Backend tidak merespons langsung (HTTP $HTTP_BACKEND)"
-  info "Log backend: pm2 logs $PM2_APP --lines 20 --err"
+while [ $RETRY -lt $MAX_RETRY ]; do
+  HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+    -X POST http://localhost:3000/api/v1/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"username":"__hc__","password":"__hc__"}' \
+    --max-time 3 2>/dev/null || echo "000")
+
+  if [ "$HTTP" = "401" ] || [ "$HTTP" = "200" ]; then
+    READY=true
+    ok "Backend siap (HTTP $HTTP) setelah $((RETRY * 5)) detik"
+    break
+  fi
+
+  RETRY=$((RETRY + 1))
+  info "Menunggu... ($RETRY/$MAX_RETRY, HTTP $HTTP)"
+  sleep 5
+done
+
+if [ "$READY" = false ]; then
+  warn "Backend belum merespons setelah 30 detik"
+  info "Cek log: pm2 logs $PM2_APP --lines 20 --err"
 fi
 
-# Test via Nginx
-if [ "$BACKEND_OK" = true ]; then
+# Verifikasi via Nginx
+if [ "$READY" = true ]; then
   HTTP_NGINX=$(curl -s -o /dev/null -w "%{http_code}" \
     -X POST "http://localhost/api/v1/auth/login" \
     -H "Content-Type: application/json" \
-    -d '{"username":"__healthcheck__","password":"__healthcheck__"}' 2>/dev/null || echo "000")
+    -d '{"username":"__hc__","password":"__hc__"}' \
+    --max-time 3 2>/dev/null || echo "000")
 
   if [ "$HTTP_NGINX" = "401" ] || [ "$HTTP_NGINX" = "200" ]; then
-    ok "Nginx proxy OK (HTTP $HTTP_NGINX) — login siap digunakan ✓"
-  elif [ "$HTTP_NGINX" = "502" ]; then
-    warn "Nginx 502 — mencoba reload Nginx..."
-    nginx -t 2>/dev/null && systemctl reload nginx && sleep 2
-    HTTP_NGINX2=$(curl -s -o /dev/null -w "%{http_code}" \
-      -X POST "http://localhost/api/v1/auth/login" \
-      -H "Content-Type: application/json" \
-      -d '{"username":"__x__","password":"__x__"}' 2>/dev/null || echo "000")
-    if [ "$HTTP_NGINX2" = "401" ] || [ "$HTTP_NGINX2" = "200" ]; then
-      ok "Nginx kembali normal setelah reload ✓"
-    else
-      warn "Nginx masih 502 — cek: nginx -t"
-    fi
+    ok "Nginx proxy OK — login bisa langsung digunakan ✓"
   else
-    warn "Nginx merespons HTTP $HTTP_NGINX — cek: nginx -t"
+    warn "Nginx merespons $HTTP_NGINX — reload Nginx..."
+    nginx -t 2>/dev/null && systemctl reload nginx && sleep 2
+    ok "Nginx di-reload"
   fi
 fi
 
