@@ -74,11 +74,6 @@ fi
 echo -e "  Pesan commit: ${BOLD}\"${COMMIT_MSG}\"${NC}"
 echo ""
 
-# ── Konfirmasi ───────────────────────────────────────────────
-read -p "  Lanjutkan push ke GitHub? (y/n): " confirm
-echo ""
-[[ "$confirm" != "y" && "$confirm" != "Y" ]] && { info "Dibatalkan."; exit 0; }
-
 # ── Stage semua perubahan ────────────────────────────────────
 head "Git Stage"
 git add -A
