@@ -65,6 +65,11 @@ const Guru = masterDB.define('Guru', {
     allowNull: true,
     comment: 'Contoh: Wali Kelas, Wakasek Kurikulum, Kepala Sekolah',
   },
+  mata_pelajaran: {
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    comment: 'Mata pelajaran yang diampu guru, bisa lebih dari satu dipisah koma',
+  },
   jurusan_id: {
     type: DataTypes.CHAR(36),
     allowNull: true,

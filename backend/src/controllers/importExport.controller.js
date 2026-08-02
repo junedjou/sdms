@@ -87,7 +87,7 @@ const GURU_HEADERS = [
 ];
 const GURU_LABELS = [
   'Nama Lengkap*','NIP','NIY','Jenis Kelamin (L/P)*','Status Kepegawaian',
-  'Jabatan','Kode Jurusan','No HP','Email',
+  'Jabatan','Mata Pelajaran','Kode Jurusan','No HP','Email',
   'Tempat Lahir','Tanggal Lahir (YYYY-MM-DD)','Agama','Alamat',
 ];
 
@@ -99,7 +99,7 @@ const exportGuru = async (req, res) => {
   });
   const data = rows.map(g => [
     g.nama, g.nip||'', g.niy||'', g.jenis_kelamin||'',
-    g.status_kepegawaian||'', g.jabatan||'',
+    g.status_kepegawaian||'', g.jabatan||'', g.mata_pelajaran||'',
     g.jurusan?.kode||'', g.no_hp||'', g.email||'',
     g.tempat_lahir||'', g.tanggal_lahir ? String(g.tanggal_lahir).slice(0,10) : '',
     g.agama||'', g.alamat||'',
@@ -109,7 +109,7 @@ const exportGuru = async (req, res) => {
 };
 
 const templateGuru = async (req, res) => {
-  const sample = [['Budi Santoso','196001011990011001','','L','PNS','Wali Kelas','TKJ','08123456789','budi@sekolah.sch.id','Jakarta','1960-01-01','Islam','Jl. Merdeka No.1']];
+  const sample = [['Budi Santoso','196001011990011001','','L','PNS','Wali Kelas','Matematika','TKJ','08123456789','budi@sekolah.sch.id','Jakarta','1960-01-01','Islam','Jl. Merdeka No.1']];
   const buf = buildWorkbook('Guru', GURU_LABELS, sample);
   sendExcel(res, buf, 'template_import_guru.xlsx');
 };
@@ -146,14 +146,15 @@ const importGuru = async (req, res) => {
       const guru = await Guru.create({
         nama, nip, niy, jenis_kelamin: jk,
         status_kepegawaian: str(r['Status Kepegawaian'] ?? r['status_kepegawaian']),
-        jabatan:      str(r['Jabatan']       ?? r['jabatan']),
+        jabatan:       str(r['Jabatan']          ?? r['jabatan']),
+        mata_pelajaran: str(r['Mata Pelajaran']  ?? r['mata_pelajaran']),
         jurusan_id,
-        no_hp:        str(r['No HP']         ?? r['no_hp']),
-        email:        str(r['Email']         ?? r['email']),
-        tempat_lahir: str(r['Tempat Lahir']  ?? r['tempat_lahir']),
+        no_hp:        str(r['No HP']             ?? r['no_hp']),
+        email:        str(r['Email']             ?? r['email']),
+        tempat_lahir: str(r['Tempat Lahir']      ?? r['tempat_lahir']),
         tanggal_lahir: dateStr(r['Tanggal Lahir (YYYY-MM-DD)'] ?? r['tanggal_lahir']),
-        agama:        str(r['Agama']         ?? r['agama']),
-        alamat:       str(r['Alamat']        ?? r['alamat']),
+        agama:        str(r['Agama']             ?? r['agama']),
+        alamat:       str(r['Alamat']            ?? r['alamat']),
       });
       syncEvent('guru.created', guru.toJSON());
       ok.push(nama);

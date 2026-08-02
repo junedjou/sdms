@@ -49,6 +49,7 @@
                 <th>NIP / NIY</th>
                 <th>Jurusan</th>
                 <th>Status</th>
+                <th>Mata Pelajaran</th>
                 <th>No. HP</th>
                 <th class="text-right">Aksi</th>
               </tr>
@@ -77,6 +78,7 @@
                     {{ item.status_kepegawaian || '—' }}
                   </span>
                 </td>
+                <td class="text-gray-600 text-sm">{{ item.mata_pelajaran || '—' }}</td>
                 <td class="text-gray-600 text-sm">{{ item.no_hp || '—' }}</td>
                 <td class="text-right">
                   <div class="flex items-center justify-end gap-1">
@@ -148,6 +150,10 @@
         <div class="form-group">
           <label class="form-label">Jabatan</label>
           <input v-model="form.jabatan" type="text" class="form-input" placeholder="Wali Kelas, Wakasek, dst." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mata Pelajaran</label>
+          <input v-model="form.mata_pelajaran" type="text" class="form-input" placeholder="Matematika, Fisika, dst." />
         </div>
         <div class="form-group">
           <label class="form-label">No. HP</label>
@@ -236,7 +242,7 @@ const showForm = ref(false); const editItem = ref(null);
 const showConfirm = ref(false); const deleteTarget = ref(null);
 const formLoading = ref(false);
 
-const emptyForm = () => ({ nama: '', nip: '', niy: '', jenis_kelamin: '', status_kepegawaian: '', jurusan_id: '', jabatan: '', no_hp: '', email: '', tempat_lahir: '', tanggal_lahir: '', agama: '', alamat: '' });
+const emptyForm = () => ({ nama: '', nip: '', niy: '', jenis_kelamin: '', status_kepegawaian: '', jurusan_id: '', jabatan: '', mata_pelajaran: '', no_hp: '', email: '', tempat_lahir: '', tanggal_lahir: '', agama: '', alamat: '' });
 const form = ref(emptyForm());
 
 const fetchData = async () => {
