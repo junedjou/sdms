@@ -4,67 +4,97 @@
     <!-- ── Panel kiri: Branding (desktop only) ───────────────── -->
     <div
       class="hidden lg:flex lg:w-5/12 xl:w-1/2 flex-col relative overflow-hidden"
-      style="background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);"
+      style="background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 40%, #0c0a1e 100%);"
     >
-      <!-- Decorative blobs -->
-      <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-0 right-0 w-[500px] h-[500px] -translate-y-1/3 translate-x-1/3 rounded-full"
-          style="background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);" />
-        <div class="absolute bottom-0 left-0 w-[400px] h-[400px] translate-y-1/3 -translate-x-1/4 rounded-full"
-          style="background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%);" />
-        <!-- Grid pattern overlay -->
-        <div class="absolute inset-0 opacity-[0.03]"
-          style="background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px); background-size: 40px 40px;" />
+      <!-- ── Latar dekoratif ──────────────────────────────────── -->
+      <div class="absolute inset-0 pointer-events-none overflow-hidden">
+        <!-- Blob ungu besar kanan atas -->
+        <div class="absolute -top-32 -right-32 w-[480px] h-[480px] rounded-full opacity-20"
+          style="background: radial-gradient(circle, #6366f1 0%, transparent 70%); filter: blur(40px);" />
+        <!-- Blob biru kiri bawah -->
+        <div class="absolute -bottom-24 -left-24 w-[360px] h-[360px] rounded-full opacity-15"
+          style="background: radial-gradient(circle, #3b82f6 0%, transparent 70%); filter: blur(50px);" />
+        <!-- Blob violet tengah -->
+        <div class="absolute top-1/2 left-1/3 w-[300px] h-[300px] rounded-full opacity-10 -translate-x-1/2 -translate-y-1/2"
+          style="background: radial-gradient(circle, #a855f7 0%, transparent 70%); filter: blur(60px);" />
+
+        <!-- Grid dot pattern -->
+        <div class="absolute inset-0 opacity-[0.04]"
+          style="background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 28px 28px;" />
+
+        <!-- Garis diagonal dekoratif -->
+        <div class="absolute top-0 right-0 w-px h-full opacity-10"
+          style="background: linear-gradient(180deg, transparent, #6366f1, transparent);" />
       </div>
 
-      <!-- Content -->
-      <div class="relative flex flex-col justify-between h-full p-10">
-        <!-- Logo area -->
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg shadow-primary-900/50">
+      <!-- ── Konten utama ──────────────────────────────────────── -->
+      <div class="relative flex flex-col h-full p-10">
+
+        <!-- Logo -->
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-900/60 flex-shrink-0"
+            style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
             <AcademicCapIcon class="w-6 h-6 text-white" />
           </div>
           <div>
-            <p class="text-lg font-bold text-white tracking-tight">SDMS</p>
-            <p class="text-xs text-white/40">School Data Management</p>
+            <p class="text-base font-bold text-white tracking-wide">SDMS</p>
+            <p class="text-[11px] text-white/40 tracking-wider uppercase">School Data Management System</p>
           </div>
         </div>
 
-        <!-- Main headline -->
-        <div class="space-y-6">
-          <div class="space-y-4">
-            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-600/20 border border-primary-500/30">
-              <span class="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
-              <span class="text-xs font-semibold text-primary-300 tracking-wide">Platform Terpadu</span>
-            </div>
-            <h1 class="text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight">
-              Satu Data,<br />
-              <span class="text-transparent bg-clip-text" style="background: linear-gradient(90deg, #818cf8, #a78bfa);">
-                Satu Sistem
+        <!-- Spacer -->
+        <div class="flex-1 flex flex-col justify-center py-8 space-y-8">
+
+          <!-- Badge -->
+          <div class="inline-flex w-fit items-center gap-2 px-3.5 py-1.5 rounded-full border"
+            style="background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.3);">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+            <span class="text-xs font-semibold text-indigo-300 tracking-widest uppercase">Platform Terpadu</span>
+          </div>
+
+          <!-- Headline -->
+          <div class="space-y-3">
+            <h1 class="text-4xl xl:text-5xl font-black text-white leading-[1.1] tracking-tight">
+              Satu Data.<br />
+              <span style="background: linear-gradient(90deg, #818cf8 0%, #c084fc 50%, #60a5fa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                Satu Sistem.
               </span>
             </h1>
-            <p class="text-base text-white/50 leading-relaxed max-w-sm">
-              Kelola data guru, siswa, pegawai, dan seluruh administrasi sekolah dalam satu platform terintegrasi.
+            <p class="text-sm text-white/50 leading-relaxed max-w-xs">
+              Kelola seluruh data akademik sekolah — guru, siswa, pegawai, kelas, dan aplikasi terhubung — dalam satu platform terintegrasi.
             </p>
+          </div>
+
+          <!-- Stats cards -->
+          <div class="grid grid-cols-3 gap-3">
+            <div v-for="stat in stats" :key="stat.label"
+              class="rounded-2xl p-3.5 border flex flex-col gap-1.5"
+              style="background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08);">
+              <component :is="stat.icon" class="w-4 h-4 text-indigo-400" />
+              <p class="text-xl font-black text-white leading-none">{{ stat.value }}</p>
+              <p class="text-[10px] text-white/40 font-medium uppercase tracking-wider leading-none">{{ stat.label }}</p>
+            </div>
           </div>
 
           <!-- Feature pills -->
           <div class="flex flex-wrap gap-2">
-            <div
-              v-for="feat in features"
-              :key="feat.label"
-              class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/70"
-            >
-              <component :is="feat.icon" class="w-3.5 h-3.5 text-primary-400 flex-shrink-0" />
+            <div v-for="feat in features" :key="feat.label"
+              class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-white/60 hover:text-white/90 transition-colors"
+              style="background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08);">
+              <component :is="feat.icon" class="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
               <span class="text-xs font-medium">{{ feat.label }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Footer note -->
-        <p class="text-xs text-white/20">
-          &copy; {{ year }} SDMS — Hak cipta dilindungi
-        </p>
+        <!-- Footer -->
+        <div class="flex items-center justify-between">
+          <p class="text-[11px] text-white/20">&copy; {{ year }} SDMS — SMK Negeri 1 Kras</p>
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span class="text-[11px] text-white/30">Sistem Aktif</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -205,8 +235,9 @@ import { useAuthStore } from '@/stores/auth.store';
 import {
   AcademicCapIcon, UserIcon, LockClosedIcon,
   EyeIcon, EyeSlashIcon, ExclamationCircleIcon,
-  ArrowRightOnRectangleIcon,
+  ArrowRightOnRectangleIcon, ArrowPathIcon,
   CheckCircleIcon, ShieldCheckIcon, CircleStackIcon,
+  Squares2X2Icon, RectangleStackIcon,
 } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
@@ -224,6 +255,12 @@ const features = [
   { label: 'One Login',      icon: ShieldCheckIcon },
   { label: 'One Data',       icon: CircleStackIcon },
   { label: 'One Dashboard',  icon: CheckCircleIcon },
+];
+
+const stats = [
+  { label: 'Aplikasi',  value: '7+',   icon: Squares2X2Icon },
+  { label: 'Modul',     value: '12+',  icon: RectangleStackIcon },
+  { label: 'Real-time', value: 'Sync', icon: ArrowPathIcon },
 ];
 
 const validate = () => {
