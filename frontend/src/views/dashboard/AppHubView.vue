@@ -6,7 +6,7 @@
         <h1 class="page-title">Application Hub</h1>
         <p class="page-subtitle">Akses semua aplikasi sekolah — klik kartu untuk membuka dengan SSO</p>
       </div>
-      <button @click="loadHealth" class="btn-secondary btn-sm" :disabled="healthLoading">
+      <button @click="loadHealth(false)" class="btn-secondary btn-sm" :disabled="healthLoading">
         <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': healthLoading }" />
         Cek Status Aplikasi
       </button>
@@ -182,7 +182,8 @@ const loadApps = async () => {
   }
 };
 
-const loadHealth = async () => {
+// silent: jika true, tidak tampilkan notifikasi (untuk auto-load saat mount)
+const loadHealth = async (silent = false) => {
   healthLoading.value = true;
   try {
     const res = await gatewayService.health();
@@ -191,13 +192,16 @@ const loadHealth = async () => {
     integrations.forEach(item => { newStatus[item.app] = item.status; });
     healthStatus.value = newStatus;
 
-    const online  = integrations.filter(i => i.status === 'online').length;
-    const offline = integrations.filter(i => i.status === 'offline').length;
-    if (online > 0) notify.success(`${online} aplikasi online`);
-    if (offline > 0) notify.warning(`${offline} aplikasi offline`);
-    if (online === 0) notify.info('Belum ada aplikasi yang aktif');
+    // Notifikasi hanya saat klik manual
+    if (!silent) {
+      const online  = integrations.filter(i => i.status === 'online').length;
+      const offline = integrations.filter(i => i.status === 'offline').length;
+      if (online > 0 && offline === 0) notify.success(`Semua aplikasi online (${online})`);
+      else if (online > 0) notify.success(`${online} online, ${offline} offline`);
+      else notify.info('Belum ada aplikasi yang aktif');
+    }
   } catch {
-    notify.error('Gagal cek status aplikasi');
+    if (!silent) notify.error('Gagal cek status aplikasi');
   } finally {
     healthLoading.value = false;
   }
@@ -227,7 +231,9 @@ const openApp = async (app) => {
 };
 
 onMounted(() => {
+  // Load daftar app + langsung cek health secara silent (tanpa popup)
   loadApps();
+  loadHealth(true);
 });
 </script>
 
