@@ -86,6 +86,9 @@ export const userService = {
   delete:        (id)     => api.delete(`/users/${id}`),
   resetPassword: (id, data) => api.patch(`/users/${id}/reset-password`, data),
   roles:         ()       => api.get('/users/roles'),
+  export:        (params) => api.get('/users/export', { params, responseType: 'blob' }),
+  template:      ()       => api.get('/users/template', { responseType: 'blob' }),
+  import:        (fd)     => api.post('/users/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 };
 
 export const masterService = {

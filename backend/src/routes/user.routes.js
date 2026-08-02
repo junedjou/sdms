@@ -1,9 +1,11 @@
 const router = require('express').Router();
-const ctrl = require('../controllers/user.controller');
+const ctrl   = require('../controllers/user.controller');
+const ie     = require('../controllers/importExport.controller');
 const { authenticate } = require('../middleware/auth');
 const { adminOnly, requirePermission } = require('../middleware/rbac');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { validate } = require('../middleware/validate');
+const upload = require('../middleware/upload');
 const Joi = require('joi');
 
 // Schema validasi
@@ -36,12 +38,15 @@ const resetPasswordSchema = Joi.object({
 // Semua route membutuhkan autentikasi
 router.use(authenticate);
 
-router.get('/roles',           asyncHandler(ctrl.getRoles));
-router.get('/',                requirePermission('user:view'),   asyncHandler(ctrl.getUsers));
-router.get('/:id',             requirePermission('user:view'),   asyncHandler(ctrl.getUserById));
-router.post('/',               requirePermission('user:create'), validate(createUserSchema), asyncHandler(ctrl.createUser));
-router.put('/:id',             requirePermission('user:update'), validate(updateUserSchema), asyncHandler(ctrl.updateUser));
-router.delete('/:id',          requirePermission('user:delete'), asyncHandler(ctrl.deleteUser));
+router.get('/roles',                requirePermission('user:view'),   asyncHandler(ctrl.getRoles));
+router.get('/export',               requirePermission('user:view'),   asyncHandler(ie.exportUsers));
+router.get('/template',             requirePermission('user:create'), asyncHandler(ie.templateUsers));
+router.post('/import',              requirePermission('user:create'), upload.single('file'), asyncHandler(ie.importUsers));
+router.get('/',                     requirePermission('user:view'),   asyncHandler(ctrl.getUsers));
+router.get('/:id',                  requirePermission('user:view'),   asyncHandler(ctrl.getUserById));
+router.post('/',                    requirePermission('user:create'), validate(createUserSchema), asyncHandler(ctrl.createUser));
+router.put('/:id',                  requirePermission('user:update'), validate(updateUserSchema), asyncHandler(ctrl.updateUser));
+router.delete('/:id',               requirePermission('user:delete'), asyncHandler(ctrl.deleteUser));
 router.patch('/:id/reset-password', adminOnly, validate(resetPasswordSchema), asyncHandler(ctrl.resetPassword));
 
 module.exports = router;

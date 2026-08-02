@@ -2,8 +2,9 @@ const XLSX = require('xlsx');
 const { Op } = require('sequelize');
 const {
   Guru, Siswa, Pegawai, Kelas, Jurusan, MataPelajaran,
-  TahunPelajaran,
+  TahunPelajaran, User, Role,
 } = require('../models');
+const { hashPassword } = require('../utils/helpers');
 const { writeAuditLog } = require('../middleware/auditLog');
 const { success, badRequest, error: serverError } = require('../utils/response');
 const { syncEvent } = require('../services/syncService');
@@ -458,6 +459,111 @@ const importMapel = async (req, res) => {
 // ============================================================
 // Exports
 // ============================================================
+// ============================================================
+// USER (Akun Login) — Export & Import
+// ============================================================
+
+const USER_LABELS = [
+  'Nama Lengkap*', 'Username*', 'Email*', 'Password (kosong=Username123!)',
+  'Role* (super_admin/admin/guru/pegawai/siswa)', 'Aktif (1=ya, 0=tidak)',
+];
+
+const exportUsers = async (req, res) => {
+  const { role: roleName } = req.query;
+  const include = [{ model: Role, as: 'role', attributes: ['name', 'label'] }];
+  const where   = {};
+  if (roleName) {
+    include[0].where = { name: roleName };
+  }
+  const rows = await User.findAll({ where, include, order: [['full_name', 'ASC']] });
+  const data = rows.map(u => [
+    u.full_name, u.username, u.email,
+    '',                              // password dikosongkan — tidak boleh export
+    u.role?.name || '',
+    u.is_active ? 1 : 0,
+  ]);
+  const suffix = roleName ? `_${roleName}` : '';
+  const buf = buildWorkbook('Users', USER_LABELS, data);
+  sendExcel(res, buf, `data_user${suffix}_${Date.now()}.xlsx`);
+};
+
+const templateUsers = async (req, res) => {
+  const sample = [
+    ['Budi Santoso', 'budi.santoso', 'budi@sekolah.sch.id', 'Rahasia123!', 'guru', 1],
+    ['Siti Rahayu',  'siti.rahayu',  'siti@sekolah.sch.id', 'Rahasia123!', 'guru', 1],
+    ['Ahmad Yusuf',  'ahmad.yusuf',  'ahmad@sekolah.sch.id', '',           'pegawai', 1],
+  ];
+  const buf = buildWorkbook('Users', USER_LABELS, sample);
+  sendExcel(res, buf, 'template_import_user.xlsx');
+};
+
+const importUsers = async (req, res) => {
+  if (!req.file) return badRequest(res, 'File Excel wajib diupload');
+
+  // Cache semua role
+  const roleList = await Role.findAll({ where: { is_active: true } });
+  const roleMap  = Object.fromEntries(roleList.map(r => [r.name.toLowerCase(), r.id]));
+
+  const rows = parseExcel(req.file.buffer);
+  const ok = [], errors = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const r   = rows[i];
+    const row = i + 2;
+
+    const full_name = str(r['Nama Lengkap*']  ?? r['nama_lengkap'] ?? r['full_name']);
+    const username  = str(r['Username*']       ?? r['username']);
+    const email     = str(r['Email*']          ?? r['email']);
+    const roleName  = str(r['Role* (super_admin/admin/guru/pegawai/siswa)'] ?? r['role'])?.toLowerCase();
+
+    if (!full_name) { errors.push({ row, field: 'full_name', message: 'Nama lengkap wajib diisi' }); continue; }
+    if (!username)  { errors.push({ row, field: 'username',  message: 'Username wajib diisi' }); continue; }
+    if (!email)     { errors.push({ row, field: 'email',     message: 'Email wajib diisi' }); continue; }
+    if (!roleName || !roleMap[roleName]) {
+      errors.push({ row, field: 'role', message: `Role '${roleName}' tidak valid. Gunakan: ${Object.keys(roleMap).join(', ')}` });
+      continue;
+    }
+
+    // Cek duplikat username / email
+    const dup = await User.unscoped().findOne({ where: { [Op.or]: [{ username }, { email }] } });
+    if (dup) {
+      errors.push({ row, field: dup.username === username ? 'username' : 'email', message: `${dup.username === username ? 'Username' : 'Email'} sudah terdaftar` });
+      continue;
+    }
+
+    // Password: ambil dari kolom atau default Username123!
+    const rawPw    = str(r['Password (kosong=Username123!)'] ?? r['password']);
+    const password = rawPw && rawPw.length >= 8 ? rawPw : 'Username123!';
+    const hashed   = await hashPassword(password);
+
+    // Aktif: default true
+    const aktifVal = r['Aktif (1=ya, 0=tidak)'] ?? r['is_active'];
+    const is_active = aktifVal === 0 || aktifVal === '0' ? false : true;
+
+    try {
+      await User.create({
+        full_name, username, email,
+        password: hashed,
+        role_id:  roleMap[roleName],
+        is_active,
+      });
+      ok.push(username);
+    } catch (e) {
+      errors.push({ row, field: '-', message: e.message });
+    }
+  }
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'IMPORT', resource: 'users',
+    description: `Import user: ${ok.length} berhasil, ${errors.length} gagal`,
+  });
+
+  return success(res, { imported: ok.length, errors },
+    `${ok.length} user berhasil diimport, ${errors.length} gagal`
+  );
+};
+
 module.exports = {
   exportGuru, templateGuru, importGuru,
   exportSiswa, templateSiswa, importSiswa,
@@ -465,4 +571,5 @@ module.exports = {
   exportJurusan, templateJurusan, importJurusan,
   exportKelas, templateKelas, importKelas,
   exportMapel, templateMapel, importMapel,
+  exportUsers, templateUsers, importUsers,
 };

@@ -2,9 +2,21 @@
   <div class="space-y-5 animate-fade-in">
     <div class="page-header">
       <div><h1 class="page-title">Manajemen User</h1><p class="page-subtitle">Kelola akun dan hak akses pengguna sistem</p></div>
-      <button v-if="authStore.hasPermission('user:create')" @click="openForm()" class="btn-primary">
-        <PlusIcon class="w-4 h-4" /> Tambah User
-      </button>
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+        <div class="flex items-center gap-1.5">
+          <button @click="doExport" :disabled="exporting" class="btn-secondary btn-sm gap-1.5">
+            <ArrowDownTrayIcon class="w-3.5 h-3.5" />
+            <span class="hidden sm:inline">{{ exporting ? 'Exporting...' : 'Export' }}</span>
+          </button>
+          <button v-if="authStore.hasPermission('user:create')" @click="showImport = true" class="btn-secondary btn-sm gap-1.5">
+            <ArrowUpTrayIcon class="w-3.5 h-3.5" />
+            <span class="hidden sm:inline">Import</span>
+          </button>
+        </div>
+        <button v-if="authStore.hasPermission('user:create')" @click="openForm()" class="btn-primary">
+          <PlusIcon class="w-4 h-4" /> Tambah User
+        </button>
+      </div>
     </div>
 
     <!-- Filter -->
@@ -78,6 +90,15 @@
       </template>
       <BaseEmpty v-else :title="search ? 'User tidak ditemukan' : 'Belum ada user'" :icon="search ? 'search' : 'inbox'" />
     </div>
+
+    <!-- Import Modal -->
+    <ImportExcelModal
+      v-model="showImport"
+      title="User"
+      :import-fn="userService.import"
+      @download-template="doTemplate"
+      @imported="(count) => { notify.success(`${count} user berhasil diimport`); fetchData(); }"
+    />
 
     <!-- Form Modal: Tambah / Edit User -->
     <BaseModal v-model="showForm" :title="editItem ? 'Edit User' : 'Tambah User'" size="md">
@@ -153,15 +174,41 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast';
 import { debounce, getInitials, getAvatarColor, formatDateTime } from '@/utils/helpers';
+import { saveAs } from 'file-saver';
 import BaseModal from '@/components/common/BaseModal.vue';
 import BaseConfirm from '@/components/common/BaseConfirm.vue';
 import BasePagination from '@/components/common/BasePagination.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, KeyIcon } from '@heroicons/vue/24/outline';
+import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
+import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, KeyIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
 const uiStore   = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Administrasi' }, { label: 'Manajemen User' }]);
+
+// ── Export & Import ───────────────────────────────────────────
+const exporting  = ref(false);
+const showImport = ref(false);
+
+const doExport = async () => {
+  exporting.value = true;
+  try {
+    const res  = await userService.export(filterRole.value ? { role: filterRole.value } : {});
+    const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const suffix = filterRole.value ? `_${filterRole.value}` : '';
+    saveAs(blob, `data_user${suffix}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    notify.success('Data user berhasil diexport');
+  } catch { notify.error('Gagal export data user'); } finally { exporting.value = false; }
+};
+
+const doTemplate = async () => {
+  try {
+    const res  = await userService.template();
+    const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'template_import_user.xlsx');
+    notify.success('Template berhasil didownload');
+  } catch { notify.error('Gagal download template'); }
+};
 
 const items = ref([]); const loading = ref(true); const roles = ref([]);
 const page = ref(1); const limit = 10; const total = ref(0);
