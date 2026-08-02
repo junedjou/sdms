@@ -1,5 +1,5 @@
 <template>
-  <BaseModal v-model="modelValue" :title="`Import Excel — ${title}`" size="lg" @update:modelValue="$emit('update:modelValue', $event)">
+  <BaseModal :modelValue="modelValue" :title="`Import Excel — ${title}`" size="lg" @update:modelValue="$emit('update:modelValue', $event)">
 
     <!-- ── Step 1: Upload ──────────────────────────────────── -->
     <div v-if="step === 'upload'" class="space-y-5">
