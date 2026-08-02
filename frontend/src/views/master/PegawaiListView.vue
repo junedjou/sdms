@@ -42,7 +42,7 @@
             </tbody>
           </table>
         </div>
-        <div class="px-4 py-3 border-t border-gray-50"><BasePagination :current-page="page" :total-pages="totalPages" :total="total" :limit="limit" @change="(p) => { page = p; fetchData(); }" /></div>
+        <div class="px-4 py-3 border-t border-gray-50"><BasePagination :current-page="page" :total-pages="totalPages" :total="total" :limit="limit" @change="(p) => { page = p; fetchData(); }" @limit-change="(l) => { limit = l; page = 1; fetchData(); }" /></div>
       </template>
       <BaseEmpty v-else :title="search ? 'Pegawai tidak ditemukan' : 'Belum ada data pegawai'" />
     </div>
@@ -85,8 +85,8 @@ import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTr
 const authStore = useAuthStore(); const uiStore = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Pegawai' }]);
 
-const items = ref([]); const loading = ref(true); const page = ref(1); const limit = 10; const total = ref(0);
-const totalPages = computed(() => Math.ceil(total.value / limit));
+const items = ref([]); const loading = ref(true); const page = ref(1); const limit = ref(10); const total = ref(0);
+const totalPages = computed(() => Math.ceil(total.value / limit.value));
 const search = ref(''); const showForm = ref(false); const editItem = ref(null);
 const showConfirm = ref(false); const deleteTarget = ref(null); const formLoading = ref(false);
 
@@ -107,7 +107,7 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
 });
 const emptyForm = () => ({ nama: '', nip: '', jenis_kelamin: '', jabatan: '', unit_kerja: '', status_kepegawaian: '', no_hp: '', alamat: '' });
 const form = ref(emptyForm());
-const fetchData = async () => { loading.value = true; try { const r = await masterService.pegawaiList({ page: page.value, limit, search: search.value }); items.value = r.data.data || []; total.value = r.data.meta?.total || 0; } finally { loading.value = false; } };
+const fetchData = async () => { loading.value = true; try { const r = await masterService.pegawaiList({ page: page.value, limit: limit.value, search: search.value }); items.value = r.data.data || []; total.value = r.data.meta?.total || 0; } finally { loading.value = false; } };
 const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
 const openForm = (item = null) => { editItem.value = item; form.value = item ? { ...item } : emptyForm(); showForm.value = true; };
 const submitForm = async () => { formLoading.value = true; try { if (editItem.value) { await masterService.pegawaiUpdate(editItem.value.id, form.value); notify.success('Pegawai diperbarui'); } else { await masterService.pegawaiCreate(form.value); notify.success('Pegawai ditambahkan'); } showForm.value = false; fetchData(); } catch (err) { notify.error(err.response?.data?.message || 'Gagal menyimpan'); } finally { formLoading.value = false; } };

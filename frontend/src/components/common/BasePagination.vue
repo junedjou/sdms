@@ -1,39 +1,65 @@
 <template>
-  <div v-if="totalPages > 1" class="flex items-center justify-between text-sm text-gray-500">
-    <span>
-      Menampilkan {{ from }}–{{ to }} dari {{ total }} data
-    </span>
-    <div class="flex items-center gap-1">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm text-slate-500">
+
+    <!-- Kiri: info + selector limit -->
+    <div class="flex items-center gap-3 flex-wrap">
+      <span class="text-slate-500">
+        Menampilkan
+        <span class="font-semibold text-slate-700">{{ from }}–{{ to }}</span>
+        dari
+        <span class="font-semibold text-slate-700">{{ total }}</span>
+        data
+      </span>
+
+      <!-- Selector jumlah per halaman -->
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400 text-xs">Tampilkan</span>
+        <select
+          :value="limit"
+          @change="$emit('limit-change', parseInt($event.target.value))"
+          class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-colors"
+        >
+          <option v-for="opt in limitOptions" :key="opt" :value="opt">{{ opt }}</option>
+        </select>
+        <span class="text-slate-400 text-xs">per halaman</span>
+      </div>
+    </div>
+
+    <!-- Kanan: navigasi halaman -->
+    <div v-if="totalPages > 1" class="flex items-center gap-1">
+      <!-- Prev -->
       <button
         @click="$emit('change', currentPage - 1)"
         :disabled="currentPage === 1"
-        class="px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        class="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        title="Halaman sebelumnya"
       >
-        &larr;
+        <ChevronLeftIcon class="w-3.5 h-3.5" />
       </button>
 
+      <!-- Page buttons -->
       <template v-for="page in visiblePages" :key="page">
-        <span v-if="page === '...'" class="px-2 text-gray-400">...</span>
+        <span v-if="page === '...'" class="w-8 h-8 flex items-center justify-center text-slate-400">···</span>
         <button
           v-else
           @click="$emit('change', page)"
           :class="[
-            'px-3 py-1.5 rounded-lg border transition-colors',
+            'w-8 h-8 rounded-lg border text-xs font-medium transition-colors',
             page === currentPage
-              ? 'bg-primary-600 text-white border-primary-600'
-              : 'border-gray-200 hover:bg-gray-50'
+              ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
+              : 'border-slate-200 hover:bg-slate-50 text-slate-600',
           ]"
-        >
-          {{ page }}
-        </button>
+        >{{ page }}</button>
       </template>
 
+      <!-- Next -->
       <button
         @click="$emit('change', currentPage + 1)"
         :disabled="currentPage === totalPages"
-        class="px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        class="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        title="Halaman berikutnya"
       >
-        &rarr;
+        <ChevronRightIcon class="w-3.5 h-3.5" />
       </button>
     </div>
   </div>
@@ -41,34 +67,36 @@
 
 <script setup>
 import { computed } from 'vue';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-  currentPage: { type: Number, required: true },
-  totalPages:  { type: Number, required: true },
-  total:       { type: Number, required: true },
-  limit:       { type: Number, default: 10 },
+  currentPage:  { type: Number, required: true },
+  totalPages:   { type: Number, required: true },
+  total:        { type: Number, required: true },
+  limit:        { type: Number, default: 10 },
+  limitOptions: { type: Array,  default: () => [10, 25, 50, 100] },
 });
 
-defineEmits(['change']);
+defineEmits(['change', 'limit-change']);
 
-const from = computed(() => ((props.currentPage - 1) * props.limit) + 1);
+const from = computed(() => props.total === 0 ? 0 : ((props.currentPage - 1) * props.limit) + 1);
 const to   = computed(() => Math.min(props.currentPage * props.limit, props.total));
 
 const visiblePages = computed(() => {
   const pages = [];
-  const total = props.totalPages;
+  const tot = props.totalPages;
   const cur = props.currentPage;
 
-  if (total <= 7) {
-    for (let i = 1; i <= total; i++) pages.push(i);
+  if (tot <= 7) {
+    for (let i = 1; i <= tot; i++) pages.push(i);
   } else {
     pages.push(1);
     if (cur > 3) pages.push('...');
     const start = Math.max(2, cur - 1);
-    const end   = Math.min(total - 1, cur + 1);
+    const end   = Math.min(tot - 1, cur + 1);
     for (let i = start; i <= end; i++) pages.push(i);
-    if (cur < total - 2) pages.push('...');
-    pages.push(total);
+    if (cur < tot - 2) pages.push('...');
+    pages.push(tot);
   }
 
   return pages;

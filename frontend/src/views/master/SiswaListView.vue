@@ -103,7 +103,12 @@
           </table>
         </div>
         <div class="px-4 py-3 border-t border-gray-50">
-          <BasePagination :current-page="page" :total-pages="totalPages" :total="total" :limit="limit" @change="(p) => { page = p; fetchData(); }" />
+          <BasePagination
+            :current-page="page" :total-pages="totalPages"
+            :total="total" :limit="limit"
+            @change="(p) => { page = p; fetchData(); }"
+            @limit-change="(l) => { limit = l; page = 1; fetchData(); }"
+          />
         </div>
       </template>
       <BaseEmpty v-else :title="search ? 'Siswa tidak ditemukan' : 'Belum ada data siswa'" :icon="search ? 'search' : 'inbox'" />
@@ -219,8 +224,8 @@ uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Data Siswa' }]);
 
 // ── State (harus di atas composable yang pakai items) ────────
 const items = ref([]); const loading = ref(true);
-const page = ref(1); const limit = 10; const total = ref(0);
-const totalPages = computed(() => Math.ceil(total.value / limit));
+const page = ref(1); const limit = ref(10); const total = ref(0);
+const totalPages = computed(() => Math.ceil(total.value / limit.value));
 const search = ref(''); const filterJurusan = ref(''); const filterStatus = ref('Aktif');
 const showForm = ref(false); const editItem = ref(null);
 const showConfirm = ref(false); const deleteTarget = ref(null); const formLoading = ref(false);
@@ -249,7 +254,7 @@ const form = ref(emptyForm());
 const fetchData = async () => {
   loading.value = true;
   try {
-    const res = await masterService.siswaList({ page: page.value, limit, search: search.value, jurusan_id: filterJurusan.value || undefined, status: filterStatus.value || undefined });
+    const res = await masterService.siswaList({ page: page.value, limit: limit.value, search: search.value, jurusan_id: filterJurusan.value || undefined, status: filterStatus.value || undefined });
     items.value = res.data.data || []; total.value = res.data.meta?.total || 0;
   } catch { notify.error('Gagal memuat data siswa'); } finally { loading.value = false; }
 };

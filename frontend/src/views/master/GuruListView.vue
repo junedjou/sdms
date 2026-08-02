@@ -103,7 +103,12 @@
           </table>
         </div>
         <div class="px-4 py-3 border-t border-gray-50">
-          <BasePagination :current-page="page" :total-pages="totalPages" :total="total" :limit="limit" @change="(p) => { page = p; fetchData(); }" />
+          <BasePagination
+            :current-page="page" :total-pages="totalPages"
+            :total="total" :limit="limit"
+            @change="(p) => { page = p; fetchData(); }"
+            @limit-change="(l) => { limit = l; page = 1; fetchData(); }"
+          />
         </div>
       </template>
       <BaseEmpty v-else :title="search ? 'Guru tidak ditemukan' : 'Belum ada data guru'" :icon="search ? 'search' : 'inbox'" />
@@ -258,8 +263,8 @@ uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Data Guru' }]);
 
 // ── State (harus di atas composable yang pakai items) ────────
 const items = ref([]); const loading = ref(true);
-const page = ref(1); const limit = 10; const total = ref(0);
-const totalPages = computed(() => Math.ceil(total.value / limit));
+const page = ref(1); const limit = ref(10); const total = ref(0);
+const totalPages = computed(() => Math.ceil(total.value / limit.value));
 const search = ref(''); const filterJurusan = ref('');
 const showForm = ref(false); const editItem = ref(null);
 const showConfirm = ref(false); const deleteTarget = ref(null);
@@ -287,7 +292,7 @@ const form = ref(emptyForm());
 const fetchData = async () => {
   loading.value = true;
   try {
-    const res = await masterService.guruList({ page: page.value, limit, search: search.value, jurusan_id: filterJurusan.value || undefined });
+    const res = await masterService.guruList({ page: page.value, limit: limit.value, search: search.value, jurusan_id: filterJurusan.value || undefined });
     items.value = res.data.data || [];
     total.value = res.data.meta?.total || 0;
   } catch { notify.error('Gagal memuat data guru'); } finally { loading.value = false; }
