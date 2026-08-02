@@ -123,6 +123,10 @@ import { PlusIcon, PencilSquareIcon, TrashIcon, ArrowDownTrayIcon, ArrowUpTrayIc
 const authStore = useAuthStore(); const masterStore = useMasterStore(); const uiStore = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Kelas' }]);
 
+const items = ref([]); const loading = ref(true); const filterTP = ref(masterStore.tahunAktif?.id || '');
+const showForm = ref(false); const editItem = ref(null); const formLoading = ref(false);
+const showConfirm = ref(false); const deleteTarget = ref(null);
+
 const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
   exportFn:   masterService.kelasExport,
   templateFn: masterService.kelasTemplate,
@@ -138,10 +142,6 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
   deleteFn: masterService.kelasBulkDelete,
   onDeleted: (count) => { notify.success(`${count} kelas berhasil dihapus`); fetchData(); },
 });
-
-const items = ref([]); const loading = ref(true); const filterTP = ref(masterStore.tahunAktif?.id || '');
-const showForm = ref(false); const editItem = ref(null); const formLoading = ref(false);
-const showConfirm = ref(false); const deleteTarget = ref(null);
 const emptyForm = () => ({ nama: '', tingkat: '', jurusan_id: '', tahun_pelajaran_id: masterStore.tahunAktif?.id || '', kapasitas: 36, ruangan: '' });
 const form = ref(emptyForm());
 

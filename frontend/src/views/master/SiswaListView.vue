@@ -217,6 +217,14 @@ import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTr
 const authStore = useAuthStore(); const masterStore = useMasterStore(); const uiStore = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Data Siswa' }]);
 
+// ── State (harus di atas composable yang pakai items) ────────
+const items = ref([]); const loading = ref(true);
+const page = ref(1); const limit = 10; const total = ref(0);
+const totalPages = computed(() => Math.ceil(total.value / limit));
+const search = ref(''); const filterJurusan = ref(''); const filterStatus = ref('Aktif');
+const showForm = ref(false); const editItem = ref(null);
+const showConfirm = ref(false); const deleteTarget = ref(null); const formLoading = ref(false);
+
 const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
   exportFn:   masterService.siswaExport,
   templateFn: masterService.siswaTemplate,
@@ -232,13 +240,6 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
   deleteFn: masterService.siswaBulkDelete,
   onDeleted: (count) => { notify.success(`${count} siswa berhasil dihapus`); fetchData(); },
 });
-
-const items = ref([]); const loading = ref(true);
-const page = ref(1); const limit = 10; const total = ref(0);
-const totalPages = computed(() => Math.ceil(total.value / limit));
-const search = ref(''); const filterJurusan = ref(''); const filterStatus = ref('Aktif');
-const showForm = ref(false); const editItem = ref(null);
-const showConfirm = ref(false); const deleteTarget = ref(null); const formLoading = ref(false);
 
 const statusClass = (s) => ({ Aktif: 'badge-green', Lulus: 'badge-blue', Pindah: 'badge-yellow', Keluar: 'badge-red', Meninggal: 'badge-gray' }[s] || 'badge-gray');
 

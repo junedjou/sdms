@@ -85,6 +85,11 @@ import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTr
 const authStore = useAuthStore(); const uiStore = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Pegawai' }]);
 
+const items = ref([]); const loading = ref(true); const page = ref(1); const limit = 10; const total = ref(0);
+const totalPages = computed(() => Math.ceil(total.value / limit));
+const search = ref(''); const showForm = ref(false); const editItem = ref(null);
+const showConfirm = ref(false); const deleteTarget = ref(null); const formLoading = ref(false);
+
 const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
   exportFn:   masterService.pegawaiExport,
   templateFn: masterService.pegawaiTemplate,
@@ -100,10 +105,6 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
   deleteFn: masterService.pegawaiBulkDelete,
   onDeleted: (count) => { notify.success(`${count} pegawai berhasil dihapus`); fetchData(); },
 });
-const items = ref([]); const loading = ref(true); const page = ref(1); const limit = 10; const total = ref(0);
-const totalPages = computed(() => Math.ceil(total.value / limit));
-const search = ref(''); const showForm = ref(false); const editItem = ref(null);
-const showConfirm = ref(false); const deleteTarget = ref(null); const formLoading = ref(false);
 const emptyForm = () => ({ nama: '', nip: '', jenis_kelamin: '', jabatan: '', unit_kerja: '', status_kepegawaian: '', no_hp: '', alamat: '' });
 const form = ref(emptyForm());
 const fetchData = async () => { loading.value = true; try { const r = await masterService.pegawaiList({ page: page.value, limit, search: search.value }); items.value = r.data.data || []; total.value = r.data.meta?.total || 0; } finally { loading.value = false; } };

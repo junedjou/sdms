@@ -256,6 +256,15 @@ const masterStore = useMasterStore();
 const uiStore     = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Data Guru' }]);
 
+// ── State (harus di atas composable yang pakai items) ────────
+const items = ref([]); const loading = ref(true);
+const page = ref(1); const limit = 10; const total = ref(0);
+const totalPages = computed(() => Math.ceil(total.value / limit));
+const search = ref(''); const filterJurusan = ref('');
+const showForm = ref(false); const editItem = ref(null);
+const showConfirm = ref(false); const deleteTarget = ref(null);
+const formLoading = ref(false);
+
 const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
   exportFn:   masterService.guruExport,
   templateFn: masterService.guruTemplate,
@@ -271,14 +280,6 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
   deleteFn: masterService.guruBulkDelete,
   onDeleted: (count) => { notify.success(`${count} guru berhasil dihapus`); fetchData(); },
 });
-
-const items = ref([]); const loading = ref(true);
-const page = ref(1); const limit = 10; const total = ref(0);
-const totalPages = computed(() => Math.ceil(total.value / limit));
-const search = ref(''); const filterJurusan = ref('');
-const showForm = ref(false); const editItem = ref(null);
-const showConfirm = ref(false); const deleteTarget = ref(null);
-const formLoading = ref(false);
 
 const emptyForm = () => ({ nama: '', nip: '', niy: '', jenis_kelamin: '', status_kepegawaian: '', jurusan_id: '', jabatan: '', mata_pelajaran: '', no_hp: '', email: '', tempat_lahir: '', tanggal_lahir: '', agama: '', alamat: '' });
 const form = ref(emptyForm());

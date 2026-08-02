@@ -77,6 +77,8 @@ import { PlusIcon, PencilSquareIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '
 const authStore = useAuthStore(); const masterStore = useMasterStore(); const uiStore = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Mata Pelajaran' }]);
 
+const items = ref([]); const loading = ref(true); const showForm = ref(false); const editItem = ref(null); const formLoading = ref(false);
+
 const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
   exportFn:   masterService.mapelExport,
   templateFn: masterService.mapelTemplate,
@@ -92,7 +94,6 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
   deleteFn: masterService.mapelBulkDelete,
   onDeleted: (count) => { notify.success(`${count} mata pelajaran berhasil dihapus`); fetchData(); },
 });
-const items = ref([]); const loading = ref(true); const showForm = ref(false); const editItem = ref(null); const formLoading = ref(false);
 const emptyForm = () => ({ kode: '', nama: '', kelompok: '', jurusan_id: '', jam_per_minggu: '' });
 const form = ref(emptyForm());
 const fetchData = async () => { loading.value = true; try { items.value = (await masterService.mapelList()).data.data || []; } finally { loading.value = false; } };

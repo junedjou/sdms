@@ -164,6 +164,15 @@ const masterStore = useMasterStore();
 const uiStore     = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Jurusan' }]);
 
+// ── State (harus di atas composable yang pakai items) ────────
+const items       = ref([]);
+const loading     = ref(true);
+const showForm    = ref(false);
+const editItem    = ref(null);
+const formLoading = ref(false);
+const showConfirm = ref(false);
+const deleteTarget = ref(null);
+
 const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
   exportFn:   masterService.jurusanExport,
   templateFn: masterService.jurusanTemplate,
@@ -179,14 +188,6 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
   deleteFn: masterService.jurusanBulkDelete,
   onDeleted: (count) => { notify.success(`${count} jurusan berhasil dihapus`); fetchData(); masterStore.fetchJurusan(); },
 });
-
-const items       = ref([]);
-const loading     = ref(true);
-const showForm    = ref(false);
-const editItem    = ref(null);
-const formLoading = ref(false);
-const showConfirm = ref(false);
-const deleteTarget = ref(null);
 
 const emptyForm = () => ({ kode: '', nama: '', deskripsi: '' });
 const form = ref(emptyForm());
