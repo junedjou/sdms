@@ -95,9 +95,10 @@ TahunPelajaran.hasMany(KalenderAkademik,   { foreignKey: 'tahun_pelajaran_id', a
 // ============================================================
 const syncModels = async () => {
   try {
-    // force:false, alter:false — hanya buat tabel jika belum ada, tidak mengubah struktur
-    // Aman untuk production dan menghindari error "Too many keys" di MariaDB
-    await masterDB.sync({ force: false, alter: false });
+    // Gunakan authenticate() saja — tidak sync/alter struktur tabel
+    // Perubahan struktur dilakukan via migration manual di folder migrations/
+    // sync({ alter: true }) dinonaktifkan karena menyebabkan "Too many keys" di MariaDB
+    await masterDB.authenticate();
     logger.info('Semua model berhasil di-sync ke MariaDB Master');
   } catch (err) {
     logger.error(`Gagal sync model: ${err.message}`);
