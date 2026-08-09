@@ -36,7 +36,9 @@ const authenticate = async (req, res, next) => {
       id: decoded.id,
       username: decoded.username,
       email: decoded.email,
+      full_name: decoded.full_name,
       role: decoded.role,
+      extra_roles: decoded.extra_roles || [],
       permissions: decoded.permissions || [],
     };
 

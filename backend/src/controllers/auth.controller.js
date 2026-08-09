@@ -36,7 +36,10 @@ const login = async (req, res) => {
         [Op.or]: [{ username }, { email: username }],
         is_active: true,
       },
-      include: [{ model: Role, as: 'role' }],
+      include: [
+        { model: Role, as: 'role' },
+        { association: 'guru', attributes: ['id', 'nama'] },
+      ],
     });
 
     if (!user) {
@@ -53,11 +56,13 @@ const login = async (req, res) => {
     // Ambil permissions
     const permissions = await getUserPermissions(user.role_id);
 
-    // Build token payload
+    // Build token payload — pakai nama guru jika ada, fallback ke full_name
+    const displayName = user.guru?.nama || user.full_name || user.username;
     const tokenPayload = {
       id: user.id,
       username: user.username,
       email: user.email,
+      full_name: displayName,
       role: user.role?.name,
       extra_roles: user.extra_roles || [],
       permissions,
@@ -84,7 +89,7 @@ const login = async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        full_name: user.full_name,
+        full_name: displayName,
         avatar: user.avatar,
         role: user.role?.name,
         role_label: user.role?.label,
