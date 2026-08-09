@@ -68,13 +68,17 @@ router.post('/mapel',              requirePermission('mapel:create'), asyncHandl
 router.put('/mapel/:id',           requirePermission('mapel:update'), asyncHandler(ctrl.updateMapel));
 
 // ── Tahun Pelajaran ───────────────────────────────────────────
-router.get('/tahun-pelajaran',            requirePermission('master:view'), asyncHandler(ctrl.getTahunPelajaran));
-router.post('/tahun-pelajaran',           requirePermission('master:view'), asyncHandler(ctrl.createTahunPelajaran));
+router.get('/tahun-pelajaran',             requirePermission('master:view'), asyncHandler(ctrl.getTahunPelajaran));
+router.post('/tahun-pelajaran',            requirePermission('master:view'), asyncHandler(ctrl.createTahunPelajaran));
+router.put('/tahun-pelajaran/:id',         requirePermission('master:view'), asyncHandler(ctrl.updateTahunPelajaran));
+router.delete('/tahun-pelajaran/:id',      requirePermission('master:view'), asyncHandler(ctrl.deleteTahunPelajaran));
 router.patch('/tahun-pelajaran/:id/aktif', requirePermission('master:view'), asyncHandler(ctrl.setTahunAktif));
 
 // ── Semester ──────────────────────────────────────────────────
 router.get('/semester',            requirePermission('master:view'), asyncHandler(ctrl.getSemester));
 router.post('/semester',           requirePermission('master:view'), asyncHandler(ctrl.createSemester));
+router.put('/semester/:id',        requirePermission('master:view'), asyncHandler(ctrl.updateSemester));
+router.delete('/semester/:id',     requirePermission('master:view'), asyncHandler(ctrl.deleteSemester));
 
 // ── Kalender Akademik ─────────────────────────────────────────
 router.get('/kalender',            requirePermission('master:view'), asyncHandler(ctrl.getKalender));

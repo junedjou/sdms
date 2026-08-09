@@ -154,9 +154,13 @@ export const masterService = {
   // Tahun Pelajaran & Semester
   tahunPelajaranList:   ()     => api.get('/master/tahun-pelajaran'),
   tahunPelajaranCreate: (data) => api.post('/master/tahun-pelajaran', data),
+  tahunPelajaranUpdate: (id,d) => api.put(`/master/tahun-pelajaran/${id}`, d),
+  tahunPelajaranDelete: (id)   => api.delete(`/master/tahun-pelajaran/${id}`),
   setTahunAktif:        (id)   => api.patch(`/master/tahun-pelajaran/${id}/aktif`),
   semesterList:         (p)    => api.get('/master/semester', { params: p }),
   semesterCreate:       (data) => api.post('/master/semester', data),
+  semesterUpdate:       (id,d) => api.put(`/master/semester/${id}`, d),
+  semesterDelete:       (id)   => api.delete(`/master/semester/${id}`),
 
   // Kalender
   kalenderList:   (p)    => api.get('/master/kalender', { params: p }),

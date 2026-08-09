@@ -299,6 +299,44 @@ const createSemester = async (req, res) => {
   return created(res, semester, 'Semester berhasil dibuat');
 };
 
+const updateTahunPelajaran = async (req, res) => {
+  const tp = await TahunPelajaran.findByPk(req.params.id);
+  if (!tp) return notFound(res, 'Tahun pelajaran tidak ditemukan');
+  // Kalau set aktif, nonaktifkan yang lain dulu
+  if (req.body.is_aktif) await TahunPelajaran.update({ is_aktif: false }, { where: {} });
+  await tp.update(req.body);
+  return success(res, tp, 'Tahun pelajaran berhasil diperbarui');
+};
+
+const deleteTahunPelajaran = async (req, res) => {
+  const tp = await TahunPelajaran.findByPk(req.params.id);
+  if (!tp) return notFound(res, 'Tahun pelajaran tidak ditemukan');
+  if (tp.is_aktif) return badRequest(res, 'Tidak bisa menghapus tahun pelajaran yang sedang aktif');
+  // Cek apakah ada kelas yang menggunakan tahun pelajaran ini
+  const kelasCount = await Kelas.count({ where: { tahun_pelajaran_id: tp.id, is_active: true } });
+  if (kelasCount > 0) return badRequest(res, `Tidak bisa menghapus — masih ada ${kelasCount} kelas aktif`);
+  await tp.destroy();
+  return success(res, null, 'Tahun pelajaran berhasil dihapus');
+};
+
+const updateSemester = async (req, res) => {
+  const sem = await Semester.findByPk(req.params.id);
+  if (!sem) return notFound(res, 'Semester tidak ditemukan');
+  if (req.body.is_aktif) {
+    await Semester.update({ is_aktif: false }, { where: { tahun_pelajaran_id: sem.tahun_pelajaran_id } });
+  }
+  await sem.update(req.body);
+  return success(res, sem, 'Semester berhasil diperbarui');
+};
+
+const deleteSemester = async (req, res) => {
+  const sem = await Semester.findByPk(req.params.id);
+  if (!sem) return notFound(res, 'Semester tidak ditemukan');
+  if (sem.is_aktif) return badRequest(res, 'Tidak bisa menghapus semester yang sedang aktif');
+  await sem.destroy();
+  return success(res, null, 'Semester berhasil dihapus');
+};
+
 // ============================================================
 // KALENDER AKADEMIK
 // ============================================================
@@ -404,8 +442,8 @@ module.exports = {
   // Mapel
   getMapel, createMapel, updateMapel, bulkDeleteMapel,
   // Tahun Pelajaran & Semester
-  getTahunPelajaran, createTahunPelajaran, setTahunAktif,
-  getSemester, createSemester,
+  getTahunPelajaran, createTahunPelajaran, updateTahunPelajaran, deleteTahunPelajaran, setTahunAktif,
+  getSemester, createSemester, updateSemester, deleteSemester,
   // Kalender
   getKalender, createKalender, updateKalender, deleteKalender,
 };
