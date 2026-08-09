@@ -159,11 +159,39 @@
           <p class="text-xs text-gray-400 mt-1">Minimal 8 karakter</p>
         </div>
         <div class="form-group">
-          <label class="form-label">Role <span class="text-red-500">*</span></label>
-          <select v-model="form.role_id" class="form-input" required>
-            <option value="">-- Pilih Role --</option>
-            <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.label }}</option>
-          </select>
+          <label class="form-label">Role / Jabatan <span class="text-red-500">*</span></label>
+          <p class="text-xs text-gray-400 mb-2">Role utama menentukan akses sistem. Centang role tambahan jika guru merangkap jabatan.</p>
+          <div class="space-y-2 border border-gray-200 rounded-lg p-3">
+            <div v-for="r in roles" :key="r.id"
+              class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+              :class="form.role_id === r.id ? 'bg-primary-50 border border-primary-200' : ''"
+              @click="selectMainRole(r)"
+            >
+              <div class="flex items-center gap-2 flex-1">
+                <input
+                  type="radio"
+                  :value="r.id"
+                  v-model="form.role_id"
+                  class="text-primary-600 focus:ring-primary-500"
+                  @click.stop
+                />
+                <span class="text-sm font-medium text-gray-800">{{ r.label }}</span>
+              </div>
+              <!-- Checkbox extra role (hanya tampil jika bukan role utama) -->
+              <div v-if="form.role_id !== r.id" class="flex items-center gap-1.5" @click.stop>
+                <input
+                  type="checkbox"
+                  :value="r.name"
+                  v-model="form.extra_roles"
+                  class="rounded text-primary-600 focus:ring-primary-500"
+                />
+                <span class="text-xs text-gray-500">Tambahan</span>
+              </div>
+            </div>
+          </div>
+          <p v-if="form.extra_roles.length" class="mt-1 text-xs text-primary-600">
+            Role tambahan: {{ form.extra_roles.join(', ') }}
+          </p>
         </div>
         <div v-if="editItem" class="flex items-center gap-2">
           <input v-model="form.is_active" type="checkbox" id="user-aktif" class="rounded" />
@@ -294,8 +322,14 @@ const executeBulkDelete = async () => {
 
 const roleBadge = (name) => ({ super_admin: 'badge-red', admin: 'badge-blue', guru: 'badge-green', pegawai: 'badge-yellow', siswa: 'badge-gray', operator: 'badge-gray' }[name] || 'badge-gray');
 
-const emptyForm = () => ({ full_name: '', username: '', email: '', password: '', role_id: '', is_active: true });
+const emptyForm = () => ({ full_name: '', username: '', email: '', password: '', role_id: '', extra_roles: [], is_active: true });
 const form = ref(emptyForm());
+
+const selectMainRole = (r) => {
+  form.value.role_id = r.id;
+  // Hapus dari extra_roles jika terpilih jadi role utama
+  form.value.extra_roles = form.value.extra_roles.filter(er => er !== r.name);
+};
 
 const fetchData = async () => {
   loading.value = true;
@@ -314,8 +348,9 @@ const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
 
 const openForm = (item = null) => {
   editItem.value = item;
-  form.value = item ? { full_name: item.full_name, username: item.username, email: item.email, role_id: item.role?.id || '', is_active: item.is_active, password: '' }
-                    : emptyForm();
+  form.value = item
+    ? { full_name: item.full_name, username: item.username, email: item.email, role_id: item.role?.id || '', extra_roles: item.extra_roles || [], is_active: item.is_active, password: '' }
+    : emptyForm();
   showForm.value = true;
 };
 
@@ -323,7 +358,7 @@ const submitForm = async () => {
   formLoading.value = true;
   try {
     if (editItem.value) {
-      const payload = { full_name: form.value.full_name, username: form.value.username, email: form.value.email, role_id: form.value.role_id, is_active: form.value.is_active };
+      const payload = { full_name: form.value.full_name, username: form.value.username, email: form.value.email, role_id: form.value.role_id, extra_roles: form.value.extra_roles, is_active: form.value.is_active };
       await userService.update(editItem.value.id, payload);
       notify.success('User berhasil diperbarui');
     } else {

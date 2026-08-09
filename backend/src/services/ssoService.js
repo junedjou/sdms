@@ -48,6 +48,7 @@ const createSSOToken = (user, appName) => {
     email: user.email,
     full_name: user.full_name,
     role: user.role,
+    extra_roles: user.extra_roles || [],
     permissions: user.permissions,
     app: appName,
     iss: 'sdms-core',

@@ -47,7 +47,7 @@ const getUserById = async (req, res) => {
 
 // POST /api/v1/users
 const createUser = async (req, res) => {
-  const { username, email, password, full_name, role_id, guru_id, siswa_id, pegawai_id } = req.body;
+  const { username, email, password, full_name, role_id, guru_id, siswa_id, pegawai_id, extra_roles } = req.body;
 
   const existing = await User.unscoped().findOne({ where: { [Op.or]: [{ username }, { email }] } });
   if (existing) return conflict(res, 'Username atau email sudah digunakan');
@@ -62,6 +62,7 @@ const createUser = async (req, res) => {
     guru_id: guru_id || null,
     siswa_id: siswa_id || null,
     pegawai_id: pegawai_id || null,
+    extra_roles: extra_roles || null,
   });
 
   await writeAuditLog({
@@ -81,7 +82,7 @@ const updateUser = async (req, res) => {
   const user = await User.unscoped().findByPk(req.params.id);
   if (!user) return notFound(res, 'User tidak ditemukan');
 
-  const { username, email, full_name, role_id, is_active, guru_id, siswa_id, pegawai_id } = req.body;
+  const { username, email, full_name, role_id, is_active, guru_id, siswa_id, pegawai_id, extra_roles } = req.body;
 
   // Cek duplikat username/email (kecuali milik user ini sendiri)
   if (username || email) {
@@ -105,6 +106,7 @@ const updateUser = async (req, res) => {
     guru_id: guru_id !== undefined ? guru_id : user.guru_id,
     siswa_id: siswa_id !== undefined ? siswa_id : user.siswa_id,
     pegawai_id: pegawai_id !== undefined ? pegawai_id : user.pegawai_id,
+    extra_roles: extra_roles !== undefined ? (extra_roles.length ? extra_roles : null) : user.extra_roles,
   });
 
   await writeAuditLog({

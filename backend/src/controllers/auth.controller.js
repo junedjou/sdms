@@ -59,6 +59,7 @@ const login = async (req, res) => {
       username: user.username,
       email: user.email,
       role: user.role?.name,
+      extra_roles: user.extra_roles || [],
       permissions,
     };
 
@@ -87,6 +88,7 @@ const login = async (req, res) => {
         avatar: user.avatar,
         role: user.role?.name,
         role_label: user.role?.label,
+        extra_roles: user.extra_roles || [],
         permissions,
       },
     }, 'Login berhasil');

@@ -67,6 +67,12 @@ const User = masterDB.define('User', {
     type: DataTypes.DATE,
     allowNull: true,
   },
+  extra_roles: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: null,
+    comment: 'Role tambahan untuk user yang merangkap jabatan, contoh: ["wali_kelas","bk"]',
+  },
 }, {
   tableName: 'users',
   timestamps: true,
