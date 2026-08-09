@@ -147,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { masterService } from '@/services/api';
 import { useAuthStore } from '@/stores/auth.store'; import { useMasterStore } from '@/stores/master.store'; import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast';
@@ -162,6 +162,14 @@ const authStore = useAuthStore(); const masterStore = useMasterStore(); const ui
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Kelas' }]);
 
 const items = ref([]); const loading = ref(true); const filterTP = ref(masterStore.tahunAktif?.id || '');
+
+// Saat tahunAktif baru tersedia (setelah store load), set filterTP otomatis
+watch(() => masterStore.tahunAktif, (val) => {
+  if (val && !filterTP.value) {
+    filterTP.value = val.id;
+    fetchData();
+  }
+}, { immediate: true });
 const showForm = ref(false); const editItem = ref(null); const formLoading = ref(false);
 const showConfirm = ref(false); const deleteTarget = ref(null);
 
