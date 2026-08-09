@@ -1,16 +1,13 @@
 #!/bin/bash
 # ============================================================
-# SDMS Push Script — Jalankan di komputer lokal
+# SDMS Push Script — Jalankan di lokal (Git Bash / WSL)
 # Commit semua perubahan dan push ke GitHub
 #
 # Usage:
-#   bash push.sh                   → commit dengan pesan otomatis
-#   bash push.sh "pesan commit"    → commit dengan pesan custom
+#   bash push.sh
+#   bash push.sh "pesan commit custom"
 # ============================================================
 
-set -e
-
-# ── Warna ────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 ok()   { echo -e "${GREEN}✓${NC}  $1"; }
@@ -18,95 +15,71 @@ err()  { echo -e "${RED}✗${NC}  $1"; exit 1; }
 info() { echo -e "${YELLOW}→${NC}  $1"; }
 head() { echo -e "\n${CYAN}${BOLD}══ $1 ══${NC}"; }
 
-# ── Root project (folder tempat push.sh berada) ──────────────
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+# ── Pindah ke root project ────────────────────────────────────
+cd "$(dirname "$0")"
 
-# ── Banner ───────────────────────────────────────────────────
 echo -e "${CYAN}${BOLD}"
 echo "  ╔══════════════════════════════════╗"
-echo "  ║   SDMS — Push to GitHub          ║"
+echo "  ║   SDMS — Push ke GitHub          ║"
 echo "  ╚══════════════════════════════════╝"
 echo -e "${NC}"
 
-# ── Pastikan ini adalah git repo ─────────────────────────────
-if [ ! -d ".git" ]; then
-  err "Folder ini bukan git repository.\n   Jalankan dulu:\n   git init && git remote add origin https://github.com/USER/sdms.git"
+# ── Cek git repo ──────────────────────────────────────────────
+[ -d ".git" ] || err "Bukan git repository!"
+
+# ── Cek ada perubahan ─────────────────────────────────────────
+head "Status Git"
+git status --short
+
+if git diff --quiet && git diff --cached --quiet; then
+  # Cek untracked files
+  UNTRACKED=$(git ls-files --others --exclude-standard | wc -l)
+  if [ "$UNTRACKED" -eq 0 ]; then
+    echo ""
+    ok "Tidak ada perubahan — sudah up-to-date"
+    exit 0
+  fi
 fi
 
-# ── Ambil info repo ──────────────────────────────────────────
-BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
-REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "(belum ada remote)")
-
-echo -e "  Branch  : ${BOLD}${BRANCH}${NC}"
-echo -e "  Remote  : ${BOLD}${REMOTE_URL}${NC}"
-echo ""
-
-# ── Cek apakah ada remote origin ─────────────────────────────
-if ! git remote get-url origin &>/dev/null; then
-  err "Remote 'origin' belum dikonfigurasi.\n   Jalankan: git remote add origin https://github.com/USER/sdms.git"
-fi
-
-# ── Cek status git ───────────────────────────────────────────
-head "Cek Status"
-CHANGED=$(git status --porcelain | wc -l | tr -d ' ')
-
-if [ "$CHANGED" -eq 0 ]; then
-  ok "Tidak ada perubahan — working tree bersih"
-  info "Tidak ada yang perlu di-push."
-  echo ""
-  exit 0
-fi
-
-info "Ditemukan ${CHANGED} file berubah:"
-git status --short | sed 's/^/     /'
-echo ""
-
-# ── Pesan commit ─────────────────────────────────────────────
+# ── Pesan commit ──────────────────────────────────────────────
 if [ -n "$1" ]; then
-  COMMIT_MSG="$1"
+  MSG="$1"
 else
-  # Otomatis: timestamp + ringkasan file berubah
-  TIMESTAMP=$(date '+%Y-%m-%d %H:%M')
-  COMMIT_MSG="update: ${TIMESTAMP}"
+  TANGGAL=$(date '+%Y-%m-%d %H:%M')
+  MSG="update: $TANGGAL"
 fi
 
-echo -e "  Pesan commit: ${BOLD}\"${COMMIT_MSG}\"${NC}"
+head "Commit & Push"
+info "Pesan: $MSG"
+
+# Stage semua perubahan (kecuali yang di .gitignore)
+git add .
+
+# Tampilkan apa yang di-commit
+echo ""
+info "File yang dicommit:"
+git diff --cached --name-only | sed 's/^/     /'
 echo ""
 
-# ── Stage semua perubahan ────────────────────────────────────
-head "Git Stage"
-git add -A
-ok "Semua perubahan di-stage"
+# Konfirmasi
+read -p "  Lanjutkan push? (y/n): " confirm
+[[ "$confirm" != "y" ]] && echo "Dibatalkan." && exit 0
 
-# ── Commit ───────────────────────────────────────────────────
-head "Git Commit"
-git commit -m "$COMMIT_MSG"
-ok "Commit berhasil: \"${COMMIT_MSG}\""
+# Commit
+git commit -m "$MSG"
+ok "Commit berhasil"
 
-# ── Push ─────────────────────────────────────────────────────
-head "Git Push → ${BRANCH}"
-info "Mendorong ke origin/${BRANCH}..."
+# Push
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+info "Push ke origin/$BRANCH..."
+git push origin "$BRANCH"
+ok "Push berhasil — HEAD: $(git rev-parse --short HEAD)"
 
-if git push origin "$BRANCH" 2>&1; then
-  ok "Push berhasil ke GitHub"
-else
-  # Kalau branch belum ada di remote, set upstream dulu
-  info "Branch baru — set upstream dan push..."
-  git push --set-upstream origin "$BRANCH"
-  ok "Push berhasil (upstream baru: origin/${BRANCH})"
-fi
-
-# ── Ringkasan ────────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}${BOLD}══════════════════════════════════════${NC}"
 echo -e "${GREEN}${BOLD}  PUSH SELESAI!${NC}"
 echo -e "${GREEN}${BOLD}══════════════════════════════════════${NC}"
 echo ""
-LAST_HASH=$(git rev-parse --short HEAD)
-echo -e "  Commit : ${BOLD}${LAST_HASH}${NC} — ${COMMIT_MSG}"
-echo -e "  Branch : ${BOLD}${BRANCH}${NC} → origin"
-echo ""
-echo -e "${YELLOW}  Langkah selanjutnya — di VPS:${NC}"
-echo -e "  ${BOLD}bash /var/www/sdms/deploy/update.sh${NC}"
+echo -e "  Sekarang jalankan di VPS SDMS:"
+echo -e "  ${CYAN}bash /var/www/sdms/deploy/update.sh${NC}"
 echo ""

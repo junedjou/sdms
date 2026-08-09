@@ -86,6 +86,44 @@
             <option v-for="tp in masterStore.tahunPelajaran" :key="tp.id" :value="tp.id">{{ tp.nama }}</option>
           </select>
         </div>
+        <div class="form-group col-span-2">
+          <label class="form-label">Wali Kelas</label>
+          <div class="relative">
+            <input
+              v-model="guruSearch"
+              type="text"
+              class="form-input"
+              placeholder="Cari nama guru..."
+              @input="filterGuru"
+              @focus="showGuruDropdown = true"
+              @blur="onGuruBlur"
+              autocomplete="off"
+            />
+            <div
+              v-if="showGuruDropdown && filteredGuru.length"
+              class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+            >
+              <div
+                class="px-3 py-2 text-sm text-gray-500 cursor-pointer hover:bg-gray-50"
+                @mousedown.prevent="selectGuru(null)"
+              >
+                — Tidak ada wali kelas —
+              </div>
+              <div
+                v-for="g in filteredGuru"
+                :key="g.id"
+                class="px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 hover:text-primary-700"
+                @mousedown.prevent="selectGuru(g)"
+              >
+                {{ g.nama }}
+                <span v-if="g.nip" class="text-xs text-gray-400 ml-1">{{ g.nip }}</span>
+              </div>
+            </div>
+          </div>
+          <p v-if="form.wali_kelas_id" class="mt-1 text-xs text-primary-600">
+            ✓ {{ guruSearch }}
+          </p>
+        </div>
         <div class="form-group">
           <label class="form-label">Kapasitas</label>
           <input v-model="form.kapasitas" type="number" class="form-input" placeholder="36" />
@@ -142,11 +180,56 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
   deleteFn: masterService.kelasBulkDelete,
   onDeleted: (count) => { notify.success(`${count} kelas berhasil dihapus`); fetchData(); },
 });
-const emptyForm = () => ({ nama: '', tingkat: '', jurusan_id: '', tahun_pelajaran_id: masterStore.tahunAktif?.id || '', kapasitas: 36, ruangan: '' });
+const emptyForm = () => ({ nama: '', tingkat: '', jurusan_id: '', tahun_pelajaran_id: masterStore.tahunAktif?.id || '', kapasitas: 36, ruangan: '', wali_kelas_id: '' });
 const form = ref(emptyForm());
 
+// ── Wali Kelas Search ─────────────────────────────────────────
+const allGuru = ref([]);
+const guruSearch = ref('');
+const filteredGuru = ref([]);
+const showGuruDropdown = ref(false);
+
+const loadGuru = async () => {
+  try {
+    const res = await masterService.guruList({ limit: 200 });
+    allGuru.value = res.data.data || [];
+  } catch {}
+};
+
+const filterGuru = () => {
+  const q = guruSearch.value.toLowerCase();
+  filteredGuru.value = q
+    ? allGuru.value.filter(g => g.nama.toLowerCase().includes(q) || (g.nip || '').includes(q))
+    : allGuru.value.slice(0, 20);
+  showGuruDropdown.value = true;
+};
+
+const selectGuru = (guru) => {
+  if (guru) {
+    form.value.wali_kelas_id = guru.id;
+    guruSearch.value = guru.nama;
+  } else {
+    form.value.wali_kelas_id = '';
+    guruSearch.value = '';
+  }
+  showGuruDropdown.value = false;
+};
+
+const onGuruBlur = () => {
+  setTimeout(() => { showGuruDropdown.value = false; }, 150);
+};
+
 const fetchData = async () => { loading.value = true; try { items.value = (await masterService.kelasList({ tahun_pelajaran_id: filterTP.value || undefined })).data.data || []; } finally { loading.value = false; } };
-const openForm = (item = null) => { editItem.value = item; form.value = item ? { ...item, jurusan_id: item.jurusan_id || '', tahun_pelajaran_id: item.tahun_pelajaran_id || '' } : emptyForm(); showForm.value = true; };
+const openForm = (item = null) => {
+  editItem.value = item;
+  form.value = item
+    ? { ...item, jurusan_id: item.jurusan_id || '', tahun_pelajaran_id: item.tahun_pelajaran_id || '', wali_kelas_id: item.wali_kelas_id || '' }
+    : emptyForm();
+  // Set nama guru di search box kalau sudah ada wali kelas
+  guruSearch.value = item?.waliKelas?.nama || '';
+  filteredGuru.value = allGuru.value.slice(0, 20);
+  showForm.value = true;
+};
 const submitForm = async () => {
   formLoading.value = true;
   try {
@@ -165,5 +248,5 @@ const executeDelete = async () => {
   } catch (err) { notify.error(err.response?.data?.message || 'Gagal'); } finally { formLoading.value = false; }
 };
 
-onMounted(fetchData);
+onMounted(() => { fetchData(); loadGuru(); });
 </script>
