@@ -1,7 +1,6 @@
 #!/bin/bash
 # ============================================================
-# SDMS Push Script — Jalankan di lokal (Git Bash / WSL)
-# Commit semua perubahan dan push ke GitHub
+# SDMS Push Script — Jalankan di lokal via Git Bash / WSL
 #
 # Usage:
 #   bash push.sh
@@ -19,26 +18,39 @@ head() { echo -e "\n${CYAN}${BOLD}══ $1 ══${NC}"; }
 cd "$(dirname "$0")"
 
 echo -e "${CYAN}${BOLD}"
-echo "  ╔══════════════════════════════════╗"
-echo "  ║   SDMS — Push ke GitHub          ║"
-echo "  ╚══════════════════════════════════╝"
+echo "  ╔══════════════════════════════════════════╗"
+echo "  ║   SDMS — Push ke GitHub                  ║"
+echo "  ╚══════════════════════════════════════════╝"
 echo -e "${NC}"
 
-# ── Cek git repo ──────────────────────────────────────────────
-[ -d ".git" ] || err "Bukan git repository!"
+# ── Cek prasyarat ─────────────────────────────────────────────
+[ -d ".git" ]              || err "Bukan git repository!"
+command -v git &>/dev/null || err "git tidak terinstall!"
 
-# ── Cek ada perubahan ─────────────────────────────────────────
+# ── Info repo ────────────────────────────────────────────────
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "(belum ada remote)")
+echo -e "  Branch : ${BOLD}$BRANCH${NC}"
+echo -e "  Remote : $REMOTE_URL"
+echo ""
+
+# Cek remote bisa dijangkau
+if ! git ls-remote origin &>/dev/null 2>&1; then
+  err "Tidak bisa menjangkau remote origin.\nCek koneksi internet atau URL remote:\n  git remote set-url origin <URL>"
+fi
+
+# ── Status Git ────────────────────────────────────────────────
 head "Status Git"
 git status --short
 
-if git diff --quiet && git diff --cached --quiet; then
-  # Cek untracked files
-  UNTRACKED=$(git ls-files --others --exclude-standard | wc -l)
-  if [ "$UNTRACKED" -eq 0 ]; then
-    echo ""
-    ok "Tidak ada perubahan — sudah up-to-date"
-    exit 0
-  fi
+# Cek ada perubahan atau tidak
+CHANGED=$(git status --porcelain)
+if [ -z "$CHANGED" ]; then
+  echo ""
+  ok "Tidak ada perubahan — sudah up-to-date dengan commit terakhir"
+  echo ""
+  echo -e "  HEAD : $(git rev-parse --short HEAD) — $(git log -1 --format='%s')"
+  exit 0
 fi
 
 # ── Pesan commit ──────────────────────────────────────────────
@@ -46,40 +58,48 @@ if [ -n "$1" ]; then
   MSG="$1"
 else
   TANGGAL=$(date '+%Y-%m-%d %H:%M')
-  MSG="update: $TANGGAL"
+  # Buat pesan otomatis dari file yang berubah
+  CHANGED_FILES=$(git diff --name-only; git ls-files --others --exclude-standard)
+  AREAS=""
+  echo "$CHANGED_FILES" | grep -q "^backend/"  && AREAS="${AREAS}backend "
+  echo "$CHANGED_FILES" | grep -q "^frontend/" && AREAS="${AREAS}frontend "
+  echo "$CHANGED_FILES" | grep -q "^deploy/"   && AREAS="${AREAS}deploy "
+  AREAS=$(echo "$AREAS" | xargs)
+  [ -n "$AREAS" ] && MSG="update $AREAS: $TANGGAL" || MSG="update: $TANGGAL"
 fi
 
+head "Review Perubahan"
+info "Pesan commit: \"$MSG\""
+echo ""
+info "File yang akan dicommit:"
+git status --short | sed 's/^/     /'
+echo ""
+
+# ── Konfirmasi ────────────────────────────────────────────────
+read -p "  Lanjutkan push ke origin/$BRANCH? (y/n): " confirm
+[[ "$confirm" != "y" ]] && echo "  Dibatalkan." && exit 0
+
+# ── Commit & Push ─────────────────────────────────────────────
 head "Commit & Push"
-info "Pesan: $MSG"
-
-# Stage semua perubahan (kecuali yang di .gitignore)
 git add .
-
-# Tampilkan apa yang di-commit
-echo ""
-info "File yang dicommit:"
-git diff --cached --name-only | sed 's/^/     /'
-echo ""
-
-# Konfirmasi
-read -p "  Lanjutkan push? (y/n): " confirm
-[[ "$confirm" != "y" ]] && echo "Dibatalkan." && exit 0
-
-# Commit
 git commit -m "$MSG"
-ok "Commit berhasil"
+ok "Commit: $(git rev-parse --short HEAD)"
 
-# Push
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
 info "Push ke origin/$BRANCH..."
 git push origin "$BRANCH"
-ok "Push berhasil — HEAD: $(git rev-parse --short HEAD)"
+ok "Push berhasil!"
 
+# ── Ringkasan ─────────────────────────────────────────────────
 echo ""
-echo -e "${GREEN}${BOLD}══════════════════════════════════════${NC}"
+echo -e "${GREEN}${BOLD}══════════════════════════════════════════${NC}"
 echo -e "${GREEN}${BOLD}  PUSH SELESAI!${NC}"
-echo -e "${GREEN}${BOLD}══════════════════════════════════════${NC}"
+echo -e "${GREEN}${BOLD}══════════════════════════════════════════${NC}"
 echo ""
-echo -e "  Sekarang jalankan di VPS SDMS:"
+echo -e "  Commit : ${BOLD}$(git rev-parse --short HEAD)${NC} — $MSG"
+echo ""
+echo -e "${YELLOW}${BOLD}  Sekarang jalankan di VPS:${NC}"
 echo -e "  ${CYAN}bash /var/www/sdms/deploy/update.sh${NC}"
+echo ""
+echo -e "  Atau jika hanya backend berubah (skip build frontend):"
+echo -e "  ${CYAN}bash /var/www/sdms/deploy/update.sh --skip-build${NC}"
 echo ""

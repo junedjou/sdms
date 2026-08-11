@@ -1,7 +1,12 @@
 <template>
   <div class="space-y-5 animate-fade-in">
+
+    <!-- ── Page Header ─────────────────────────────────────── -->
     <div class="page-header">
-      <div><h1 class="page-title">Manajemen User</h1><p class="page-subtitle">Kelola akun dan hak akses pengguna sistem</p></div>
+      <div>
+        <h1 class="page-title">Manajemen User</h1>
+        <p class="page-subtitle">Kelola akun dan hak akses pengguna sistem</p>
+      </div>
       <div class="flex items-center gap-2 flex-wrap justify-end">
         <div class="flex items-center gap-1.5">
           <button @click="doExport" :disabled="exporting" class="btn-secondary btn-sm gap-1.5">
@@ -19,93 +24,270 @@
       </div>
     </div>
 
-    <!-- Filter -->
-    <div class="card p-4 flex flex-col sm:flex-row gap-3">
-      <div class="relative flex-1">
-        <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input v-model="search" @input="debouncedFetch" type="search" placeholder="Cari nama, username, email..." class="form-input pl-9" />
-      </div>
-      <select v-model="filterRole" @change="fetchData" class="form-input w-full sm:w-44">
-        <option value="">Semua Role</option>
-        <option v-for="r in roles" :key="r.id" :value="r.name">{{ r.label }}</option>
-      </select>
+    <!-- ── Tabs ─────────────────────────────────────────────── -->
+    <div class="flex gap-1 border-b border-gray-200">
+      <button
+        v-for="t in tabs" :key="t.key"
+        class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors"
+        :class="activeTab === t.key
+          ? 'border-primary-600 text-primary-700'
+          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+        @click="switchTab(t.key)"
+      >
+        {{ t.label }}
+        <span v-if="t.key === 'piket' && piketTotal > 0"
+          class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-xs font-bold">
+          {{ piketTotal }}
+        </span>
+      </button>
     </div>
 
-    <!-- Tabel -->
-    <div class="card overflow-hidden">
-      <div v-if="loading" class="p-8 flex justify-center">
-        <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- TAB: SEMUA USER                                        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <template v-if="activeTab === 'semua'">
+
+      <!-- Filter -->
+      <div class="card p-4 flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input v-model="search" @input="debouncedFetch" type="search"
+            placeholder="Cari nama, username, email..." class="form-input pl-9" />
+        </div>
+        <select v-model="filterRole" @change="fetchData" class="form-input w-full sm:w-44">
+          <option value="">Semua Role</option>
+          <option v-for="r in roles" :key="r.id" :value="r.name">{{ r.label }}</option>
+        </select>
       </div>
-      <template v-else-if="items.length">
-        <div class="table-container border-0">
-          <table class="table">
-            <thead>
-              <tr>
-                <th class="w-10">
-                  <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-                    :checked="isAllSelected" :indeterminate="isPartialSelected" @change="toggleAll" />
-                </th>
-                <th>User</th><th>Username</th><th>Role</th><th>Login Terakhir</th><th>Status</th><th class="text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in items" :key="item.id" :class="isSelected(item.id) ? 'bg-primary-50/50' : ''">
-                <td>
-                  <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-                    :checked="isSelected(item.id)" @change="toggleOne(item.id)"
-                    :disabled="item.id === authStore.user?.id" />
-                </td>
-                <td>
-                  <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                         :class="getAvatarColor(item.full_name)">
-                      {{ getInitials(item.full_name) }}
-                    </div>
-                    <div>
-                      <p class="font-medium text-gray-900">{{ item.full_name }}</p>
-                      <p class="text-xs text-gray-400">{{ item.email }}</p>
-                    </div>
-                  </div>
-                </td>
-                <td class="font-mono text-sm text-gray-700">{{ item.username }}</td>
-                <td>
-                  <span class="badge" :class="roleBadge(item.role?.name)">{{ item.role?.label }}</span>
-                </td>
-                <td class="text-sm text-gray-500">{{ formatDateTime(item.last_login_at) }}</td>
-                <td>
-                  <span class="badge" :class="item.is_active ? 'badge-green' : 'badge-red'">
-                    {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
-                  </span>
-                </td>
-                <td class="text-right">
-                  <div class="flex items-center justify-end gap-1">
-                    <button v-if="authStore.hasPermission('user:update')" @click="openForm(item)" class="btn-ghost btn-sm p-1.5" title="Edit">
-                      <PencilSquareIcon class="w-4 h-4" />
-                    </button>
-                    <button v-if="authStore.isAdmin" @click="openResetPw(item)" class="btn-ghost btn-sm p-1.5 text-yellow-600 hover:bg-yellow-50" title="Reset Password">
-                      <KeyIcon class="w-4 h-4" />
-                    </button>
-                    <button v-if="authStore.hasPermission('user:delete') && item.id !== authStore.user?.id"
-                            @click="confirmDelete(item)" class="btn-ghost btn-sm p-1.5 text-red-500 hover:bg-red-50" title="Hapus">
-                      <TrashIcon class="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+      <!-- Tabel Semua User -->
+      <div class="card overflow-hidden">
+        <div v-if="loading" class="p-8 flex justify-center">
+          <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
-        <div class="px-4 py-3 border-t border-gray-50">
-          <BasePagination
-            :current-page="page" :total-pages="totalPages"
-            :total="total" :limit="limit"
-            @change="(p) => { page = p; fetchData(); }"
-            @limit-change="(l) => { limit = l; page = 1; fetchData(); }"
-          />
+        <template v-else-if="items.length">
+          <div class="table-container border-0">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th class="w-10">
+                    <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      :checked="isAllSelected" :indeterminate="isPartialSelected" @change="toggleAll" />
+                  </th>
+                  <th>User</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Login Terakhir</th>
+                  <th>Status</th>
+                  <th class="text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in items" :key="item.id" :class="isSelected(item.id) ? 'bg-primary-50/50' : ''">
+                  <td>
+                    <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      :checked="isSelected(item.id)" @change="toggleOne(item.id)"
+                      :disabled="item.id === authStore.user?.id" />
+                  </td>
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                           :class="getAvatarColor(item.full_name)">
+                        {{ getInitials(item.full_name) }}
+                      </div>
+                      <div>
+                        <p class="font-medium text-gray-900">{{ item.full_name }}</p>
+                        <p class="text-xs text-gray-400">{{ item.email }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="font-mono text-sm text-gray-700">{{ item.username }}</td>
+                  <td>
+                    <div class="flex flex-wrap gap-1">
+                      <span class="badge" :class="roleBadge(item.role?.name)">{{ item.role?.label }}</span>
+                      <span v-if="(item.extra_roles || []).includes('petugas_piket')"
+                        class="badge badge-indigo text-xs">🔔 Piket</span>
+                      <span v-for="er in extraRolesDisplay(item.extra_roles, item.role?.name)" :key="er"
+                        class="badge badge-gray text-xs">+{{ er }}</span>
+                    </div>
+                  </td>
+                  <td class="text-sm text-gray-500">{{ formatDateTime(item.last_login_at) }}</td>
+                  <td>
+                    <span class="badge" :class="item.is_active ? 'badge-green' : 'badge-red'">
+                      {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex items-center justify-end gap-1">
+                      <button v-if="authStore.hasPermission('user:update')"
+                        @click="openForm(item)" class="btn-ghost btn-sm p-1.5" title="Edit">
+                        <PencilSquareIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.isAdmin"
+                        @click="openResetPw(item)" class="btn-ghost btn-sm p-1.5 text-yellow-600 hover:bg-yellow-50" title="Reset Password">
+                        <KeyIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.hasPermission('user:delete') && item.id !== authStore.user?.id"
+                        @click="confirmDelete(item)" class="btn-ghost btn-sm p-1.5 text-red-500 hover:bg-red-50" title="Hapus">
+                        <TrashIcon class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-4 py-3 border-t border-gray-50">
+            <BasePagination
+              :current-page="page" :total-pages="totalPages"
+              :total="total" :limit="limit"
+              @change="(p) => { page = p; fetchData(); }"
+              @limit-change="(l) => { limit = l; page = 1; fetchData(); }"
+            />
+          </div>
+        </template>
+        <BaseEmpty v-else :title="search ? 'User tidak ditemukan' : 'Belum ada user'"
+          :icon="search ? 'search' : 'inbox'" />
+      </div>
+
+    </template>
+    <!-- END TAB: SEMUA USER -->
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- TAB: GURU PIKET                                        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <template v-if="activeTab === 'piket'">
+
+      <!-- Info banner -->
+      <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl flex gap-3">
+        <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+          <ShieldCheckIcon class="w-5 h-5 text-blue-600" />
         </div>
-      </template>
-      <BaseEmpty v-else :title="search ? 'User tidak ditemukan' : 'Belum ada user'" :icon="search ? 'search' : 'inbox'" />
-    </div>
+        <div>
+          <p class="text-sm font-semibold text-blue-800">Sinkronisasi Otomatis dengan Aplikasi Piket</p>
+          <p class="text-xs text-blue-600 mt-0.5">
+            User di bawah akan otomatis mendapat akses ke Aplikasi Piket saat login via SSO.
+            Guru dengan role tambahan <strong>Petugas Piket</strong> dipetakan ke role <code class="bg-blue-100 px-1 rounded">PETUGAS_PIKET</code> di Piket.
+          </p>
+        </div>
+      </div>
+
+      <!-- Filter piket -->
+      <div class="card p-4 flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input v-model="piketSearch" @input="debouncedFetchPiket" type="search"
+            placeholder="Cari nama, username..." class="form-input pl-9" />
+        </div>
+        <button @click="openForm()" v-if="authStore.hasPermission('user:create')"
+          class="btn-primary whitespace-nowrap">
+          <PlusIcon class="w-4 h-4" /> Tambah Guru Piket
+        </button>
+      </div>
+
+      <!-- Tabel Guru Piket -->
+      <div class="card overflow-hidden">
+        <div v-if="piketLoading" class="p-8 flex justify-center">
+          <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
+        </div>
+        <template v-else-if="piketItems.length">
+          <div class="table-container border-0">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Guru</th>
+                  <th>Username</th>
+                  <th>Role di SDMS</th>
+                  <th>Role di Piket</th>
+                  <th>Login Terakhir</th>
+                  <th>Status</th>
+                  <th class="text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in piketItems" :key="item.id">
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                           :class="getAvatarColor(item.full_name)">
+                        {{ getInitials(item.full_name) }}
+                      </div>
+                      <div>
+                        <p class="font-medium text-gray-900">{{ item.full_name }}</p>
+                        <p class="text-xs text-gray-400">
+                          {{ item.guru?.nip || item.guru?.niy || '' }}
+                          <span v-if="item.guru?.jabatan"> · {{ item.guru.jabatan }}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="font-mono text-sm text-gray-700">{{ item.username }}</td>
+                  <td>
+                    <div class="flex flex-wrap gap-1">
+                      <span class="badge" :class="roleBadge(item.role?.name)">{{ item.role?.label }}</span>
+                      <span v-for="er in (item.extra_roles || [])" :key="er"
+                        class="badge badge-indigo text-xs">+{{ er }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <!-- Role yang akan diterima di Piket berdasarkan pemetaan SSO -->
+                    <div class="flex flex-wrap gap-1">
+                      <span v-if="item.role?.name === 'petugas_piket'" class="badge badge-indigo">PETUGAS_PIKET</span>
+                      <template v-else>
+                        <span class="badge badge-green">GURU</span>
+                        <span v-if="(item.extra_roles||[]).includes('petugas_piket')" class="badge badge-indigo">PETUGAS_PIKET</span>
+                        <span v-if="(item.extra_roles||[]).includes('wali_kelas')" class="badge badge-yellow">WALI_KELAS</span>
+                        <span v-if="(item.extra_roles||[]).includes('bk')" class="badge badge-purple">BK</span>
+                      </template>
+                    </div>
+                  </td>
+                  <td class="text-sm text-gray-500">{{ formatDateTime(item.last_login_at) }}</td>
+                  <td>
+                    <span class="badge" :class="item.is_active ? 'badge-green' : 'badge-red'">
+                      {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex items-center justify-end gap-1">
+                      <button v-if="authStore.hasPermission('user:update')"
+                        @click="openForm(item)" class="btn-ghost btn-sm p-1.5" title="Edit">
+                        <PencilSquareIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.isAdmin"
+                        @click="openResetPw(item)" class="btn-ghost btn-sm p-1.5 text-yellow-600 hover:bg-yellow-50" title="Reset Password">
+                        <KeyIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.hasPermission('user:delete') && item.id !== authStore.user?.id"
+                        @click="confirmDelete(item)" class="btn-ghost btn-sm p-1.5 text-red-500 hover:bg-red-50" title="Hapus">
+                        <TrashIcon class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-4 py-3 border-t border-gray-50">
+            <BasePagination
+              :current-page="piketPage" :total-pages="piketTotalPages"
+              :total="piketTotal" :limit="piketLimit"
+              @change="(p) => { piketPage = p; fetchPiketData(); }"
+              @limit-change="(l) => { piketLimit = l; piketPage = 1; fetchPiketData(); }"
+            />
+          </div>
+        </template>
+        <BaseEmpty v-else
+          title="Belum ada guru piket"
+          description="Tambahkan user dengan role utama atau role tambahan Petugas Piket"
+          icon="inbox" />
+      </div>
+
+    </template>
+    <!-- END TAB: GURU PIKET -->
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- SHARED MODALS                                          -->
+    <!-- ══════════════════════════════════════════════════════ -->
 
     <!-- Import Modal -->
     <ImportExcelModal
@@ -136,9 +318,94 @@
       @clear="clearSelected"
     />
 
-    <!-- Form Modal: Tambah / Edit User -->
+    <!-- ── Form Modal: Tambah / Edit User ──────────────────── -->
     <BaseModal v-model="showForm" :title="editItem ? 'Edit User' : 'Tambah User'" size="md">
-      <form class="space-y-4">
+      <form class="space-y-4" @submit.prevent="submitForm">
+
+        <!-- ── Pencarian Guru ─────────────────────────────── -->
+        <div v-if="!editItem" class="form-group">
+          <label class="form-label">
+            Pilih dari Data Guru
+            <span class="text-xs font-normal text-gray-400">(opsional — isi form otomatis)</span>
+          </label>
+          <div class="relative">
+            <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              v-model="guruSearchQuery"
+              type="text"
+              class="form-input pl-9"
+              placeholder="Cari nama atau NIP/NIY guru..."
+              @input="onGuruSearch"
+              @focus="showGuruDropdown = true"
+              @blur="() => setTimeout(() => { showGuruDropdown = false }, 200)"
+              autocomplete="off"
+            />
+            <div v-if="guruSearchLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
+              <div class="w-4 h-4 border-2 border-gray-300 border-t-primary-500 rounded-full animate-spin" />
+            </div>
+          </div>
+
+          <!-- Dropdown hasil pencarian -->
+          <div v-if="showGuruDropdown && guruResults.length" class="relative z-50">
+            <div class="absolute w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+              <div
+                v-for="g in guruResults" :key="g.id"
+                class="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors border-b border-gray-50 last:border-0"
+                :class="g.has_account ? 'hover:bg-amber-50' : 'hover:bg-primary-50'"
+                @mousedown.prevent="selectGuru(g)"
+              >
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                     :class="getAvatarColor(g.nama)">
+                  {{ getInitials(g.nama) }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-800 truncate">{{ g.nama }}</p>
+                  <p class="text-xs text-gray-400">
+                    {{ g.nip || g.niy || 'Tanpa NIP' }}
+                    <span v-if="g.jabatan"> · {{ g.jabatan }}</span>
+                  </p>
+                </div>
+                <!-- Badge status akun -->
+                <div class="flex-shrink-0">
+                  <span v-if="g.has_account && g.account_is_piket"
+                    class="badge badge-indigo text-xs">✓ Piket</span>
+                  <span v-else-if="g.has_account"
+                    class="badge badge-yellow text-xs">Sudah Punya Akun</span>
+                  <span v-else
+                    class="badge badge-green text-xs">Belum Punya Akun</span>
+                </div>
+              </div>
+              <div v-if="guruResults.length === 0 && guruSearchQuery" class="px-4 py-3 text-sm text-gray-400 text-center">
+                Guru tidak ditemukan
+              </div>
+            </div>
+          </div>
+
+          <!-- Info guru terpilih -->
+          <div v-if="selectedGuru" class="mt-2 flex items-center gap-2 p-2.5 bg-primary-50 border border-primary-200 rounded-lg">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                 :class="getAvatarColor(selectedGuru.nama)">
+              {{ getInitials(selectedGuru.nama) }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-primary-800 truncate">{{ selectedGuru.nama }}</p>
+              <p class="text-xs text-primary-600">{{ selectedGuru.nip || selectedGuru.niy || '' }}
+                <span v-if="selectedGuru.jabatan"> · {{ selectedGuru.jabatan }}</span>
+              </p>
+            </div>
+            <button type="button" @click="clearGuruSelection"
+              class="w-5 h-5 flex items-center justify-center text-primary-400 hover:text-red-500 transition-colors">
+              <XMarkIcon class="w-4 h-4" />
+            </button>
+          </div>
+          <p v-if="selectedGuru?.has_account && !selectedGuru?.account_is_piket"
+            class="text-xs text-amber-600 mt-1 flex items-center gap-1">
+            ⚠️ Guru ini sudah punya akun (<strong>{{ selectedGuru.account_username }}</strong>).
+            Edit user yang ada untuk menambah role piket.
+          </p>
+        </div>
+
+        <!-- ── Field nama, username, email, password ──────── -->
         <div class="form-group">
           <label class="form-label">Nama Lengkap <span class="text-red-500">*</span></label>
           <input v-model="form.full_name" type="text" class="form-input" required />
@@ -147,6 +414,7 @@
           <div class="form-group">
             <label class="form-label">Username <span class="text-red-500">*</span></label>
             <input v-model="form.username" type="text" class="form-input" required autocomplete="off" />
+            <p class="text-xs text-gray-400 mt-1">Gunakan NIP/NIY atau username unik</p>
           </div>
           <div class="form-group">
             <label class="form-label">Email <span class="text-red-500">*</span></label>
@@ -158,46 +426,64 @@
           <input v-model="form.password" type="password" class="form-input" required minlength="8" autocomplete="new-password" />
           <p class="text-xs text-gray-400 mt-1">Minimal 8 karakter</p>
         </div>
+
+        <!-- ── Role / Jabatan ─────────────────────────────── -->
         <div class="form-group">
           <label class="form-label">Role / Jabatan <span class="text-red-500">*</span></label>
-          <p class="text-xs text-gray-400 mb-2">Role utama menentukan akses sistem. Centang role tambahan jika guru merangkap jabatan.</p>
-          <div class="space-y-2 border border-gray-200 rounded-lg p-3">
-            <div v-for="r in roles" :key="r.id"
-              class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-              :class="form.role_id === r.id ? 'bg-primary-50 border border-primary-200' : ''"
+          <p class="text-xs text-gray-400 mb-2">
+            Role utama menentukan akses sistem. Centang <strong>Tambahan</strong> jika guru merangkap jabatan
+            (misal: Guru + Petugas Piket).
+          </p>
+          <div class="space-y-1.5 border border-gray-200 rounded-xl p-3 bg-gray-50/50">
+            <div
+              v-for="r in roles" :key="r.id"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors"
+              :class="form.role_id === r.id
+                ? 'bg-primary-50 border border-primary-200'
+                : 'bg-white border border-transparent hover:border-gray-200'"
               @click="selectMainRole(r)"
             >
-              <div class="flex items-center gap-2 flex-1">
-                <input
-                  type="radio"
-                  :value="r.id"
-                  v-model="form.role_id"
-                  class="text-primary-600 focus:ring-primary-500"
-                  @click.stop
-                />
-                <span class="text-sm font-medium text-gray-800">{{ r.label }}</span>
-              </div>
-              <!-- Checkbox extra role (hanya tampil jika bukan role utama) -->
+              <input type="radio" :value="r.id" v-model="form.role_id"
+                class="text-primary-600 focus:ring-primary-500" @click.stop />
+              <span class="text-sm font-medium text-gray-800 flex-1">{{ r.label }}</span>
               <div v-if="form.role_id !== r.id" class="flex items-center gap-1.5" @click.stop>
-                <input
-                  type="checkbox"
-                  :value="r.name"
-                  v-model="form.extra_roles"
-                  class="rounded text-primary-600 focus:ring-primary-500"
-                />
+                <input type="checkbox" :value="r.name" v-model="form.extra_roles"
+                  class="rounded text-primary-600 focus:ring-primary-500" />
                 <span class="text-xs text-gray-500">Tambahan</span>
               </div>
+              <span v-else class="text-xs text-primary-500 font-medium">Utama</span>
             </div>
           </div>
-          <p v-if="form.extra_roles.length" class="mt-1 text-xs text-primary-600">
-            Role tambahan: {{ form.extra_roles.join(', ') }}
+          <div v-if="form.extra_roles.length" class="mt-2 flex flex-wrap gap-1.5">
+            <span v-for="er in form.extra_roles" :key="er" class="badge badge-indigo text-xs">
+              +{{ er }}
+            </span>
+          </div>
+        </div>
+
+        <!-- ── Info Sinkronisasi Piket ────────────────────── -->
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+          <p class="text-xs text-blue-700 font-semibold mb-1 flex items-center gap-1.5">
+            <ShieldCheckIcon class="w-3.5 h-3.5" /> Sinkronisasi Piket (SSO)
+          </p>
+          <p class="text-xs text-blue-600 leading-relaxed">
+            User akan otomatis masuk ke Aplikasi Piket saat login via SSO.
+            <span v-if="willHavePiketRole" class="font-semibold text-blue-800">
+              Role <code class="bg-blue-100 px-1 rounded">PETUGAS_PIKET</code> akan aktif di Piket.
+            </span>
+            <span v-else>
+              Centang <strong>Petugas Piket</strong> sebagai role tambahan agar guru bisa mengakses fitur piket.
+            </span>
           </p>
         </div>
+
+        <!-- ── Status aktif (edit only) ───────────────────── -->
         <div v-if="editItem" class="flex items-center gap-2">
           <input v-model="form.is_active" type="checkbox" id="user-aktif" class="rounded" />
           <label for="user-aktif" class="text-sm text-gray-700">User aktif</label>
         </div>
       </form>
+
       <template #footer>
         <button class="btn-secondary" @click="showForm = false">Batal</button>
         <button class="btn-primary" :disabled="formLoading" @click="submitForm">
@@ -210,10 +496,13 @@
     <!-- Modal Reset Password -->
     <BaseModal v-model="showResetPw" title="Reset Password" size="sm">
       <div class="space-y-4">
-        <p class="text-sm text-gray-600">Reset password untuk user <strong>{{ resetTarget?.username }}</strong>.</p>
+        <p class="text-sm text-gray-600">
+          Reset password untuk user <strong>{{ resetTarget?.username }}</strong>.
+        </p>
         <div class="form-group">
           <label class="form-label">Password Baru <span class="text-red-500">*</span></label>
-          <input v-model="newPassword" type="password" class="form-input" minlength="8" placeholder="Minimal 8 karakter" />
+          <input v-model="newPassword" type="password" class="form-input" minlength="8"
+            placeholder="Minimal 8 karakter" />
         </div>
       </div>
       <template #footer>
@@ -226,8 +515,16 @@
     </BaseModal>
 
     <!-- Konfirmasi hapus -->
-    <BaseConfirm v-model="showConfirm" title="Hapus User" :message="`Hapus user '${deleteTarget?.username}'? Tindakan ini tidak bisa dibatalkan.`"
-      confirm-label="Hapus User" :danger-mode="true" :loading="formLoading" @confirm="executeDelete" />
+    <BaseConfirm
+      v-model="showConfirm"
+      title="Hapus User"
+      :message="`Hapus user '${deleteTarget?.username}'? Tindakan ini tidak bisa dibatalkan.`"
+      confirm-label="Hapus User"
+      :danger-mode="true"
+      :loading="formLoading"
+      @confirm="executeDelete"
+    />
+
   </div>
 </template>
 
@@ -239,33 +536,296 @@ import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast';
 import { debounce, getInitials, getAvatarColor, formatDateTime } from '@/utils/helpers';
 import { saveAs } from 'file-saver';
-import BaseModal from '@/components/common/BaseModal.vue';
-import BaseConfirm from '@/components/common/BaseConfirm.vue';
+import BaseModal      from '@/components/common/BaseModal.vue';
+import BaseConfirm    from '@/components/common/BaseConfirm.vue';
 import BasePagination from '@/components/common/BasePagination.vue';
-import BaseEmpty from '@/components/common/BaseEmpty.vue';
+import BaseEmpty      from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
-import BulkDeleteBar from '@/components/common/BulkDeleteBar.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, KeyIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
+import BulkDeleteBar  from '@/components/common/BulkDeleteBar.vue';
+import {
+  PlusIcon, PencilSquareIcon, TrashIcon,
+  MagnifyingGlassIcon, KeyIcon,
+  ArrowDownTrayIcon, ArrowUpTrayIcon,
+  ShieldCheckIcon, XMarkIcon,
+} from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
 const uiStore   = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Administrasi' }, { label: 'Manajemen User' }]);
 
-// ── Export & Import ───────────────────────────────────────────
-const exporting  = ref(false);
-const showImport = ref(false);
+// ── Tabs ──────────────────────────────────────────────────────
+const tabs = [
+  { key: 'semua', label: 'Semua User' },
+  { key: 'piket', label: 'Guru Piket' },
+];
+const activeTab = ref('semua');
 
+const switchTab = (key) => {
+  activeTab.value = key;
+  if (key === 'piket' && piketItems.value.length === 0) fetchPiketData();
+};
+
+// ── State Semua User ──────────────────────────────────────────
+const items      = ref([]); const loading   = ref(true); const roles     = ref([]);
+const page       = ref(1);  const limit     = ref(10);   const total     = ref(0);
+const totalPages = computed(() => Math.ceil(total.value / limit.value));
+const search     = ref(''); const filterRole = ref('');
+
+// ── State Guru Piket ──────────────────────────────────────────
+const piketItems      = ref([]); const piketLoading    = ref(false);
+const piketPage       = ref(1);  const piketLimit      = ref(10);
+const piketTotal      = ref(0);  const piketSearch     = ref('');
+const piketTotalPages = computed(() => Math.ceil(piketTotal.value / piketLimit.value));
+
+// ── Modals ────────────────────────────────────────────────────
+const showForm    = ref(false); const editItem    = ref(null); const formLoading = ref(false);
+const showConfirm = ref(false); const deleteTarget = ref(null);
+const showResetPw = ref(false); const resetTarget  = ref(null); const newPassword = ref('');
+const showImport  = ref(false);
+
+// ── Bulk delete ───────────────────────────────────────────────
+const selected          = ref([]);
+const showBulkConfirm   = ref(false);
+const bulkDeleting      = ref(false);
+const isAllSelected     = computed(() => items.value.length > 0 && items.value.every(i => selected.value.includes(i.id)));
+const isPartialSelected = computed(() => selected.value.length > 0 && !isAllSelected.value);
+const isSelected        = (id) => selected.value.includes(id);
+
+const toggleAll = () => {
+  if (isAllSelected.value) {
+    const pageIds = items.value.map(i => i.id);
+    selected.value = selected.value.filter(id => !pageIds.includes(id));
+  } else {
+    const merged = new Set([...selected.value, ...items.value.map(i => i.id)]);
+    selected.value = Array.from(merged);
+  }
+};
+const toggleOne     = (id) => {
+  const idx = selected.value.indexOf(id);
+  if (idx > -1) selected.value.splice(idx, 1); else selected.value.push(id);
+};
+const clearSelected = () => { selected.value = []; };
+
+const executeBulkDelete = async () => {
+  bulkDeleting.value = true;
+  try {
+    await Promise.all(selected.value.map(id => userService.delete(id)));
+    notify.success(`${selected.value.length} user berhasil dihapus`);
+    clearSelected(); showBulkConfirm.value = false; fetchData();
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal menghapus user');
+  } finally { bulkDeleting.value = false; }
+};
+
+// ── Pencarian Guru (form) ─────────────────────────────────────
+const guruSearchQuery  = ref('');
+const guruResults      = ref([]);
+const showGuruDropdown = ref(false);
+const selectedGuru     = ref(null);
+const guruSearchLoading = ref(false);
+
+// Debounced search guru menggunakan endpoint guru-search
+const doGuruSearch = debounce(async () => {
+  const q = guruSearchQuery.value.trim();
+  guruSearchLoading.value = true;
+  try {
+    const res = await userService.guruSearch({ search: q, limit: 20 });
+    guruResults.value = res.data.data || [];
+    showGuruDropdown.value = true;
+  } catch {
+    guruResults.value = [];
+  } finally {
+    guruSearchLoading.value = false;
+  }
+}, 300);
+
+const onGuruSearch = () => {
+  if (!guruSearchQuery.value.trim()) {
+    guruResults.value = [];
+    showGuruDropdown.value = false;
+    return;
+  }
+  doGuruSearch();
+};
+
+const selectGuru = (guru) => {
+  selectedGuru.value    = guru;
+  guruSearchQuery.value = guru.nama;
+  showGuruDropdown.value = false;
+  // Auto-fill form
+  form.value.full_name = guru.nama;
+  form.value.username  = guru.nip || guru.niy || '';
+  form.value.email     = guru.email || '';
+  form.value.guru_id   = guru.id;
+};
+
+const clearGuruSelection = () => {
+  selectedGuru.value     = null;
+  guruSearchQuery.value  = '';
+  guruResults.value      = [];
+  form.value.guru_id     = null;
+};
+
+// ── Form ──────────────────────────────────────────────────────
+const emptyForm = () => ({
+  full_name: '', username: '', email: '', password: '',
+  role_id: '', extra_roles: [], is_active: true, guru_id: null,
+});
+const form = ref(emptyForm());
+
+// Computed: apakah user yang akan dibuat akan punya role piket di aplikasi piket
+const willHavePiketRole = computed(() => {
+  const mainRole = roles.value.find(r => r.id === form.value.role_id);
+  return mainRole?.name === 'petugas_piket' || (form.value.extra_roles || []).includes('petugas_piket');
+});
+
+// Helper: extra roles yang ditampilkan di badge (kecuali role utama)
+const extraRolesDisplay = (extraRoles, mainRoleName) => {
+  if (!extraRoles || !extraRoles.length) return [];
+  return extraRoles.filter(er => er !== mainRoleName && er !== 'petugas_piket');
+};
+
+const roleBadge = (name) => ({
+  super_admin:    'badge-red',
+  admin:          'badge-blue',
+  guru:           'badge-green',
+  petugas_piket:  'badge-indigo',
+  operator:       'badge-gray',
+  pegawai:        'badge-yellow',
+  siswa:          'badge-gray',
+}[name] || 'badge-gray');
+
+const selectMainRole = (r) => {
+  form.value.role_id     = r.id;
+  form.value.extra_roles = (form.value.extra_roles || []).filter(er => er !== r.name);
+};
+
+// ── Fetch Data ────────────────────────────────────────────────
+const fetchData = async () => {
+  loading.value = true;
+  try {
+    const res = await userService.list({
+      page: page.value, limit: limit.value,
+      search: search.value,
+      role: filterRole.value || undefined,
+    });
+    items.value = res.data.data || [];
+    total.value = res.data.meta?.total || 0;
+  } catch { notify.error('Gagal memuat data user'); } finally { loading.value = false; }
+};
+
+const fetchPiketData = async () => {
+  piketLoading.value = true;
+  try {
+    const res = await userService.piketUsers({
+      page: piketPage.value, limit: piketLimit.value,
+      search: piketSearch.value,
+    });
+    piketItems.value = res.data.data || [];
+    piketTotal.value = res.data.meta?.total || 0;
+  } catch { notify.error('Gagal memuat data guru piket'); } finally { piketLoading.value = false; }
+};
+
+const fetchRoles = async () => {
+  try { roles.value = (await userService.roles()).data.data || []; } catch { /* skip */ }
+};
+
+const debouncedFetch      = debounce(() => { page.value = 1; fetchData(); });
+const debouncedFetchPiket = debounce(() => { piketPage.value = 1; fetchPiketData(); });
+
+// ── Open / Submit Form ────────────────────────────────────────
+const openForm = (item = null) => {
+  editItem.value = item;
+  form.value = item
+    ? {
+        full_name:   item.full_name,
+        username:    item.username,
+        email:       item.email,
+        role_id:     item.role?.id || '',
+        extra_roles: item.extra_roles || [],
+        is_active:   item.is_active,
+        password:    '',
+        guru_id:     item.guru_id || null,
+      }
+    : emptyForm();
+  // Reset guru search state
+  guruSearchQuery.value  = '';
+  selectedGuru.value     = null;
+  guruResults.value      = [];
+  showGuruDropdown.value = false;
+  showForm.value = true;
+};
+
+const submitForm = async () => {
+  formLoading.value = true;
+  try {
+    if (editItem.value) {
+      await userService.update(editItem.value.id, {
+        full_name:   form.value.full_name,
+        username:    form.value.username,
+        email:       form.value.email,
+        role_id:     form.value.role_id,
+        extra_roles: form.value.extra_roles,
+        is_active:   form.value.is_active,
+        guru_id:     form.value.guru_id,
+      });
+      notify.success('User berhasil diperbarui');
+    } else {
+      await userService.create(form.value);
+      notify.success('User berhasil dibuat');
+    }
+    showForm.value = false;
+    fetchData();
+    if (activeTab.value === 'piket') fetchPiketData();
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal menyimpan user');
+  } finally { formLoading.value = false; }
+};
+
+// ── Reset Password ────────────────────────────────────────────
+const openResetPw = (item) => {
+  resetTarget.value = item; newPassword.value = ''; showResetPw.value = true;
+};
+const executeResetPw = async () => {
+  if (!newPassword.value || newPassword.value.length < 8) {
+    notify.error('Password minimal 8 karakter'); return;
+  }
+  formLoading.value = true;
+  try {
+    await userService.resetPassword(resetTarget.value.id, { new_password: newPassword.value });
+    notify.success(`Password ${resetTarget.value.username} berhasil direset`);
+    showResetPw.value = false;
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal reset password');
+  } finally { formLoading.value = false; }
+};
+
+// ── Delete ────────────────────────────────────────────────────
+const confirmDelete = (item) => { deleteTarget.value = item; showConfirm.value = true; };
+const executeDelete = async () => {
+  formLoading.value = true;
+  try {
+    await userService.delete(deleteTarget.value.id);
+    notify.success('User berhasil dihapus');
+    showConfirm.value = false;
+    fetchData();
+    if (activeTab.value === 'piket') fetchPiketData();
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal menghapus user');
+  } finally { formLoading.value = false; }
+};
+
+// ── Export / Import ───────────────────────────────────────────
+const exporting = ref(false);
 const doExport = async () => {
   exporting.value = true;
   try {
     const res  = await userService.export(filterRole.value ? { role: filterRole.value } : {});
     const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const suffix = filterRole.value ? `_${filterRole.value}` : '';
-    saveAs(blob, `data_user${suffix}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    saveAs(blob, `data_user_${new Date().toISOString().slice(0,10)}.xlsx`);
     notify.success('Data user berhasil diexport');
   } catch { notify.error('Gagal export data user'); } finally { exporting.value = false; }
 };
-
 const doTemplate = async () => {
   try {
     const res  = await userService.template();
@@ -275,122 +835,6 @@ const doTemplate = async () => {
   } catch { notify.error('Gagal download template'); }
 };
 
-const items = ref([]); const loading = ref(true); const roles = ref([]);
-const page = ref(1); const limit = ref(10); const total = ref(0);
-const totalPages = computed(() => Math.ceil(total.value / limit.value));
-const search = ref(''); const filterRole = ref('');
-const showForm    = ref(false); const editItem  = ref(null); const formLoading = ref(false);
-const showConfirm = ref(false); const deleteTarget = ref(null);
-const showResetPw = ref(false); const resetTarget  = ref(null); const newPassword = ref('');
-
-// ── Bulk delete ───────────────────────────────────────────────
-const selected        = ref([]);
-const showBulkConfirm = ref(false);
-const bulkDeleting    = ref(false);
-const isAllSelected   = computed(() => items.value.length > 0 && items.value.every(i => selected.value.includes(i.id)));
-const isPartialSelected = computed(() => selected.value.length > 0 && !isAllSelected.value);
-const isSelected      = (id) => selected.value.includes(id);
-const toggleAll       = () => {
-  if (isAllSelected.value) {
-    const pageIds = items.value.map(i => i.id);
-    selected.value = selected.value.filter(id => !pageIds.includes(id));
-  } else {
-    const merged = new Set([...selected.value, ...items.value.map(i => i.id)]);
-    selected.value = Array.from(merged);
-  }
-};
-const toggleOne = (id) => {
-  const idx = selected.value.indexOf(id);
-  if (idx > -1) selected.value.splice(idx, 1);
-  else selected.value.push(id);
-};
-const clearSelected = () => { selected.value = []; };
-const executeBulkDelete = async () => {
-  bulkDeleting.value = true;
-  try {
-    await Promise.all(selected.value.map(id => userService.delete(id)));
-    notify.success(`${selected.value.length} user berhasil dihapus`);
-    clearSelected();
-    showBulkConfirm.value = false;
-    fetchData();
-  } catch (err) {
-    notify.error(err.response?.data?.message || 'Gagal menghapus user');
-  } finally {
-    bulkDeleting.value = false;
-  }
-};
-
-const roleBadge = (name) => ({ super_admin: 'badge-red', admin: 'badge-blue', guru: 'badge-green', pegawai: 'badge-yellow', siswa: 'badge-gray', operator: 'badge-gray' }[name] || 'badge-gray');
-
-const emptyForm = () => ({ full_name: '', username: '', email: '', password: '', role_id: '', extra_roles: [], is_active: true });
-const form = ref(emptyForm());
-
-const selectMainRole = (r) => {
-  form.value.role_id = r.id;
-  // Hapus dari extra_roles jika terpilih jadi role utama
-  form.value.extra_roles = form.value.extra_roles.filter(er => er !== r.name);
-};
-
-const fetchData = async () => {
-  loading.value = true;
-  try {
-    const res = await userService.list({ page: page.value, limit: limit.value, search: search.value, role: filterRole.value || undefined });
-    items.value = res.data.data || [];
-    total.value = res.data.meta?.total || 0;
-  } catch { notify.error('Gagal memuat data user'); } finally { loading.value = false; }
-};
-
-const fetchRoles = async () => {
-  try { roles.value = (await userService.roles()).data.data || []; } catch { /* skip */ }
-};
-
-const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
-
-const openForm = (item = null) => {
-  editItem.value = item;
-  form.value = item
-    ? { full_name: item.full_name, username: item.username, email: item.email, role_id: item.role?.id || '', extra_roles: item.extra_roles || [], is_active: item.is_active, password: '' }
-    : emptyForm();
-  showForm.value = true;
-};
-
-const submitForm = async () => {
-  formLoading.value = true;
-  try {
-    if (editItem.value) {
-      const payload = { full_name: form.value.full_name, username: form.value.username, email: form.value.email, role_id: form.value.role_id, extra_roles: form.value.extra_roles, is_active: form.value.is_active };
-      await userService.update(editItem.value.id, payload);
-      notify.success('User berhasil diperbarui');
-    } else {
-      await userService.create(form.value);
-      notify.success('User berhasil dibuat');
-    }
-    showForm.value = false;
-    fetchData();
-  } catch (err) { notify.error(err.response?.data?.message || 'Gagal menyimpan user'); } finally { formLoading.value = false; }
-};
-
-const openResetPw = (item) => { resetTarget.value = item; newPassword.value = ''; showResetPw.value = true; };
-const executeResetPw = async () => {
-  if (!newPassword.value || newPassword.value.length < 8) { notify.error('Password minimal 8 karakter'); return; }
-  formLoading.value = true;
-  try {
-    await userService.resetPassword(resetTarget.value.id, { new_password: newPassword.value });
-    notify.success(`Password ${resetTarget.value.username} berhasil direset`);
-    showResetPw.value = false;
-  } catch (err) { notify.error(err.response?.data?.message || 'Gagal reset password'); } finally { formLoading.value = false; }
-};
-
-const confirmDelete = (item) => { deleteTarget.value = item; showConfirm.value = true; };
-const executeDelete = async () => {
-  formLoading.value = true;
-  try {
-    await userService.delete(deleteTarget.value.id);
-    notify.success('User berhasil dihapus');
-    showConfirm.value = false;
-    fetchData();
-  } catch (err) { notify.error(err.response?.data?.message || 'Gagal menghapus user'); } finally { formLoading.value = false; }
-};
-
+// ── Init ──────────────────────────────────────────────────────
 onMounted(() => { fetchData(); fetchRoles(); });
 </script>

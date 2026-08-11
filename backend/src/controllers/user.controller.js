@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { User, Role, Permission } = require('../models');
+const { User, Role, Permission, Guru } = require('../models');
 const { hashPassword, getPagination } = require('../utils/helpers');
 const { writeAuditLog } = require('../middleware/auditLog');
 const { success, created, paginated, notFound, conflict, badRequest } = require('../utils/response');
@@ -168,4 +168,100 @@ const getRoles = async (req, res) => {
   return success(res, roles);
 };
 
-module.exports = { getUsers, getUserById, createUser, updateUser, deleteUser, resetPassword, getRoles };
+// GET /api/v1/users/guru-search
+// Mengembalikan daftar guru aktif + flag has_account (apakah sudah punya akun user)
+const getGuruSearch = async (req, res) => {
+  const { search = '', limit = 30 } = req.query;
+  const lim = Math.min(parseInt(limit) || 30, 100);
+
+  const where = { is_active: true };
+  if (search.trim()) {
+    where[Op.or] = [
+      { nama: { [Op.like]: `%${search.trim()}%` } },
+      { nip:  { [Op.like]: `%${search.trim()}%` } },
+      { niy:  { [Op.like]: `%${search.trim()}%` } },
+    ];
+  }
+
+  const guruList = await Guru.findAll({
+    where,
+    attributes: ['id', 'nama', 'nip', 'niy', 'email', 'jabatan', 'mata_pelajaran', 'status_kepegawaian', 'foto'],
+    order: [['nama', 'ASC']],
+    limit: lim,
+  });
+
+  // Cek satu kali — ambil semua guru_id yang sudah punya akun
+  const guruIds = guruList.map(g => g.id);
+  const existingUsers = await User.unscoped().findAll({
+    where: { guru_id: { [Op.in]: guruIds } },
+    attributes: ['guru_id', 'username', 'is_active', 'extra_roles'],
+  });
+
+  const userByGuruId = {};
+  existingUsers.forEach(u => { userByGuruId[u.guru_id] = u; });
+
+  const data = guruList.map(g => ({
+    ...g.toJSON(),
+    has_account:       !!userByGuruId[g.id],
+    account_username:  userByGuruId[g.id]?.username  || null,
+    account_active:    userByGuruId[g.id]?.is_active ?? null,
+    account_is_piket:  userByGuruId[g.id]
+      ? (userByGuruId[g.id].extra_roles || []).includes('petugas_piket')
+      : false,
+  }));
+
+  return success(res, data);
+};
+
+// GET /api/v1/users/piket
+// Daftar user yang memiliki role utama 'guru' + extra_role 'petugas_piket',
+// atau role utama 'petugas_piket' secara langsung.
+const getUsersPiket = async (req, res) => {
+  const { page = 1, limit = 20, search = '' } = req.query;
+  const { limit: lim, offset } = getPagination(page, limit);
+
+  // Cari role guru dan petugas_piket
+  const [roleGuru, rolePiket] = await Promise.all([
+    Role.findOne({ where: { name: 'guru' } }),
+    Role.findOne({ where: { name: 'petugas_piket' } }),
+  ]);
+
+  const roleIds = [roleGuru?.id, rolePiket?.id].filter(Boolean);
+
+  const where = {};
+  if (search.trim()) {
+    where[Op.or] = [
+      { username:  { [Op.like]: `%${search.trim()}%` } },
+      { full_name: { [Op.like]: `%${search.trim()}%` } },
+      { email:     { [Op.like]: `%${search.trim()}%` } },
+    ];
+  }
+
+  // Ambil semua user dengan role guru/petugas_piket, lalu filter di JS
+  // agar bisa cek extra_roles JSON (MySQL JSON_CONTAINS tidak tersedia di semua versi)
+  const allMatching = await User.findAll({
+    where: {
+      ...where,
+      role_id: roleIds.length ? { [Op.in]: roleIds } : undefined,
+    },
+    include: [
+      { model: Role, as: 'role', attributes: ['id', 'name', 'label'] },
+      { model: Guru, as: 'guru', attributes: ['id', 'nama', 'nip', 'niy', 'jabatan', 'mata_pelajaran', 'foto'] },
+    ],
+    order: [['full_name', 'ASC']],
+  });
+
+  // Filter: hanya tampilkan yang punya extra_role petugas_piket ATAU role utama petugas_piket
+  const piketUsers = allMatching.filter(u => {
+    const isPiketRole = u.role?.name === 'petugas_piket';
+    const hasPiketExtra = (u.extra_roles || []).includes('petugas_piket');
+    return isPiketRole || hasPiketExtra;
+  });
+
+  const total  = piketUsers.length;
+  const paged  = piketUsers.slice(offset, offset + lim);
+
+  return paginated(res, paged, { total, page: parseInt(page), limit: lim });
+};
+
+module.exports = { getUsers, getUserById, createUser, updateUser, deleteUser, resetPassword, getRoles, getGuruSearch, getUsersPiket };

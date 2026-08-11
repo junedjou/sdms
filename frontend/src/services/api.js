@@ -88,6 +88,9 @@ export const userService = {
   roles:         ()       => api.get('/users/roles'),
   export:        (params) => api.get('/users/export', { params, responseType: 'blob' }),
   template:      ()       => api.get('/users/template', { responseType: 'blob' }),
+  // Guru Piket
+  guruSearch:    (params) => api.get('/users/guru-search', { params }),
+  piketUsers:    (params) => api.get('/users/piket', { params }),
   import:        (fd)     => api.post('/users/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 };
 
