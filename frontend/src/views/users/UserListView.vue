@@ -417,8 +417,8 @@
             <p class="text-xs text-gray-400 mt-1">Gunakan NIP/NIY atau username unik</p>
           </div>
           <div class="form-group">
-            <label class="form-label">Email <span class="text-red-500">*</span></label>
-            <input v-model="form.email" type="email" class="form-input" required />
+            <label class="form-label">Email <span class="text-xs text-gray-400">(opsional)</span></label>
+            <input v-model="form.email" type="email" class="form-input" placeholder="Kosongkan jika tidak ada" />
           </div>
         </div>
         <div v-if="!editItem" class="form-group">
@@ -763,7 +763,7 @@ const submitForm = async () => {
       await userService.update(editItem.value.id, {
         full_name:   form.value.full_name,
         username:    form.value.username,
-        email:       form.value.email,
+        email:       form.value.email || undefined,
         role_id:     form.value.role_id,
         extra_roles: form.value.extra_roles,
         is_active:   form.value.is_active,
@@ -771,7 +771,9 @@ const submitForm = async () => {
       });
       notify.success('User berhasil diperbarui');
     } else {
-      await userService.create(form.value);
+      const payload = { ...form.value };
+      if (!payload.email) delete payload.email;  // biarkan backend generate dummy
+      await userService.create(payload);
       notify.success('User berhasil dibuat');
     }
     showForm.value = false;

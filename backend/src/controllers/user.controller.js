@@ -47,7 +47,12 @@ const getUserById = async (req, res) => {
 
 // POST /api/v1/users
 const createUser = async (req, res) => {
-  const { username, email, password, full_name, role_id, guru_id, siswa_id, pegawai_id, extra_roles } = req.body;
+  let { username, email, password, full_name, role_id, guru_id, siswa_id, pegawai_id, extra_roles } = req.body;
+
+  // Jika email kosong, generate email dummy dari username agar unique constraint tidak gagal
+  if (!email || !email.trim()) {
+    email = `${username.toLowerCase().replace(/\s+/g, '')}@sdms.local`;
+  }
 
   const existing = await User.unscoped().findOne({ where: { [Op.or]: [{ username }, { email }] } });
   if (existing) return conflict(res, 'Username atau email sudah digunakan');
@@ -59,9 +64,9 @@ const createUser = async (req, res) => {
   const user = await User.create({
     username, email, full_name, role_id,
     password: hashed,
-    guru_id: guru_id || null,
-    siswa_id: siswa_id || null,
-    pegawai_id: pegawai_id || null,
+    guru_id:     guru_id     || null,
+    siswa_id:    siswa_id    || null,
+    pegawai_id:  pegawai_id  || null,
     extra_roles: extra_roles || null,
   });
 
@@ -214,36 +219,29 @@ const getGuruSearch = async (req, res) => {
 };
 
 // GET /api/v1/users/piket
-// Daftar user yang memiliki role utama 'guru' + extra_role 'petugas_piket',
-// atau role utama 'petugas_piket' secara langsung.
+// Daftar user yang memiliki role utama 'petugas_piket',
+// ATAU memiliki 'petugas_piket' di dalam extra_roles JSON.
 const getUsersPiket = async (req, res) => {
   const { page = 1, limit = 20, search = '' } = req.query;
   const { limit: lim, offset } = getPagination(page, limit);
 
-  // Cari role guru dan petugas_piket
-  const [roleGuru, rolePiket] = await Promise.all([
-    Role.findOne({ where: { name: 'guru' } }),
-    Role.findOne({ where: { name: 'petugas_piket' } }),
-  ]);
+  // Cari id role petugas_piket
+  const rolePiket = await Role.findOne({ where: { name: 'petugas_piket' } });
 
-  const roleIds = [roleGuru?.id, rolePiket?.id].filter(Boolean);
-
-  const where = {};
+  // Bangun kondisi where untuk search
+  const searchWhere = {};
   if (search.trim()) {
-    where[Op.or] = [
+    searchWhere[Op.or] = [
       { username:  { [Op.like]: `%${search.trim()}%` } },
       { full_name: { [Op.like]: `%${search.trim()}%` } },
       { email:     { [Op.like]: `%${search.trim()}%` } },
     ];
   }
 
-  // Ambil semua user dengan role guru/petugas_piket, lalu filter di JS
-  // agar bisa cek extra_roles JSON (MySQL JSON_CONTAINS tidak tersedia di semua versi)
-  const allMatching = await User.findAll({
-    where: {
-      ...where,
-      role_id: roleIds.length ? { [Op.in]: roleIds } : undefined,
-    },
+  // Ambil SEMUA user (tidak filter role_id dulu) agar bisa cek extra_roles di JS
+  // Lebih akurat daripada JSON_CONTAINS yang tidak portable
+  const allUsers = await User.findAll({
+    where: searchWhere,
     include: [
       { model: Role, as: 'role', attributes: ['id', 'name', 'label'] },
       { model: Guru, as: 'guru', attributes: ['id', 'nama', 'nip', 'niy', 'jabatan', 'mata_pelajaran', 'foto'] },
@@ -251,15 +249,15 @@ const getUsersPiket = async (req, res) => {
     order: [['full_name', 'ASC']],
   });
 
-  // Filter: hanya tampilkan yang punya extra_role petugas_piket ATAU role utama petugas_piket
-  const piketUsers = allMatching.filter(u => {
-    const isPiketRole = u.role?.name === 'petugas_piket';
-    const hasPiketExtra = (u.extra_roles || []).includes('petugas_piket');
+  // Filter: role utama petugas_piket ATAU extra_roles berisi 'petugas_piket'
+  const piketUsers = allUsers.filter(u => {
+    const isPiketRole  = rolePiket && u.role_id === rolePiket.id;
+    const hasPiketExtra = Array.isArray(u.extra_roles) && u.extra_roles.includes('petugas_piket');
     return isPiketRole || hasPiketExtra;
   });
 
-  const total  = piketUsers.length;
-  const paged  = piketUsers.slice(offset, offset + lim);
+  const total = piketUsers.length;
+  const paged = piketUsers.slice(offset, offset + lim);
 
   return paginated(res, paged, { total, page: parseInt(page), limit: lim });
 };

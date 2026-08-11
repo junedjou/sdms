@@ -11,7 +11,7 @@ const Joi = require('joi');
 // Schema validasi
 const createUserSchema = Joi.object({
   username:    Joi.string().min(3).max(100).required(),
-  email:       Joi.string().email().required(),
+  email:       Joi.string().email().allow('', null).optional(),
   password:    Joi.string().min(8).required(),
   full_name:   Joi.string().max(200).required(),
   role_id:     Joi.string().uuid().required(),
