@@ -166,6 +166,31 @@ if [ "$RUN_SEED" = true ]; then
   ok "Seed selesai"
 fi
 
+# ── STEP 5b: Auto-run pending migrations ─────────────────────
+head "Cek Pending Migrations"
+MIGRATION_DIR="$APP_DIR/backend/migrations"
+MIGRATION_DONE_FILE="$APP_DIR/.migrations_done"
+
+# Baca daftar migration yang sudah dijalankan
+touch "$MIGRATION_DONE_FILE"
+RAN_MIGRATIONS=$(cat "$MIGRATION_DONE_FILE")
+
+for migration_file in "$MIGRATION_DIR"/*.js; do
+  migration_name=$(basename "$migration_file")
+  if echo "$RAN_MIGRATIONS" | grep -qF "$migration_name"; then
+    info "Skip (sudah dijalankan): $migration_name"
+  else
+    info "Menjalankan migration: $migration_name"
+    cd "$APP_DIR/backend"
+    if node "$migration_file"; then
+      echo "$migration_name" >> "$MIGRATION_DONE_FILE"
+      ok "Migration selesai: $migration_name"
+    else
+      warn "Migration gagal: $migration_name — lanjutkan tetap..."
+    fi
+  fi
+done
+
 # ── STEP 6: Restart backend ──────────────────────────────────
 head "Restart Backend"
 cd "$APP_DIR"
