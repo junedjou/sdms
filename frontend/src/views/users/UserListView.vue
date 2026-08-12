@@ -39,6 +39,10 @@
           class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">
           {{ piketTotal }}
         </span>
+        <span v-if="t.key === 'bk' && bkTotal > 0"
+          class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold">
+          {{ bkTotal }}
+        </span>
         <span v-if="t.key === 'wali_kelas' && waliTotal > 0"
           class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold">
           {{ waliTotal }}
@@ -294,6 +298,137 @@
 
     </template>
     <!-- END TAB: GURU PIKET -->
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- TAB: GURU BK                                           -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <template v-if="activeTab === 'bk'">
+
+      <!-- Info banner -->
+      <div class="p-4 bg-teal-50 border border-teal-200 rounded-xl flex gap-3">
+        <div class="flex-shrink-0 w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+          <ShieldCheckIcon class="w-5 h-5 text-teal-600" />
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-teal-800">Guru BK (Bimbingan Konseling) — Sinkronisasi ke Aplikasi Piket</p>
+          <p class="text-xs text-teal-700 mt-0.5">
+            User dengan role <strong>Guru BK</strong> (utama atau tambahan) akan dipetakan ke role
+            <code class="bg-teal-100 px-1 rounded">BK</code> di Aplikasi Piket saat login via SSO.
+            Guru BK dapat mengakses data siswa, rekap pelanggaran, dan fitur konseling.
+          </p>
+        </div>
+      </div>
+
+      <!-- Filter BK -->
+      <div class="card p-4 flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input v-model="bkSearch" @input="debouncedFetchBK" type="search"
+            placeholder="Cari nama, username..." class="form-input pl-9" />
+        </div>
+        <button @click="openForm()" v-if="authStore.hasPermission('user:create')"
+          class="btn-primary whitespace-nowrap">
+          <PlusIcon class="w-4 h-4" /> Tambah Guru BK
+        </button>
+      </div>
+
+      <!-- Tabel Guru BK -->
+      <div class="card overflow-hidden">
+        <div v-if="bkLoading" class="p-8 flex justify-center">
+          <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
+        </div>
+        <template v-else-if="bkItems.length">
+          <div class="table-container border-0">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Guru</th>
+                  <th>Username</th>
+                  <th>Role di SDMS</th>
+                  <th>Role di Piket</th>
+                  <th>Login Terakhir</th>
+                  <th>Status</th>
+                  <th class="text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in bkItems" :key="item.id">
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                           :class="getAvatarColor(item.full_name)">
+                        {{ getInitials(item.full_name) }}
+                      </div>
+                      <div>
+                        <p class="font-medium text-gray-900">{{ item.full_name }}</p>
+                        <p class="text-xs text-gray-400">
+                          {{ item.guru?.nip || item.guru?.niy || '' }}
+                          <span v-if="item.guru?.jabatan"> · {{ item.guru.jabatan }}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="font-mono text-sm text-gray-700">{{ item.username }}</td>
+                  <td>
+                    <div class="flex flex-wrap gap-1">
+                      <span class="badge" :class="roleBadge(item.role?.name)">{{ item.role?.label }}</span>
+                      <span v-for="er in (item.extra_roles || [])" :key="er"
+                        class="badge badge-indigo text-xs">+{{ er }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="flex flex-wrap gap-1">
+                      <span v-if="item.role?.name === 'bk'" class="badge badge-teal">BK</span>
+                      <template v-else>
+                        <span class="badge badge-green">GURU</span>
+                        <span class="badge badge-teal">BK</span>
+                      </template>
+                      <span v-if="(item.extra_roles||[]).includes('petugas_piket')" class="badge badge-indigo">PETUGAS_PIKET</span>
+                    </div>
+                  </td>
+                  <td class="text-sm text-gray-500">{{ formatDateTime(item.last_login_at) }}</td>
+                  <td>
+                    <span class="badge" :class="item.is_active ? 'badge-green' : 'badge-red'">
+                      {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex items-center justify-end gap-1">
+                      <button v-if="authStore.hasPermission('user:update')"
+                        @click="openForm(item)" class="btn-ghost btn-sm p-1.5" title="Edit">
+                        <PencilSquareIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.isAdmin"
+                        @click="openResetPw(item)" class="btn-ghost btn-sm p-1.5 text-yellow-600 hover:bg-yellow-50" title="Reset Password">
+                        <KeyIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.hasPermission('user:delete') && item.id !== authStore.user?.id"
+                        @click="confirmDelete(item)" class="btn-ghost btn-sm p-1.5 text-red-500 hover:bg-red-50" title="Hapus">
+                        <TrashIcon class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-4 py-3 border-t border-gray-50">
+            <BasePagination
+              :current-page="bkPage" :total-pages="bkTotalPages"
+              :total="bkTotal" :limit="bkLimit"
+              @change="(p) => { bkPage = p; fetchBKData(); }"
+              @limit-change="(l) => { bkLimit = l; bkPage = 1; fetchBKData(); }"
+            />
+          </div>
+        </template>
+        <BaseEmpty v-else
+          title="Belum ada guru BK"
+          description="Tambahkan user dengan role utama atau role tambahan Guru BK"
+          icon="inbox" />
+      </div>
+
+    </template>
+    <!-- END TAB: GURU BK -->
 
     <!-- ══════════════════════════════════════════════════════ -->
     <!-- TAB: WALI KELAS                                        -->
@@ -832,6 +967,7 @@ uiStore.setBreadcrumbs([{ label: 'Administrasi' }, { label: 'Manajemen User' }])
 const tabs = [
   { key: 'semua',          label: 'Semua User' },
   { key: 'piket',          label: 'Guru Piket' },
+  { key: 'bk',             label: 'Guru BK' },
   { key: 'wali_kelas',     label: 'Wali Kelas' },
   { key: 'kepala_sekolah', label: 'Kepala Sekolah' },
 ];
@@ -840,6 +976,7 @@ const activeTab = ref('semua');
 const switchTab = (key) => {
   activeTab.value = key;
   if (key === 'piket' && piketItems.value.length === 0) fetchPiketData();
+  if (key === 'bk' && bkItems.value.length === 0) fetchBKData();
   if (key === 'wali_kelas' && waliItems.value.length === 0) fetchWaliData();
   if (key === 'kepala_sekolah' && kepalaItems.value.length === 0) fetchKepalaData();
 };
@@ -855,6 +992,12 @@ const piketItems      = ref([]); const piketLoading    = ref(false);
 const piketPage       = ref(1);  const piketLimit      = ref(10);
 const piketTotal      = ref(0);  const piketSearch     = ref('');
 const piketTotalPages = computed(() => Math.ceil(piketTotal.value / piketLimit.value));
+
+// ── State Guru BK ─────────────────────────────────────────────
+const bkItems      = ref([]); const bkLoading    = ref(false);
+const bkPage       = ref(1);  const bkLimit      = ref(10);
+const bkTotal      = ref(0);  const bkSearch     = ref('');
+const bkTotalPages = computed(() => Math.ceil(bkTotal.value / bkLimit.value));
 
 // ── State Wali Kelas ──────────────────────────────────────────
 const waliItems      = ref([]); const waliLoading    = ref(false);
@@ -980,6 +1123,7 @@ const piketRolesPreview = computed(() => {
     super_admin:    'SUPER_ADMIN',
     admin:          'ADMIN',
     guru:           'GURU',
+    bk:             'BK',
     wali_kelas:     'WALI_KELAS',
     kepala_sekolah: 'KEPALA_SEKOLAH',
     petugas_piket:  'PETUGAS_PIKET',
@@ -1004,6 +1148,7 @@ const roleBadge = (name) => ({
   super_admin:     'badge-red',
   admin:           'badge-blue',
   guru:            'badge-green',
+  bk:              'badge-teal',
   wali_kelas:      'badge-yellow',
   kepala_sekolah:  'badge-purple',
   petugas_piket:   'badge-indigo',
@@ -1043,6 +1188,18 @@ const fetchPiketData = async () => {
   } catch { notify.error('Gagal memuat data guru piket'); } finally { piketLoading.value = false; }
 };
 
+const fetchBKData = async () => {
+  bkLoading.value = true;
+  try {
+    const res = await userService.bkUsers({
+      page: bkPage.value, limit: bkLimit.value,
+      search: bkSearch.value,
+    });
+    bkItems.value = res.data.data || [];
+    bkTotal.value = res.data.meta?.total || 0;
+  } catch { notify.error('Gagal memuat data guru BK'); } finally { bkLoading.value = false; }
+};
+
 const fetchWaliData = async () => {
   waliLoading.value = true;
   try {
@@ -1071,9 +1228,10 @@ const fetchRoles = async () => {
   try { roles.value = (await userService.roles()).data.data || []; } catch { /* skip */ }
 };
 
-const debouncedFetch      = debounce(() => { page.value = 1; fetchData(); });
-const debouncedFetchPiket = debounce(() => { piketPage.value = 1; fetchPiketData(); });
-const debouncedFetchWali  = debounce(() => { waliPage.value = 1; fetchWaliData(); });
+const debouncedFetch       = debounce(() => { page.value = 1; fetchData(); });
+const debouncedFetchPiket  = debounce(() => { piketPage.value = 1; fetchPiketData(); });
+const debouncedFetchBK     = debounce(() => { bkPage.value = 1; fetchBKData(); });
+const debouncedFetchWali   = debounce(() => { waliPage.value = 1; fetchWaliData(); });
 const debouncedFetchKepala = debounce(() => { kepalaPage.value = 1; fetchKepalaData(); });
 
 // ── Open / Submit Form ────────────────────────────────────────
@@ -1122,6 +1280,7 @@ const submitForm = async () => {
     showForm.value = false;
     fetchData();
     if (activeTab.value === 'piket') fetchPiketData();
+    if (activeTab.value === 'bk') fetchBKData();
     if (activeTab.value === 'wali_kelas') fetchWaliData();
     if (activeTab.value === 'kepala_sekolah') fetchKepalaData();
   } catch (err) {
@@ -1157,6 +1316,7 @@ const executeDelete = async () => {
     showConfirm.value = false;
     fetchData();
     if (activeTab.value === 'piket') fetchPiketData();
+    if (activeTab.value === 'bk') fetchBKData();
     if (activeTab.value === 'wali_kelas') fetchWaliData();
     if (activeTab.value === 'kepala_sekolah') fetchKepalaData();
   } catch (err) {

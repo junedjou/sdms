@@ -90,8 +90,9 @@ export const userService = {
   template:      ()       => api.get('/users/template', { responseType: 'blob' }),
   // Guru Piket
   guruSearch:       (params) => api.get('/users/guru-search', { params }),
-  piketUsers:       (params) => api.get('/users/piket', { params }),
-  waliKelasUsers:   (params) => api.get('/users/wali-kelas', { params }),
+  piketUsers:         (params) => api.get('/users/piket', { params }),
+  bkUsers:            (params) => api.get('/users/bk', { params }),
+  waliKelasUsers:     (params) => api.get('/users/wali-kelas', { params }),
   kepalaSekolahUsers: (params) => api.get('/users/kepala-sekolah', { params }),
   import:           (fd)     => api.post('/users/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 };

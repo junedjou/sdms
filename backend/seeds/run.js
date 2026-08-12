@@ -56,6 +56,7 @@ const ROLES = [
   { name: 'super_admin',     label: 'Super Administrator', description: 'Akses penuh ke seluruh sistem' },
   { name: 'admin',           label: 'Administrator',        description: 'Kelola data master dan user' },
   { name: 'guru',            label: 'Guru',                 description: 'Akses modul pembelajaran dan jurnal' },
+  { name: 'bk',              label: 'Guru BK',              description: 'Guru Bimbingan Konseling, akses data siswa, pelanggaran, surat, dan laporan BK' },
   { name: 'wali_kelas',      label: 'Wali Kelas',           description: 'Guru yang merangkap wali kelas, akses data siswa kelas binaan + fitur piket wali kelas' },
   { name: 'kepala_sekolah',  label: 'Kepala Sekolah',       description: 'Akses penuh monitoring seluruh data akademik, absensi, dan laporan sekolah' },
   { name: 'pegawai',         label: 'Pegawai TU',           description: 'Akses data siswa dan administrasi' },
@@ -96,6 +97,13 @@ const ROLE_PERMISSIONS = {
   petugas_piket: [
     'dashboard:view', 'piket:access', 'sholat:access',
     'siswa:view', 'kelas:view', 'guru:view',
+  ],
+  bk: [
+    'dashboard:view',
+    'piket:access', 'sholat:access',
+    'siswa:view', 'kelas:view', 'guru:view',
+    'lms:access', 'jurnal:access',
+    'kegiatan:access',
   ],
   wali_kelas: [
     'dashboard:view',

@@ -213,6 +213,9 @@ const getGuruSearch = async (req, res) => {
     account_is_piket:         userByGuruId[g.id]
       ? (userByGuruId[g.id].extra_roles || []).includes('petugas_piket')
       : false,
+    account_is_bk:            userByGuruId[g.id]
+      ? (userByGuruId[g.id].extra_roles || []).includes('bk')
+      : false,
     account_is_wali_kelas:    userByGuruId[g.id]
       ? (userByGuruId[g.id].extra_roles || []).includes('wali_kelas')
       : false,
@@ -264,6 +267,45 @@ const getUsersPiket = async (req, res) => {
 
   const total = piketUsers.length;
   const paged = piketUsers.slice(offset, offset + lim);
+
+  return paginated(res, paged, { total, page: parseInt(page), limit: lim });
+};
+
+// GET /api/v1/users/bk
+// Daftar user yang memiliki role utama 'bk',
+// ATAU memiliki 'bk' di dalam extra_roles JSON.
+const getUsersBK = async (req, res) => {
+  const { page = 1, limit = 20, search = '' } = req.query;
+  const { limit: lim, offset } = getPagination(page, limit);
+
+  const roleBK = await Role.findOne({ where: { name: 'bk' } });
+
+  const searchWhere = {};
+  if (search.trim()) {
+    searchWhere[Op.or] = [
+      { username:  { [Op.like]: `%${search.trim()}%` } },
+      { full_name: { [Op.like]: `%${search.trim()}%` } },
+      { email:     { [Op.like]: `%${search.trim()}%` } },
+    ];
+  }
+
+  const allUsers = await User.findAll({
+    where: searchWhere,
+    include: [
+      { model: Role, as: 'role', attributes: ['id', 'name', 'label'] },
+      { model: Guru, as: 'guru', attributes: ['id', 'nama', 'nip', 'niy', 'jabatan', 'mata_pelajaran', 'foto'] },
+    ],
+    order: [['full_name', 'ASC']],
+  });
+
+  const bkUsers = allUsers.filter(u => {
+    const isBKRole   = roleBK && u.role_id === roleBK.id;
+    const hasBKExtra = Array.isArray(u.extra_roles) && u.extra_roles.includes('bk');
+    return isBKRole || hasBKExtra;
+  });
+
+  const total = bkUsers.length;
+  const paged = bkUsers.slice(offset, offset + lim);
 
   return paginated(res, paged, { total, page: parseInt(page), limit: lim });
 };
@@ -346,4 +388,4 @@ const getUsersKepalaSekolah = async (req, res) => {
   return paginated(res, paged, { total, page: parseInt(page), limit: lim });
 };
 
-module.exports = { getUsers, getUserById, createUser, updateUser, deleteUser, resetPassword, getRoles, getGuruSearch, getUsersPiket, getUsersWaliKelas, getUsersKepalaSekolah };
+module.exports = { getUsers, getUserById, createUser, updateUser, deleteUser, resetPassword, getRoles, getGuruSearch, getUsersPiket, getUsersBK, getUsersWaliKelas, getUsersKepalaSekolah };

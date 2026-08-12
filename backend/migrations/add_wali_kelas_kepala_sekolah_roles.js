@@ -1,17 +1,18 @@
 /**
- * Migration: Tambah role wali_kelas dan kepala_sekolah
+ * Migration: Tambah role wali_kelas, kepala_sekolah, dan bk
  *
  * Jalankan sekali di VPS:
  *   node backend/migrations/add_wali_kelas_kepala_sekolah_roles.js
  *
  * Aman dijalankan berulang (idempotent).
  *
- * Kedua role ini bisa digunakan sebagai:
+ * Role ini bisa digunakan sebagai:
  *  - Role UTAMA (primary role di kolom role_id)
- *  - Role TAMBAHAN (extra_roles JSON, contoh guru yang juga merangkap wali kelas)
+ *  - Role TAMBAHAN (extra_roles JSON, contoh guru yang merangkap bk/wali kelas)
  *
- * Saat SSO ke Aplikasi Piket, role akan dipetakan:
- *  - wali_kelas    → WALI_KELAS
+ * Saat SSO ke Aplikasi Piket, role dipetakan:
+ *  - bk             → BK
+ *  - wali_kelas     → WALI_KELAS
  *  - kepala_sekolah → KEPALA_SEKOLAH
  */
 
@@ -21,6 +22,22 @@ const { syncModels, Role, Permission, RolePermission } = require('../src/models'
 const logger = require('../src/utils/logger');
 
 const NEW_ROLES = [
+  {
+    name:        'bk',
+    label:       'Guru BK',
+    description: 'Guru Bimbingan Konseling, akses data siswa, pelanggaran, surat, dan laporan BK',
+    permissions: [
+      'dashboard:view',
+      'piket:access',
+      'sholat:access',
+      'siswa:view',
+      'kelas:view',
+      'guru:view',
+      'lms:access',
+      'jurnal:access',
+      'kegiatan:access',
+    ],
+  },
   {
     name:        'wali_kelas',
     label:       'Wali Kelas',
@@ -95,11 +112,11 @@ const run = async () => {
       logger.info(`[migration] ${added} permission baru ditambahkan ke role '${roleDef.name}'`);
     }
 
-    logger.info('[migration] Selesai — role wali_kelas dan kepala_sekolah siap digunakan');
+    logger.info('[migration] Selesai — role bk, wali_kelas, dan kepala_sekolah siap digunakan');
     logger.info('[migration] Cara penggunaan:');
-    logger.info('  - Role UTAMA : pilih "Wali Kelas" / "Kepala Sekolah" sebagai role utama di form user');
-    logger.info('  - Role TAMBAHAN: centang "Tambahan" di samping Wali Kelas / Kepala Sekolah (untuk guru yang merangkap)');
-    logger.info('  - SSO Piket: role akan otomatis dipetakan ke WALI_KELAS / KEPALA_SEKOLAH di Aplikasi Piket');
+    logger.info('  - Role UTAMA   : pilih "Guru BK" / "Wali Kelas" / "Kepala Sekolah" sebagai role utama');
+    logger.info('  - Role TAMBAHAN: centang "Tambahan" untuk guru yang merangkap jabatan');
+    logger.info('  - SSO Piket    : bk→BK, wali_kelas→WALI_KELAS, kepala_sekolah→KEPALA_SEKOLAH');
     process.exit(0);
   } catch (err) {
     logger.error(`[migration] Gagal: ${err.message}`);
