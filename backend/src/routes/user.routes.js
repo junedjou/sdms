@@ -46,6 +46,8 @@ router.get('/template',             requirePermission('user:create'), asyncHandl
 router.post('/import',              requirePermission('user:create'), upload.single('file'), asyncHandler(ie.importUsers));
 router.get('/guru-search',          requirePermission('user:view'),   asyncHandler(ctrl.getGuruSearch));
 router.get('/piket',                requirePermission('user:view'),   asyncHandler(ctrl.getUsersPiket));
+router.get('/wali-kelas',           requirePermission('user:view'),   asyncHandler(ctrl.getUsersWaliKelas));
+router.get('/kepala-sekolah',       requirePermission('user:view'),   asyncHandler(ctrl.getUsersKepalaSekolah));
 router.get('/',                     requirePermission('user:view'),   asyncHandler(ctrl.getUsers));
 router.get('/:id',                  requirePermission('user:view'),   asyncHandler(ctrl.getUserById));
 router.post('/',                    requirePermission('user:create'), validate(createUserSchema), asyncHandler(ctrl.createUser));

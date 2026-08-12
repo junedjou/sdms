@@ -207,11 +207,17 @@ const getGuruSearch = async (req, res) => {
 
   const data = guruList.map(g => ({
     ...g.toJSON(),
-    has_account:       !!userByGuruId[g.id],
-    account_username:  userByGuruId[g.id]?.username  || null,
-    account_active:    userByGuruId[g.id]?.is_active ?? null,
-    account_is_piket:  userByGuruId[g.id]
+    has_account:              !!userByGuruId[g.id],
+    account_username:         userByGuruId[g.id]?.username  || null,
+    account_active:           userByGuruId[g.id]?.is_active ?? null,
+    account_is_piket:         userByGuruId[g.id]
       ? (userByGuruId[g.id].extra_roles || []).includes('petugas_piket')
+      : false,
+    account_is_wali_kelas:    userByGuruId[g.id]
+      ? (userByGuruId[g.id].extra_roles || []).includes('wali_kelas')
+      : false,
+    account_is_kepala_sekolah: userByGuruId[g.id]
+      ? (userByGuruId[g.id].extra_roles || []).includes('kepala_sekolah')
       : false,
   }));
 
@@ -262,4 +268,82 @@ const getUsersPiket = async (req, res) => {
   return paginated(res, paged, { total, page: parseInt(page), limit: lim });
 };
 
-module.exports = { getUsers, getUserById, createUser, updateUser, deleteUser, resetPassword, getRoles, getGuruSearch, getUsersPiket };
+// GET /api/v1/users/wali-kelas
+// Daftar user yang memiliki role utama 'wali_kelas',
+// ATAU memiliki 'wali_kelas' di dalam extra_roles JSON.
+const getUsersWaliKelas = async (req, res) => {
+  const { page = 1, limit = 20, search = '' } = req.query;
+  const { limit: lim, offset } = getPagination(page, limit);
+
+  const roleWali = await Role.findOne({ where: { name: 'wali_kelas' } });
+
+  const searchWhere = {};
+  if (search.trim()) {
+    searchWhere[Op.or] = [
+      { username:  { [Op.like]: `%${search.trim()}%` } },
+      { full_name: { [Op.like]: `%${search.trim()}%` } },
+      { email:     { [Op.like]: `%${search.trim()}%` } },
+    ];
+  }
+
+  const allUsers = await User.findAll({
+    where: searchWhere,
+    include: [
+      { model: Role, as: 'role', attributes: ['id', 'name', 'label'] },
+      { model: Guru, as: 'guru', attributes: ['id', 'nama', 'nip', 'niy', 'jabatan', 'mata_pelajaran', 'foto'] },
+    ],
+    order: [['full_name', 'ASC']],
+  });
+
+  const waliUsers = allUsers.filter(u => {
+    const isWaliRole  = roleWali && u.role_id === roleWali.id;
+    const hasWaliExtra = Array.isArray(u.extra_roles) && u.extra_roles.includes('wali_kelas');
+    return isWaliRole || hasWaliExtra;
+  });
+
+  const total = waliUsers.length;
+  const paged = waliUsers.slice(offset, offset + lim);
+
+  return paginated(res, paged, { total, page: parseInt(page), limit: lim });
+};
+
+// GET /api/v1/users/kepala-sekolah
+// Daftar user yang memiliki role utama 'kepala_sekolah',
+// ATAU memiliki 'kepala_sekolah' di dalam extra_roles JSON.
+const getUsersKepalaSekolah = async (req, res) => {
+  const { page = 1, limit = 20, search = '' } = req.query;
+  const { limit: lim, offset } = getPagination(page, limit);
+
+  const roleKepala = await Role.findOne({ where: { name: 'kepala_sekolah' } });
+
+  const searchWhere = {};
+  if (search.trim()) {
+    searchWhere[Op.or] = [
+      { username:  { [Op.like]: `%${search.trim()}%` } },
+      { full_name: { [Op.like]: `%${search.trim()}%` } },
+      { email:     { [Op.like]: `%${search.trim()}%` } },
+    ];
+  }
+
+  const allUsers = await User.findAll({
+    where: searchWhere,
+    include: [
+      { model: Role, as: 'role', attributes: ['id', 'name', 'label'] },
+      { model: Guru, as: 'guru', attributes: ['id', 'nama', 'nip', 'niy', 'jabatan', 'mata_pelajaran', 'foto'] },
+    ],
+    order: [['full_name', 'ASC']],
+  });
+
+  const kepalaUsers = allUsers.filter(u => {
+    const isKepalaRole  = roleKepala && u.role_id === roleKepala.id;
+    const hasKepalaExtra = Array.isArray(u.extra_roles) && u.extra_roles.includes('kepala_sekolah');
+    return isKepalaRole || hasKepalaExtra;
+  });
+
+  const total = kepalaUsers.length;
+  const paged = kepalaUsers.slice(offset, offset + lim);
+
+  return paginated(res, paged, { total, page: parseInt(page), limit: lim });
+};
+
+module.exports = { getUsers, getUserById, createUser, updateUser, deleteUser, resetPassword, getRoles, getGuruSearch, getUsersPiket, getUsersWaliKelas, getUsersKepalaSekolah };

@@ -53,13 +53,15 @@ const PERMISSIONS = [
 ];
 
 const ROLES = [
-  { name: 'super_admin',    label: 'Super Administrator', description: 'Akses penuh ke seluruh sistem' },
-  { name: 'admin',          label: 'Administrator',        description: 'Kelola data master dan user' },
-  { name: 'guru',           label: 'Guru',                 description: 'Akses modul pembelajaran dan jurnal' },
-  { name: 'pegawai',        label: 'Pegawai TU',           description: 'Akses data siswa dan administrasi' },
-  { name: 'siswa',          label: 'Siswa',                description: 'Akses LMS dan informasi akademik' },
-  { name: 'operator',       label: 'Operator',             description: 'Input data absensi dan piket' },
-  { name: 'petugas_piket',  label: 'Petugas Piket',        description: 'Akses penuh fitur absensi di Aplikasi Piket' },
+  { name: 'super_admin',     label: 'Super Administrator', description: 'Akses penuh ke seluruh sistem' },
+  { name: 'admin',           label: 'Administrator',        description: 'Kelola data master dan user' },
+  { name: 'guru',            label: 'Guru',                 description: 'Akses modul pembelajaran dan jurnal' },
+  { name: 'wali_kelas',      label: 'Wali Kelas',           description: 'Guru yang merangkap wali kelas, akses data siswa kelas binaan + fitur piket wali kelas' },
+  { name: 'kepala_sekolah',  label: 'Kepala Sekolah',       description: 'Akses penuh monitoring seluruh data akademik, absensi, dan laporan sekolah' },
+  { name: 'pegawai',         label: 'Pegawai TU',           description: 'Akses data siswa dan administrasi' },
+  { name: 'siswa',           label: 'Siswa',                description: 'Akses LMS dan informasi akademik' },
+  { name: 'operator',        label: 'Operator',             description: 'Input data absensi dan piket' },
+  { name: 'petugas_piket',   label: 'Petugas Piket',        description: 'Akses penuh fitur absensi di Aplikasi Piket' },
 ];
 
 // Permission per role (selain super_admin yang dapat semua)
@@ -94,6 +96,19 @@ const ROLE_PERMISSIONS = {
   petugas_piket: [
     'dashboard:view', 'piket:access', 'sholat:access',
     'siswa:view', 'kelas:view', 'guru:view',
+  ],
+  wali_kelas: [
+    'dashboard:view',
+    'piket:access', 'sholat:access',
+    'siswa:view', 'kelas:view', 'guru:view',
+    'lms:access', 'jurnal:access',
+  ],
+  kepala_sekolah: [
+    'dashboard:view', 'dashboard:analytics',
+    'piket:access', 'sholat:access',
+    'siswa:view', 'kelas:view', 'guru:view', 'pegawai:view',
+    'master:view',
+    'lms:access', 'jurnal:access', 'kegiatan:access', 'kelulusan:access',
   ],
 };
 

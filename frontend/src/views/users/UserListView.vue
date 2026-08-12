@@ -36,8 +36,16 @@
       >
         {{ t.label }}
         <span v-if="t.key === 'piket' && piketTotal > 0"
-          class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-xs font-bold">
+          class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">
           {{ piketTotal }}
+        </span>
+        <span v-if="t.key === 'wali_kelas' && waliTotal > 0"
+          class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold">
+          {{ waliTotal }}
+        </span>
+        <span v-if="t.key === 'kepala_sekolah' && kepalaTotal > 0"
+          class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-700 text-xs font-bold">
+          {{ kepalaTotal }}
         </span>
       </button>
     </div>
@@ -167,7 +175,9 @@
           <p class="text-sm font-semibold text-blue-800">Sinkronisasi Otomatis dengan Aplikasi Piket</p>
           <p class="text-xs text-blue-600 mt-0.5">
             User di bawah akan otomatis mendapat akses ke Aplikasi Piket saat login via SSO.
-            Guru dengan role tambahan <strong>Petugas Piket</strong> dipetakan ke role <code class="bg-blue-100 px-1 rounded">PETUGAS_PIKET</code> di Piket.
+            Guru dengan role tambahan <strong>Petugas Piket</strong> dipetakan ke role
+            <code class="bg-blue-100 px-1 rounded">PETUGAS_PIKET</code> di Piket.
+            Lihat juga tab <strong>Wali Kelas</strong> dan <strong>Kepala Sekolah</strong> untuk role lainnya.
           </p>
         </div>
       </div>
@@ -284,6 +294,267 @@
 
     </template>
     <!-- END TAB: GURU PIKET -->
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- TAB: WALI KELAS                                        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <template v-if="activeTab === 'wali_kelas'">
+
+      <!-- Info banner -->
+      <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex gap-3">
+        <div class="flex-shrink-0 w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+          <ShieldCheckIcon class="w-5 h-5 text-yellow-600" />
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-yellow-800">Wali Kelas — Sinkronisasi ke Aplikasi Piket</p>
+          <p class="text-xs text-yellow-700 mt-0.5">
+            User dengan role <strong>Wali Kelas</strong> (utama atau tambahan) akan dipetakan ke role
+            <code class="bg-yellow-100 px-1 rounded">WALI_KELAS</code> di Aplikasi Piket saat login via SSO.
+            Wali kelas dapat memantau absensi dan rekap siswa kelasnya.
+          </p>
+        </div>
+      </div>
+
+      <!-- Filter wali kelas -->
+      <div class="card p-4 flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input v-model="waliSearch" @input="debouncedFetchWali" type="search"
+            placeholder="Cari nama, username..." class="form-input pl-9" />
+        </div>
+        <button @click="openForm()" v-if="authStore.hasPermission('user:create')"
+          class="btn-primary whitespace-nowrap">
+          <PlusIcon class="w-4 h-4" /> Tambah Wali Kelas
+        </button>
+      </div>
+
+      <!-- Tabel Wali Kelas -->
+      <div class="card overflow-hidden">
+        <div v-if="waliLoading" class="p-8 flex justify-center">
+          <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
+        </div>
+        <template v-else-if="waliItems.length">
+          <div class="table-container border-0">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Guru</th>
+                  <th>Username</th>
+                  <th>Role di SDMS</th>
+                  <th>Role di Piket</th>
+                  <th>Login Terakhir</th>
+                  <th>Status</th>
+                  <th class="text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in waliItems" :key="item.id">
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                           :class="getAvatarColor(item.full_name)">
+                        {{ getInitials(item.full_name) }}
+                      </div>
+                      <div>
+                        <p class="font-medium text-gray-900">{{ item.full_name }}</p>
+                        <p class="text-xs text-gray-400">
+                          {{ item.guru?.nip || item.guru?.niy || '' }}
+                          <span v-if="item.guru?.jabatan"> · {{ item.guru.jabatan }}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="font-mono text-sm text-gray-700">{{ item.username }}</td>
+                  <td>
+                    <div class="flex flex-wrap gap-1">
+                      <span class="badge" :class="roleBadge(item.role?.name)">{{ item.role?.label }}</span>
+                      <span v-for="er in (item.extra_roles || [])" :key="er"
+                        class="badge badge-indigo text-xs">+{{ er }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="flex flex-wrap gap-1">
+                      <span v-if="item.role?.name === 'wali_kelas'" class="badge badge-yellow">WALI_KELAS</span>
+                      <template v-else>
+                        <span class="badge badge-green">GURU</span>
+                        <span class="badge badge-yellow">WALI_KELAS</span>
+                      </template>
+                      <span v-if="(item.extra_roles||[]).includes('petugas_piket')" class="badge badge-indigo">PETUGAS_PIKET</span>
+                    </div>
+                  </td>
+                  <td class="text-sm text-gray-500">{{ formatDateTime(item.last_login_at) }}</td>
+                  <td>
+                    <span class="badge" :class="item.is_active ? 'badge-green' : 'badge-red'">
+                      {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex items-center justify-end gap-1">
+                      <button v-if="authStore.hasPermission('user:update')"
+                        @click="openForm(item)" class="btn-ghost btn-sm p-1.5" title="Edit">
+                        <PencilSquareIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.isAdmin"
+                        @click="openResetPw(item)" class="btn-ghost btn-sm p-1.5 text-yellow-600 hover:bg-yellow-50" title="Reset Password">
+                        <KeyIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.hasPermission('user:delete') && item.id !== authStore.user?.id"
+                        @click="confirmDelete(item)" class="btn-ghost btn-sm p-1.5 text-red-500 hover:bg-red-50" title="Hapus">
+                        <TrashIcon class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-4 py-3 border-t border-gray-50">
+            <BasePagination
+              :current-page="waliPage" :total-pages="waliTotalPages"
+              :total="waliTotal" :limit="waliLimit"
+              @change="(p) => { waliPage = p; fetchWaliData(); }"
+              @limit-change="(l) => { waliLimit = l; waliPage = 1; fetchWaliData(); }"
+            />
+          </div>
+        </template>
+        <BaseEmpty v-else
+          title="Belum ada wali kelas"
+          description="Tambahkan user dengan role utama atau role tambahan Wali Kelas"
+          icon="inbox" />
+      </div>
+
+    </template>
+    <!-- END TAB: WALI KELAS -->
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- TAB: KEPALA SEKOLAH                                    -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <template v-if="activeTab === 'kepala_sekolah'">
+
+      <!-- Info banner -->
+      <div class="p-4 bg-purple-50 border border-purple-200 rounded-xl flex gap-3">
+        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+          <ShieldCheckIcon class="w-5 h-5 text-purple-600" />
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-purple-800">Kepala Sekolah — Sinkronisasi ke Aplikasi Piket</p>
+          <p class="text-xs text-purple-700 mt-0.5">
+            User dengan role <strong>Kepala Sekolah</strong> (utama atau tambahan) akan dipetakan ke role
+            <code class="bg-purple-100 px-1 rounded">KEPALA_SEKOLAH</code> di Aplikasi Piket saat login via SSO.
+            Kepala sekolah mendapat akses monitoring penuh: absensi, rekap, pelanggaran, dan laporan.
+          </p>
+        </div>
+      </div>
+
+      <!-- Filter kepala sekolah -->
+      <div class="card p-4 flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input v-model="kepalaSearch" @input="debouncedFetchKepala" type="search"
+            placeholder="Cari nama, username..." class="form-input pl-9" />
+        </div>
+        <button @click="openForm()" v-if="authStore.hasPermission('user:create')"
+          class="btn-primary whitespace-nowrap">
+          <PlusIcon class="w-4 h-4" /> Tambah Kepala Sekolah
+        </button>
+      </div>
+
+      <!-- Tabel Kepala Sekolah -->
+      <div class="card overflow-hidden">
+        <div v-if="kepalaLoading" class="p-8 flex justify-center">
+          <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
+        </div>
+        <template v-else-if="kepalaItems.length">
+          <div class="table-container border-0">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Pegawai</th>
+                  <th>Username</th>
+                  <th>Role di SDMS</th>
+                  <th>Role di Piket</th>
+                  <th>Login Terakhir</th>
+                  <th>Status</th>
+                  <th class="text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in kepalaItems" :key="item.id">
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                           :class="getAvatarColor(item.full_name)">
+                        {{ getInitials(item.full_name) }}
+                      </div>
+                      <div>
+                        <p class="font-medium text-gray-900">{{ item.full_name }}</p>
+                        <p class="text-xs text-gray-400">
+                          {{ item.guru?.nip || item.guru?.niy || '' }}
+                          <span v-if="item.guru?.jabatan"> · {{ item.guru.jabatan }}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="font-mono text-sm text-gray-700">{{ item.username }}</td>
+                  <td>
+                    <div class="flex flex-wrap gap-1">
+                      <span class="badge" :class="roleBadge(item.role?.name)">{{ item.role?.label }}</span>
+                      <span v-for="er in (item.extra_roles || [])" :key="er"
+                        class="badge badge-indigo text-xs">+{{ er }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="flex flex-wrap gap-1">
+                      <span v-if="item.role?.name === 'kepala_sekolah'" class="badge badge-purple">KEPALA_SEKOLAH</span>
+                      <template v-else>
+                        <span class="badge badge-green">GURU</span>
+                        <span class="badge badge-purple">KEPALA_SEKOLAH</span>
+                      </template>
+                    </div>
+                  </td>
+                  <td class="text-sm text-gray-500">{{ formatDateTime(item.last_login_at) }}</td>
+                  <td>
+                    <span class="badge" :class="item.is_active ? 'badge-green' : 'badge-red'">
+                      {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex items-center justify-end gap-1">
+                      <button v-if="authStore.hasPermission('user:update')"
+                        @click="openForm(item)" class="btn-ghost btn-sm p-1.5" title="Edit">
+                        <PencilSquareIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.isAdmin"
+                        @click="openResetPw(item)" class="btn-ghost btn-sm p-1.5 text-yellow-600 hover:bg-yellow-50" title="Reset Password">
+                        <KeyIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.hasPermission('user:delete') && item.id !== authStore.user?.id"
+                        @click="confirmDelete(item)" class="btn-ghost btn-sm p-1.5 text-red-500 hover:bg-red-50" title="Hapus">
+                        <TrashIcon class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-4 py-3 border-t border-gray-50">
+            <BasePagination
+              :current-page="kepalaPage" :total-pages="kepalaTotalPages"
+              :total="kepalaTotal" :limit="kepalaLimit"
+              @change="(p) => { kepalaPage = p; fetchKepalaData(); }"
+              @limit-change="(l) => { kepalaLimit = l; kepalaPage = 1; fetchKepalaData(); }"
+            />
+          </div>
+        </template>
+        <BaseEmpty v-else
+          title="Belum ada kepala sekolah"
+          description="Tambahkan user dengan role utama atau role tambahan Kepala Sekolah"
+          icon="inbox" />
+      </div>
+
+    </template>
+    <!-- END TAB: KEPALA SEKOLAH -->
 
     <!-- ══════════════════════════════════════════════════════ -->
     <!-- SHARED MODALS                                          -->
@@ -468,12 +739,16 @@
           </p>
           <p class="text-xs text-blue-600 leading-relaxed">
             User akan otomatis masuk ke Aplikasi Piket saat login via SSO.
-            <span v-if="willHavePiketRole" class="font-semibold text-blue-800">
-              Role <code class="bg-blue-100 px-1 rounded">PETUGAS_PIKET</code> akan aktif di Piket.
-            </span>
-            <span v-else>
-              Centang <strong>Petugas Piket</strong> sebagai role tambahan agar guru bisa mengakses fitur piket.
-            </span>
+          </p>
+          <div v-if="piketRolesPreview.length" class="mt-1.5 flex flex-wrap gap-1">
+            <span class="text-xs text-blue-600">Role di Piket:</span>
+            <code v-for="r in piketRolesPreview" :key="r"
+              class="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-mono font-semibold">
+              {{ r }}
+            </code>
+          </div>
+          <p v-else class="text-xs text-blue-500 mt-1">
+            Pilih role terlebih dahulu untuk melihat pemetaan ke Aplikasi Piket.
           </p>
         </div>
 
@@ -555,14 +830,18 @@ uiStore.setBreadcrumbs([{ label: 'Administrasi' }, { label: 'Manajemen User' }])
 
 // ── Tabs ──────────────────────────────────────────────────────
 const tabs = [
-  { key: 'semua', label: 'Semua User' },
-  { key: 'piket', label: 'Guru Piket' },
+  { key: 'semua',          label: 'Semua User' },
+  { key: 'piket',          label: 'Guru Piket' },
+  { key: 'wali_kelas',     label: 'Wali Kelas' },
+  { key: 'kepala_sekolah', label: 'Kepala Sekolah' },
 ];
 const activeTab = ref('semua');
 
 const switchTab = (key) => {
   activeTab.value = key;
   if (key === 'piket' && piketItems.value.length === 0) fetchPiketData();
+  if (key === 'wali_kelas' && waliItems.value.length === 0) fetchWaliData();
+  if (key === 'kepala_sekolah' && kepalaItems.value.length === 0) fetchKepalaData();
 };
 
 // ── State Semua User ──────────────────────────────────────────
@@ -576,6 +855,18 @@ const piketItems      = ref([]); const piketLoading    = ref(false);
 const piketPage       = ref(1);  const piketLimit      = ref(10);
 const piketTotal      = ref(0);  const piketSearch     = ref('');
 const piketTotalPages = computed(() => Math.ceil(piketTotal.value / piketLimit.value));
+
+// ── State Wali Kelas ──────────────────────────────────────────
+const waliItems      = ref([]); const waliLoading    = ref(false);
+const waliPage       = ref(1);  const waliLimit      = ref(10);
+const waliTotal      = ref(0);  const waliSearch     = ref('');
+const waliTotalPages = computed(() => Math.ceil(waliTotal.value / waliLimit.value));
+
+// ── State Kepala Sekolah ──────────────────────────────────────
+const kepalaItems      = ref([]); const kepalaLoading    = ref(false);
+const kepalaPage       = ref(1);  const kepalaLimit      = ref(10);
+const kepalaTotal      = ref(0);  const kepalaSearch     = ref('');
+const kepalaTotalPages = computed(() => Math.ceil(kepalaTotal.value / kepalaLimit.value));
 
 // ── Modals ────────────────────────────────────────────────────
 const showForm    = ref(false); const editItem    = ref(null); const formLoading = ref(false);
@@ -679,6 +970,30 @@ const willHavePiketRole = computed(() => {
   return mainRole?.name === 'petugas_piket' || (form.value.extra_roles || []).includes('petugas_piket');
 });
 
+// Computed: role-role yang akan aktif di Aplikasi Piket (untuk SSO info box)
+const piketRolesPreview = computed(() => {
+  const mainRole = roles.value.find(r => r.id === form.value.role_id);
+  const mainName = mainRole?.name || '';
+  const extras   = form.value.extra_roles || [];
+
+  const SSO_MAP = {
+    super_admin:    'SUPER_ADMIN',
+    admin:          'ADMIN',
+    guru:           'GURU',
+    wali_kelas:     'WALI_KELAS',
+    kepala_sekolah: 'KEPALA_SEKOLAH',
+    petugas_piket:  'PETUGAS_PIKET',
+    pegawai:        'GURU',
+    operator:       'GURU',
+  };
+
+  const mapped = [mainName, ...extras]
+    .map(r => SSO_MAP[r])
+    .filter(Boolean);
+
+  return [...new Set(mapped)];
+});
+
 // Helper: extra roles yang ditampilkan di badge (kecuali role utama)
 const extraRolesDisplay = (extraRoles, mainRoleName) => {
   if (!extraRoles || !extraRoles.length) return [];
@@ -686,13 +1001,15 @@ const extraRolesDisplay = (extraRoles, mainRoleName) => {
 };
 
 const roleBadge = (name) => ({
-  super_admin:    'badge-red',
-  admin:          'badge-blue',
-  guru:           'badge-green',
-  petugas_piket:  'badge-indigo',
-  operator:       'badge-gray',
-  pegawai:        'badge-yellow',
-  siswa:          'badge-gray',
+  super_admin:     'badge-red',
+  admin:           'badge-blue',
+  guru:            'badge-green',
+  wali_kelas:      'badge-yellow',
+  kepala_sekolah:  'badge-purple',
+  petugas_piket:   'badge-indigo',
+  operator:        'badge-gray',
+  pegawai:         'badge-yellow',
+  siswa:           'badge-gray',
 }[name] || 'badge-gray');
 
 const selectMainRole = (r) => {
@@ -726,12 +1043,38 @@ const fetchPiketData = async () => {
   } catch { notify.error('Gagal memuat data guru piket'); } finally { piketLoading.value = false; }
 };
 
+const fetchWaliData = async () => {
+  waliLoading.value = true;
+  try {
+    const res = await userService.waliKelasUsers({
+      page: waliPage.value, limit: waliLimit.value,
+      search: waliSearch.value,
+    });
+    waliItems.value = res.data.data || [];
+    waliTotal.value = res.data.meta?.total || 0;
+  } catch { notify.error('Gagal memuat data wali kelas'); } finally { waliLoading.value = false; }
+};
+
+const fetchKepalaData = async () => {
+  kepalaLoading.value = true;
+  try {
+    const res = await userService.kepalaSekolahUsers({
+      page: kepalaPage.value, limit: kepalaLimit.value,
+      search: kepalaSearch.value,
+    });
+    kepalaItems.value = res.data.data || [];
+    kepalaTotal.value = res.data.meta?.total || 0;
+  } catch { notify.error('Gagal memuat data kepala sekolah'); } finally { kepalaLoading.value = false; }
+};
+
 const fetchRoles = async () => {
   try { roles.value = (await userService.roles()).data.data || []; } catch { /* skip */ }
 };
 
 const debouncedFetch      = debounce(() => { page.value = 1; fetchData(); });
 const debouncedFetchPiket = debounce(() => { piketPage.value = 1; fetchPiketData(); });
+const debouncedFetchWali  = debounce(() => { waliPage.value = 1; fetchWaliData(); });
+const debouncedFetchKepala = debounce(() => { kepalaPage.value = 1; fetchKepalaData(); });
 
 // ── Open / Submit Form ────────────────────────────────────────
 const openForm = (item = null) => {
@@ -779,6 +1122,8 @@ const submitForm = async () => {
     showForm.value = false;
     fetchData();
     if (activeTab.value === 'piket') fetchPiketData();
+    if (activeTab.value === 'wali_kelas') fetchWaliData();
+    if (activeTab.value === 'kepala_sekolah') fetchKepalaData();
   } catch (err) {
     notify.error(err.response?.data?.message || 'Gagal menyimpan user');
   } finally { formLoading.value = false; }
@@ -812,6 +1157,8 @@ const executeDelete = async () => {
     showConfirm.value = false;
     fetchData();
     if (activeTab.value === 'piket') fetchPiketData();
+    if (activeTab.value === 'wali_kelas') fetchWaliData();
+    if (activeTab.value === 'kepala_sekolah') fetchKepalaData();
   } catch (err) {
     notify.error(err.response?.data?.message || 'Gagal menghapus user');
   } finally { formLoading.value = false; }

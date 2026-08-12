@@ -33,6 +33,19 @@ const APP_SSO_SECRETS = {
  * @param {object} user - Data user dari req.user
  * @param {string} appName - Nama aplikasi target (lms, jurnal, dll)
  * @returns {{ sso_token: string, redirect_url: string }}
+ *
+ * Pemetaan role SDMS → Piket (dilakukan di sisi Piket via mapRoleSDMS):
+ *   super_admin    → SUPER_ADMIN
+ *   admin          → ADMIN
+ *   guru           → GURU
+ *   wali_kelas     → WALI_KELAS
+ *   kepala_sekolah → KEPALA_SEKOLAH
+ *   petugas_piket  → PETUGAS_PIKET
+ *   pegawai        → GURU (fallback)
+ *
+ * extra_roles juga ikut dikirim dan dipetakan di Piket sehingga
+ * guru yang merangkap wali_kelas / kepala_sekolah / petugas_piket
+ * akan mendapat semua role tersebut di Piket.
  */
 const createSSOToken = (user, appName) => {
   const appUrl = config.apps[appName];
