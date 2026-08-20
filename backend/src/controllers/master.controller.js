@@ -70,12 +70,23 @@ const deleteGuru = async (req, res) => {
 // SISWA
 // ============================================================
 const getSiswa = async (req, res) => {
-  const { page = 1, limit = 10, search = '', jurusan_id, status = 'Aktif' } = req.query;
+  const { page = 1, limit = 10, search = '', jurusan_id, kelas_id, status = 'Aktif' } = req.query;
   const { limit: lim, offset } = getPagination(page, limit);
   const where = {};
   if (status) where.status = status;
   if (search) where[Op.or] = [{ nama: { [Op.like]: `%${search}%` } }, { nisn: { [Op.like]: `%${search}%` } }, { nis: { [Op.like]: `%${search}%` } }];
   if (jurusan_id) where.jurusan_id = jurusan_id;
+
+  // Filter by kelas via SiswaKelas junction table
+  if (kelas_id) {
+    const siswaIds = await SiswaKelas.findAll({
+      where: { kelas_id, is_aktif: true },
+      attributes: ['siswa_id'],
+      raw: true,
+    }).then(rows => rows.map(r => r.siswa_id));
+    where.id = { [Op.in]: siswaIds };
+  }
+
   const { count, rows } = await Siswa.findAndCountAll({
     where, limit: lim, offset,
     include: [{ association: 'jurusan', attributes: ['id', 'kode', 'nama'] }],

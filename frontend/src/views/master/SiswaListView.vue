@@ -23,20 +23,49 @@
     </div>
 
     <!-- Filter -->
-    <div class="card p-4 flex flex-col sm:flex-row gap-3">
-      <div class="relative flex-1">
-        <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input v-model="search" @input="debouncedFetch" type="search" placeholder="Cari nama, NISN, NIS..." class="form-input pl-9" />
+    <div class="card p-4">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input v-model="search" @input="debouncedFetch" type="search" placeholder="Cari nama, NISN, NIS..." class="form-input pl-9" />
+        </div>
+        <select v-model="filterKelas" @change="onFilterChange" class="form-input w-full sm:w-44">
+          <option value="">Semua Kelas</option>
+          <option v-for="k in kelasList" :key="k.id" :value="k.id">{{ k.nama }}</option>
+        </select>
+        <select v-model="filterJurusan" @change="onFilterChange" class="form-input w-full sm:w-44">
+          <option value="">Semua Jurusan</option>
+          <option v-for="j in masterStore.jurusan" :key="j.id" :value="j.id">{{ j.nama }}</option>
+        </select>
+        <select v-model="filterStatus" @change="onFilterChange" class="form-input w-full sm:w-36">
+          <option value="Aktif">Aktif</option>
+          <option value="">Semua Status</option>
+          <option v-for="s in ['Lulus','Pindah','Keluar','Meninggal']" :key="s" :value="s">{{ s }}</option>
+        </select>
       </div>
-      <select v-model="filterJurusan" @change="fetchData" class="form-input w-full sm:w-48">
-        <option value="">Semua Jurusan</option>
-        <option v-for="j in masterStore.jurusan" :key="j.id" :value="j.id">{{ j.nama }}</option>
-      </select>
-      <select v-model="filterStatus" @change="fetchData" class="form-input w-full sm:w-36">
-        <option value="Aktif">Aktif</option>
-        <option value="">Semua Status</option>
-        <option v-for="s in ['Lulus','Pindah','Keluar','Meninggal']" :key="s" :value="s">{{ s }}</option>
-      </select>
+      <!-- Active filters -->
+      <div v-if="filterKelas || filterJurusan || filterStatus !== 'Aktif'" class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+        <span class="text-xs text-slate-400">Filter aktif:</span>
+        <button v-if="filterKelas" @click="clearFilter('kelas')"
+          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary-50 text-primary-700 text-xs font-medium hover:bg-primary-100 transition-colors">
+          {{ kelasList.find(k => k.id === filterKelas)?.nama || 'Kelas' }}
+          <XMarkIcon class="w-3 h-3" />
+        </button>
+        <button v-if="filterJurusan" @click="clearFilter('jurusan')"
+          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium hover:bg-blue-100 transition-colors">
+          {{ masterStore.jurusan.find(j => j.id === filterJurusan)?.kode || 'Jurusan' }}
+          <XMarkIcon class="w-3 h-3" />
+        </button>
+        <button v-if="filterStatus !== 'Aktif'" @click="clearFilter('status')"
+          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium hover:bg-emerald-100 transition-colors">
+          {{ filterStatus || 'Semua Status' }}
+          <XMarkIcon class="w-3 h-3" />
+        </button>
+        <button @click="clearAllFilters"
+          class="text-xs text-slate-400 hover:text-red-500 transition-colors ml-1">
+          Reset semua
+        </button>
+      </div>
     </div>
 
     <!-- Table -->
@@ -217,7 +246,7 @@ import BasePagination from '@/components/common/BasePagination.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
 import BulkDeleteBar from '@/components/common/BulkDeleteBar.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore(); const masterStore = useMasterStore(); const uiStore = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Data Siswa' }]);
@@ -226,7 +255,7 @@ uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Data Siswa' }]);
 const items = ref([]); const loading = ref(true);
 const page = ref(1); const limit = ref(10); const total = ref(0);
 const totalPages = computed(() => Math.ceil(total.value / limit.value));
-const search = ref(''); const filterJurusan = ref(''); const filterStatus = ref('Aktif');
+const search = ref(''); const filterJurusan = ref(''); const filterKelas = ref(''); const filterStatus = ref('Aktif');
 const showForm = ref(false); const editItem = ref(null);
 const showConfirm = ref(false); const deleteTarget = ref(null); const formLoading = ref(false);
 
@@ -248,16 +277,40 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
 
 const statusClass = (s) => ({ Aktif: 'badge-green', Lulus: 'badge-blue', Pindah: 'badge-yellow', Keluar: 'badge-red', Meninggal: 'badge-gray' }[s] || 'badge-gray');
 
+// ── Load kelas list ──────────────────────────────────────
+const kelasList = ref([]);
+const loadKelas = async () => {
+  try {
+    const res = await masterService.kelasList({ limit: 200 });
+    kelasList.value = res.data.data || [];
+  } catch { /* silent */ }
+};
+
 const emptyForm = () => ({ nama: '', nisn: '', nis: '', jenis_kelamin: '', jurusan_id: '', tahun_masuk: '', status: 'Aktif', tempat_lahir: '', tanggal_lahir: '', agama: '', no_hp: '', alamat: '' });
 const form = ref(emptyForm());
 
 const fetchData = async () => {
   loading.value = true;
   try {
-    const res = await masterService.siswaList({ page: page.value, limit: limit.value, search: search.value, jurusan_id: filterJurusan.value || undefined, status: filterStatus.value || undefined });
+    const res = await masterService.siswaList({
+      page: page.value, limit: limit.value,
+      search: search.value,
+      jurusan_id: filterJurusan.value || undefined,
+      kelas_id: filterKelas.value || undefined,
+      status: filterStatus.value || undefined,
+    });
     items.value = res.data.data || []; total.value = res.data.meta?.total || 0;
   } catch { notify.error('Gagal memuat data siswa'); } finally { loading.value = false; }
 };
+
+const onFilterChange = () => { page.value = 1; fetchData(); };
+const clearFilter = (type) => {
+  if (type === 'kelas') filterKelas.value = '';
+  else if (type === 'jurusan') filterJurusan.value = '';
+  else if (type === 'status') filterStatus.value = 'Aktif';
+  onFilterChange();
+};
+const clearAllFilters = () => { search.value = ''; filterJurusan.value = ''; filterKelas.value = ''; filterStatus.value = 'Aktif'; page.value = 1; fetchData(); };
 
 const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
 const openForm = (item = null) => { editItem.value = item; form.value = item ? { ...item, jurusan_id: item.jurusan_id || '' } : emptyForm(); showForm.value = true; };
@@ -276,5 +329,5 @@ const executeDelete = async () => {
   catch { notify.error('Gagal menghapus'); } finally { formLoading.value = false; }
 };
 
-onMounted(fetchData);
+onMounted(() => { fetchData(); loadKelas(); });
 </script>
