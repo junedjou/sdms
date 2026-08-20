@@ -84,6 +84,7 @@
                 </th>
                 <th>Nama</th>
                 <th>NISN / NIS</th>
+                <th>Kelas</th>
                 <th>Jurusan</th>
                 <th>JK</th>
                 <th>Tahun Masuk</th>
@@ -111,7 +112,11 @@
                   <p class="text-gray-400">{{ item.nis || '—' }}</p>
                 </td>
                 <td>
-                  <span v-if="item.jurusan" class="badge-blue">{{ item.jurusan.kode }}</span>
+                  <span v-if="item.kelas" class="badge-indigo text-xs">{{ item.kelas.nama }}</span>
+                  <span v-else class="text-gray-400 text-xs">—</span>
+                </td>
+                <td>
+                  <span v-if="item.jurusan" class="badge-blue text-xs">{{ item.jurusan.kode }}</span>
                   <span v-else class="text-gray-400 text-xs">—</span>
                 </td>
                 <td>{{ item.jenis_kelamin === 'L' ? '♂ L' : '♀ P' }}</td>
@@ -174,6 +179,13 @@
             <option value="">-- Pilih --</option>
             <option value="L">Laki-laki</option>
             <option value="P">Perempuan</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kelas</label>
+          <select v-model="form.kelas_id" class="form-input">
+            <option value="">-- Pilih Kelas --</option>
+            <option v-for="k in kelasList" :key="k.id" :value="k.id">{{ k.nama }}</option>
           </select>
         </div>
         <div class="form-group">
@@ -286,7 +298,7 @@ const loadKelas = async () => {
   } catch { /* silent */ }
 };
 
-const emptyForm = () => ({ nama: '', nisn: '', nis: '', jenis_kelamin: '', jurusan_id: '', tahun_masuk: '', status: 'Aktif', tempat_lahir: '', tanggal_lahir: '', agama: '', no_hp: '', alamat: '' });
+const emptyForm = () => ({ nama: '', nisn: '', nis: '', jenis_kelamin: '', kelas_id: '', jurusan_id: '', tahun_masuk: '', status: 'Aktif', tempat_lahir: '', tanggal_lahir: '', agama: '', no_hp: '', alamat: '' });
 const form = ref(emptyForm());
 
 const fetchData = async () => {
@@ -313,7 +325,7 @@ const clearFilter = (type) => {
 const clearAllFilters = () => { search.value = ''; filterJurusan.value = ''; filterKelas.value = ''; filterStatus.value = 'Aktif'; page.value = 1; fetchData(); };
 
 const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
-const openForm = (item = null) => { editItem.value = item; form.value = item ? { ...item, jurusan_id: item.jurusan_id || '' } : emptyForm(); showForm.value = true; };
+const openForm = (item = null) => { editItem.value = item; form.value = item ? { ...item, jurusan_id: item.jurusan_id || '', kelas_id: item.kelas_id || '' } : emptyForm(); showForm.value = true; };
 const submitForm = async () => {
   formLoading.value = true;
   try {

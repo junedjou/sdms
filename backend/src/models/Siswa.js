@@ -61,6 +61,12 @@ const Siswa = masterDB.define('Siswa', {
     allowNull: true,
     references: { model: 'jurusan', key: 'id' },
   },
+  kelas_id: {
+    type: DataTypes.CHAR(36),
+    allowNull: true,
+    references: { model: 'kelas', key: 'id' },
+    comment: 'Kelas aktif siswa saat ini',
+  },
   orang_tua_id: {
     type: DataTypes.CHAR(36),
     allowNull: true,
@@ -84,6 +90,7 @@ const Siswa = masterDB.define('Siswa', {
     { fields: ['nisn'] },
     { fields: ['status'] },
     { fields: ['jurusan_id'] },
+    { fields: ['kelas_id'] },
   ],
 });
 

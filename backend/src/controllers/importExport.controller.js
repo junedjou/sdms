@@ -173,7 +173,7 @@ const importGuru = async (req, res) => {
 // ============================================================
 
 const SISWA_LABELS = [
-  'Nama Lengkap*','NISN','NIS','Jenis Kelamin (L/P)*','Kode Jurusan',
+  'Nama Lengkap*','NISN','NIS','Jenis Kelamin (L/P)*','Kelas','Kode Jurusan',
   'Tahun Masuk','Status','Tempat Lahir','Tanggal Lahir (YYYY-MM-DD)',
   'Agama','No HP','Alamat',
 ];
@@ -181,12 +181,15 @@ const SISWA_LABELS = [
 const exportSiswa = async (req, res) => {
   const where = { status: 'Aktif' };
   const rows = await Siswa.findAll({
-    where, include: [{ association: 'jurusan', attributes: ['kode'] }],
+    where, include: [
+      { association: 'jurusan', attributes: ['kode'] },
+      { association: 'kelas', attributes: ['nama'] },
+    ],
     order: [['nama', 'ASC']],
   });
   const data = rows.map(s => [
     s.nama, s.nisn||'', s.nis||'', s.jenis_kelamin||'',
-    s.jurusan?.kode||'', s.tahun_masuk||'', s.status||'Aktif',
+    s.kelas?.nama||'', s.jurusan?.kode||'', s.tahun_masuk||'', s.status||'Aktif',
     s.tempat_lahir||'', s.tanggal_lahir ? String(s.tanggal_lahir).slice(0,10) : '',
     s.agama||'', s.no_hp||'', s.alamat||'',
   ]);
@@ -195,7 +198,7 @@ const exportSiswa = async (req, res) => {
 };
 
 const templateSiswa = async (req, res) => {
-  const sample = [['Andi Pratama','1234567890','2024001','L','TKJ','2024','Aktif','Surabaya','2008-06-15','Islam','08123456789','Jl. Pahlawan No.5']];
+  const sample = [['Andi Pratama','1234567890','2024001','L','X TKJ 1','TKJ','2024','Aktif','Surabaya','2008-06-15','Islam','08123456789','Jl. Pahlawan No.5']];
   const buf = buildWorkbook('Siswa', SISWA_LABELS, sample);
   sendExcel(res, buf, 'template_import_siswa.xlsx');
 };
@@ -204,6 +207,8 @@ const importSiswa = async (req, res) => {
   if (!req.file) return badRequest(res, 'File Excel wajib diupload');
   const jurusanList = await Jurusan.findAll({ where: { is_active: true } });
   const jurusanMap  = Object.fromEntries(jurusanList.map(j => [j.kode.toUpperCase(), j.id]));
+  const kelasList = await Kelas.findAll({ where: { is_active: true } });
+  const kelasMap  = Object.fromEntries(kelasList.map(k => [k.nama.toUpperCase(), k.id]));
 
   const rows = parseExcel(req.file.buffer);
   const ok = [], errors = [];
@@ -221,12 +226,14 @@ const importSiswa = async (req, res) => {
 
     const kodeJurusan = str(r['Kode Jurusan'] ?? r['jurusan_kode'])?.toUpperCase();
     const jurusan_id  = kodeJurusan ? jurusanMap[kodeJurusan] : null;
+    const namaKelas = str(r['Kelas'] ?? r['kelas'])?.toUpperCase();
+    const kelas_id  = namaKelas ? kelasMap[namaKelas] : null;
 
     try {
       const siswa = await Siswa.create({
         nama, nisn, nis: str(r['NIS'] ?? r['nis']),
         jenis_kelamin: normJK(r['Jenis Kelamin (L/P)*'] ?? r['jenis_kelamin']),
-        jurusan_id,
+        jurusan_id, kelas_id,
         tahun_masuk:  str(r['Tahun Masuk'] ?? r['tahun_masuk']),
         status:       str(r['Status']      ?? r['status']) || 'Aktif',
         tempat_lahir: str(r['Tempat Lahir']  ?? r['tempat_lahir']),

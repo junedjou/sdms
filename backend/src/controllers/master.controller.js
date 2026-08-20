@@ -76,27 +76,21 @@ const getSiswa = async (req, res) => {
   if (status) where.status = status;
   if (search) where[Op.or] = [{ nama: { [Op.like]: `%${search}%` } }, { nisn: { [Op.like]: `%${search}%` } }, { nis: { [Op.like]: `%${search}%` } }];
   if (jurusan_id) where.jurusan_id = jurusan_id;
-
-  // Filter by kelas via SiswaKelas junction table
-  if (kelas_id) {
-    const siswaIds = await SiswaKelas.findAll({
-      where: { kelas_id, is_aktif: true },
-      attributes: ['siswa_id'],
-      raw: true,
-    }).then(rows => rows.map(r => r.siswa_id));
-    where.id = { [Op.in]: siswaIds };
-  }
+  if (kelas_id) where.kelas_id = kelas_id;
 
   const { count, rows } = await Siswa.findAndCountAll({
     where, limit: lim, offset,
-    include: [{ association: 'jurusan', attributes: ['id', 'kode', 'nama'] }],
+    include: [
+      { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
+      { association: 'kelas', attributes: ['id', 'nama'] },
+    ],
     order: [['nama', 'ASC']],
   });
   return paginated(res, rows, { total: count, page: parseInt(page), limit: lim });
 };
 
 const getSiswaById = async (req, res) => {
-  const siswa = await Siswa.findByPk(req.params.id, { include: ['jurusan', 'orangTua', 'riwayatKelas'] });
+  const siswa = await Siswa.findByPk(req.params.id, { include: ['jurusan', 'kelas', 'orangTua', 'riwayatKelas'] });
   if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
   return success(res, siswa);
 };
