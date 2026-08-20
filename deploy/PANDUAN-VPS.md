@@ -26,7 +26,7 @@ bash push.sh
 
 **Di VPS** setelah push.sh selesai:
 ```bash
-bash /var/www/sdms/deploy/update.sh
+bash /var/www/sdms/update.sh
 ```
 
 Opsi tambahan `update.sh`:
@@ -34,6 +34,15 @@ Opsi tambahan `update.sh`:
 bash update.sh                   # pull + build + restart (default)
 bash update.sh --skip-build      # hanya git pull + restart (cepat, tanpa rebuild frontend)
 bash update.sh --seed            # pull + build + restart + jalankan seed ulang
+bash update.sh --force-build     # force rebuild frontend meski tidak ada perubahan
+bash update.sh --dry-run         # preview saja, tidak eksekusi
+```
+
+**Quick reload** (tanpa git pull, hanya restart):
+```bash
+bash /var/www/sdms/deploy/hot-reload.sh           # restart backend + reload nginx
+bash /var/www/sdms/deploy/hot-reload.sh --backend # restart backend saja
+bash /var/www/sdms/deploy/hot-reload.sh --rebuild # rebuild frontend + restart
 ```
 
 ---
@@ -177,7 +186,10 @@ bash deploy/setup-after-upload.sh
 bash push.sh "update tampilan dashboard"
 
 # Di VPS (SSH):
-bash /var/www/sdms/deploy/update.sh
+bash /var/www/sdms/update.sh
+
+# atau tanpa SSH langsung dari push.sh output:
+# bash /var/www/sdms/update.sh --skip-build  # cepat
 ```
 
 ---
@@ -302,6 +314,10 @@ crontab -e
 
 ```bash
 cd /var/www/sdms
+bash update.sh                   # Update otomatis (recommended)
+
+# atau perintah manual:
 git pull                          # Ambil update terbaru
 bash deploy/update.sh             # Rebuild & restart otomatis
+bash deploy/hot-reload.sh         # Quick restart tanpa git pull
 ```

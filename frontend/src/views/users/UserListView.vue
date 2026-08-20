@@ -78,7 +78,7 @@
           <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
         <template v-else-if="items.length">
-          <div class="table-container border-0">
+          <div class="table-wrapper border-0">
             <table class="table">
               <thead>
                 <tr>
@@ -205,7 +205,7 @@
           <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
         <template v-else-if="piketItems.length">
-          <div class="table-container border-0">
+          <div class="table-wrapper border-0">
             <table class="table">
               <thead>
                 <tr>
@@ -338,7 +338,7 @@
           <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
         <template v-else-if="bkItems.length">
-          <div class="table-container border-0">
+          <div class="table-wrapper border-0">
             <table class="table">
               <thead>
                 <tr>
@@ -469,7 +469,7 @@
           <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
         <template v-else-if="waliItems.length">
-          <div class="table-container border-0">
+          <div class="table-wrapper border-0">
             <table class="table">
               <thead>
                 <tr>
@@ -600,7 +600,7 @@
           <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
         <template v-else-if="kepalaItems.length">
-          <div class="table-container border-0">
+          <div class="table-wrapper border-0">
             <table class="table">
               <thead>
                 <tr>

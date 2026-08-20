@@ -21,7 +21,7 @@
         <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
       <template v-else-if="items.length">
-        <div class="table-container border-0">
+        <div class="table-wrapper border-0">
           <table class="table">
             <thead>
               <tr><th>Judul Kegiatan</th><th>Tanggal Mulai</th><th>Tanggal Selesai</th><th>Jenis</th><th class="text-right">Aksi</th></tr>

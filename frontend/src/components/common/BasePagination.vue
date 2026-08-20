@@ -5,7 +5,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
 
       <!-- Info: menampilkan X-Y dari Z -->
-      <span class="text-slate-500 whitespace-nowrap">
+      <span class="text-slate-500 whitespace-nowrap text-xs sm:text-sm">
         Menampilkan
         <span class="font-semibold text-slate-700">{{ from }}–{{ to }}</span>
         dari
@@ -19,11 +19,11 @@
         <select
           :value="limit"
           @change="$emit('limit-change', parseInt($event.target.value))"
-          class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 min-w-[64px] bg-white text-slate-700 cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-colors appearance-none"
+          class="text-xs border border-slate-200/80 rounded-lg px-2.5 py-1.5 min-w-[64px] bg-white text-slate-700 cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500/15 focus:border-primary-400 transition-colors appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:14px] bg-[right_6px_center] bg-no-repeat pr-7"
         >
           <option v-for="opt in limitOptions" :key="opt" :value="opt">{{ opt }}</option>
         </select>
-        <span class="text-slate-400 text-xs whitespace-nowrap">per halaman</span>
+        <span class="text-slate-400 text-xs whitespace-nowrap hidden xs:block">per halaman</span>
       </div>
     </div>
 
@@ -33,23 +33,23 @@
       <button
         @click="$emit('change', currentPage - 1)"
         :disabled="currentPage === 1"
-        class="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        class="w-9 h-9 rounded-xl border border-slate-200/80 flex items-center justify-center hover:bg-slate-50 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150 active:scale-95"
         title="Halaman sebelumnya"
       >
-        <ChevronLeftIcon class="w-3.5 h-3.5" />
+        <ChevronLeftIcon class="w-4 h-4" />
       </button>
 
       <!-- Page buttons -->
       <template v-for="pg in visiblePages" :key="pg">
-        <span v-if="pg === '...'" class="w-8 h-8 flex items-center justify-center text-slate-400">···</span>
+        <span v-if="pg === '...'" class="w-9 h-9 flex items-center justify-center text-slate-400 text-xs">···</span>
         <button
           v-else
           @click="$emit('change', pg)"
           :class="[
-            'w-8 h-8 rounded-lg border text-xs font-medium transition-colors',
+            'w-9 h-9 rounded-xl border text-xs font-semibold transition-all duration-150 active:scale-95',
             pg === currentPage
-              ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
-              : 'border-slate-200 hover:bg-slate-50 text-slate-600',
+              ? 'bg-primary-600 text-white border-primary-600 shadow-sm shadow-primary-500/20'
+              : 'border-slate-200/80 hover:bg-slate-50 hover:border-slate-300 text-slate-600',
           ]"
         >{{ pg }}</button>
       </template>
@@ -58,10 +58,10 @@
       <button
         @click="$emit('change', currentPage + 1)"
         :disabled="currentPage === totalPages"
-        class="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        class="w-9 h-9 rounded-xl border border-slate-200/80 flex items-center justify-center hover:bg-slate-50 hover:border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150 active:scale-95"
         title="Halaman berikutnya"
       >
-        <ChevronRightIcon class="w-3.5 h-3.5" />
+        <ChevronRightIcon class="w-4 h-4" />
       </button>
     </div>
 
@@ -103,4 +103,5 @@ const visiblePages = computed(() => {
   }
 
   return pages;
-});</script>
+});
+</script>

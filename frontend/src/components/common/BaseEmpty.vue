@@ -1,10 +1,10 @@
 <template>
   <div class="flex flex-col items-center justify-center py-16 text-center">
-    <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-      <component :is="iconComponent" class="w-8 h-8 text-gray-400" />
+    <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center mb-5 ring-1 ring-slate-100">
+      <component :is="iconComponent" class="w-9 h-9 text-slate-300" />
     </div>
-    <p class="text-gray-500 font-medium">{{ title }}</p>
-    <p v-if="subtitle" class="text-sm text-gray-400 mt-1">{{ subtitle }}</p>
+    <p class="text-slate-500 font-semibold">{{ title }}</p>
+    <p v-if="subtitle" class="text-sm text-slate-400 mt-1.5">{{ subtitle }}</p>
     <slot />
   </div>
 </template>

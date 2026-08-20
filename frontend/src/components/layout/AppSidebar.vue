@@ -3,7 +3,7 @@
   <Transition name="overlay">
     <div
       v-if="uiStore.sidebarMobile"
-      class="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+      class="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm lg:hidden"
       @click="uiStore.closeMobileSidebar()"
     />
   </Transition>
@@ -11,9 +11,9 @@
   <!-- Sidebar -->
   <aside
     :class="[
-      'fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300 ease-in-out select-none',
-      uiStore.sidebarOpen ? 'w-64' : 'w-[70px]',
-      uiStore.sidebarMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+      'fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] select-none',
+      uiStore.sidebarOpen ? 'w-64' : 'w-[72px]',
+      uiStore.sidebarMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0',
     ]"
     :style="{
       background: `linear-gradient(180deg, ${settingsStore.get('sidebar_bg')} 0%, ${settingsStore.get('sidebar_bg')}ee 100%)`,
@@ -26,7 +26,7 @@
         uiStore.sidebarOpen ? 'px-4 gap-3' : 'px-0 justify-center',
       ]"
     >
-      <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden"
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden ring-1 ring-white/10 transition-transform duration-200 hover:scale-105"
         :style="{ background: settingsStore.get('sidebar_accent') }">
         <img v-if="settingsStore.get('logo_url')" :src="settingsStore.get('logo_url')"
           class="w-full h-full object-contain" alt="Logo" />
@@ -34,8 +34,8 @@
       </div>
       <Transition name="label">
         <div v-if="uiStore.sidebarOpen" class="overflow-hidden min-w-0">
-          <p class="text-sm font-bold text-white tracking-tight leading-none">SDMS</p>
-          <p class="text-[10px] text-white/40 leading-none mt-1 tracking-wide">School Data Management</p>
+          <p class="text-sm font-bold text-white tracking-tight leading-none">{{ settingsStore.get('app_name') || 'SDMS' }}</p>
+          <p class="text-[10px] text-white/35 leading-none mt-1 tracking-wide">{{ settingsStore.get('app_subtitle') || 'School Data Management' }}</p>
         </div>
       </Transition>
     </div>
@@ -56,9 +56,9 @@
         >
           <span
             v-if="uiStore.sidebarOpen"
-            class="text-[10px] font-bold text-white/25 uppercase tracking-[0.12em]"
+            class="text-[10px] font-bold text-white/20 uppercase tracking-[0.15em]"
           >{{ section.label }}</span>
-          <div v-else class="w-4 h-px bg-white/10" />
+          <div v-else class="w-5 h-px bg-white/10" />
         </div>
 
         <!-- Menu items -->
@@ -70,26 +70,27 @@
               <button
                 @click="toggleExpanded(item.name)"
                 :class="[
-                  'w-full flex items-center rounded-xl text-sm transition-all duration-150',
+                  'w-full flex items-center rounded-xl text-sm transition-all duration-150 group',
                   uiStore.sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center py-2.5',
                   isActiveParent(item)
-                    ? 'bg-primary-600/15 text-white'
-                    : 'text-white/55 hover:text-white hover:bg-white/[0.06]',
+                    ? 'bg-white/[0.08] text-white'
+                    : 'text-white/50 hover:text-white hover:bg-white/[0.06]',
                 ]"
                 :title="!uiStore.sidebarOpen ? item.label : ''"
               >
                 <div class="relative flex-shrink-0">
-                  <component :is="item.icon" class="w-[18px] h-[18px]" />
+                  <component :is="item.icon" class="w-[18px] h-[18px] transition-transform duration-150 group-hover:scale-105" />
                   <span
                     v-if="!uiStore.sidebarOpen && isActiveParent(item)"
-                    class="absolute -right-0.5 -top-0.5 w-1.5 h-1.5 rounded-full bg-primary-400"
+                    class="absolute -right-0.5 -top-0.5 w-1.5 h-1.5 rounded-full"
+                    :style="{ background: settingsStore.get('sidebar_accent') }"
                   />
                 </div>
                 <Transition name="label">
                   <div v-if="uiStore.sidebarOpen" class="flex flex-1 items-center justify-between min-w-0">
                     <span class="truncate font-medium">{{ item.label }}</span>
                     <ChevronDownIcon
-                      class="w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 text-white/30"
+                      class="w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 text-white/25"
                       :class="expandedItems.includes(item.name) ? 'rotate-180 text-white/60' : ''"
                     />
                   </div>
@@ -110,13 +111,14 @@
                     :class="[
                       'flex items-center gap-3 pl-9 pr-3 py-2 rounded-xl text-sm transition-all duration-150',
                       isActive(child.to)
-                        ? 'bg-primary-600/20 text-primary-300 font-medium'
-                        : 'text-white/45 hover:text-white/80 hover:bg-white/[0.05]',
+                        ? 'bg-white/[0.1] text-white font-medium'
+                        : 'text-white/40 hover:text-white/80 hover:bg-white/[0.05]',
                     ]"
                   >
                     <span
-                      class="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors"
-                      :class="isActive(child.to) ? 'bg-primary-400' : 'bg-white/20'"
+                      class="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all duration-200"
+                      :class="isActive(child.to) ? 'scale-110' : 'bg-white/15'"
+                      :style="isActive(child.to) ? { background: settingsStore.get('sidebar_accent') } : {}"
                     />
                     <span class="truncate">{{ child.label }}</span>
                   </RouterLink>
@@ -130,16 +132,16 @@
               :to="item.to"
               @click="uiStore.closeMobileSidebar()"
               :class="[
-                'flex items-center rounded-xl text-sm transition-all duration-150',
+                'flex items-center rounded-xl text-sm transition-all duration-150 group',
                 uiStore.sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center py-2.5',
                 isActive(item.to)
-                  ? 'text-white shadow-lg font-medium'
-                  : 'text-white/55 hover:text-white hover:bg-white/[0.06]',
+                  ? 'text-white font-medium'
+                  : 'text-white/50 hover:text-white hover:bg-white/[0.06]',
               ]"
               :style="isActive(item.to) ? { background: settingsStore.get('sidebar_accent') } : {}"
               :title="!uiStore.sidebarOpen ? item.label : ''"
             >
-              <component :is="item.icon" class="w-[18px] h-[18px] flex-shrink-0" />
+              <component :is="item.icon" class="w-[18px] h-[18px] flex-shrink-0 transition-transform duration-150 group-hover:scale-105" />
               <Transition name="label">
                 <span v-if="uiStore.sidebarOpen" class="truncate font-medium">{{ item.label }}</span>
               </Transition>
@@ -160,15 +162,15 @@
       >
         <!-- Avatar -->
         <div
-          class="w-8 h-8 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold text-white shadow-sm"
+          class="w-8 h-8 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold text-white shadow-sm ring-1 ring-white/10"
           :class="avatarColor"
         >
           {{ initials }}
         </div>
         <Transition name="label">
           <div v-if="uiStore.sidebarOpen" class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-white/90 truncate leading-none">{{ authStore.user?.full_name }}</p>
-            <p class="text-[11px] text-white/35 truncate mt-1 leading-none">{{ authStore.user?.role_label }}</p>
+            <p class="text-sm font-semibold text-white/85 truncate leading-none">{{ authStore.user?.full_name }}</p>
+            <p class="text-[11px] text-white/30 truncate mt-1 leading-none">{{ authStore.user?.role_label }}</p>
           </div>
         </Transition>
       </div>
@@ -268,13 +270,13 @@ const filteredMenu = computed(() =>
 
 <style scoped>
 /* Label fade — untuk teks yang muncul/hilang saat sidebar expand/collapse */
-.label-enter-active { transition: opacity 0.15s ease 0.08s, transform 0.15s ease 0.08s; }
+.label-enter-active { transition: opacity 0.18s ease 0.06s, transform 0.18s ease 0.06s; }
 .label-leave-active { transition: opacity 0.1s ease, transform 0.1s ease; }
 .label-enter-from   { opacity: 0; transform: translateX(-6px); }
 .label-leave-to     { opacity: 0; transform: translateX(-4px); }
 
 /* Collapse sub-menu */
-.collapse-enter-active { transition: all 0.2s ease; }
+.collapse-enter-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
 .collapse-leave-active { transition: all 0.15s ease; }
 .collapse-enter-from, .collapse-leave-to { opacity: 0; transform: translateY(-6px); }
 

@@ -19,7 +19,7 @@
     <div class="card overflow-hidden">
       <div v-if="loading" class="p-8 flex justify-center"><div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" /></div>
       <template v-else-if="items.length">
-        <div class="table-container border-0">
+        <div class="table-wrapper border-0">
           <table class="table">
             <thead><tr>
               <th class="w-10"><input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer" :checked="isAllSelected" :indeterminate="isPartialSelected" @change="toggleAll" /></th>

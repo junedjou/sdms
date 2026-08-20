@@ -17,7 +17,7 @@
           </button>
         </div>
         <button v-if="authStore.hasPermission('siswa:create')" @click="openForm()" class="btn-primary">
-          <PlusIcon class="w-4 h-4" /> Tambah Siswa
+          <PlusIcon class="w-4 h-4" /> <span class="hidden sm:inline">Tambah</span> Siswa
         </button>
       </div>
     </div>
@@ -45,7 +45,7 @@
         <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
       <template v-else-if="items.length">
-        <div class="table-container border-0">
+        <div class="table-wrapper border-0">
           <table class="table">
             <thead>
               <tr>

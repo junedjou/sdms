@@ -2,26 +2,26 @@
   <Teleport to="body">
     <Transition name="modal">
       <div v-if="modelValue" class="fixed inset-0 z-50 overflow-y-auto" @click.self="onOverlayClick">
-        <!-- Overlay -->
-        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
+        <!-- Overlay with glassmorphism -->
+        <div class="fixed inset-0 bg-black/30 backdrop-blur-md" aria-hidden="true" />
 
         <!-- Panel -->
-        <div class="flex min-h-screen items-center justify-center p-4">
+        <div class="flex min-h-screen items-center justify-center p-4 sm:p-6">
           <div
-            class="relative z-10 bg-white rounded-xl shadow-xl w-full transition-all"
+            class="relative z-10 bg-white rounded-2xl shadow-card-xl w-full transition-all duration-200 max-h-[90vh] flex flex-col"
             :class="[sizeClass]"
             role="dialog"
             :aria-label="title"
           >
             <!-- Header -->
-            <div v-if="title || $slots.header" class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div v-if="title || $slots.header" class="flex items-center justify-between px-6 py-4 border-b border-slate-100/80 flex-shrink-0">
               <slot name="header">
-                <h3 class="text-base font-semibold text-gray-900">{{ title }}</h3>
+                <h3 class="text-base font-bold text-slate-900">{{ title }}</h3>
               </slot>
               <button
                 v-if="closable"
                 @click="$emit('update:modelValue', false)"
-                class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                class="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-150 active:scale-95"
                 aria-label="Tutup"
               >
                 <XMarkIcon class="w-5 h-5" />
@@ -29,12 +29,12 @@
             </div>
 
             <!-- Body -->
-            <div class="px-6 py-4">
+            <div class="px-6 py-4 overflow-y-auto flex-1">
               <slot />
             </div>
 
             <!-- Footer -->
-            <div v-if="$slots.footer" class="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
+            <div v-if="$slots.footer" class="px-6 py-4 border-t border-slate-100/80 flex items-center justify-end gap-3 flex-shrink-0 bg-slate-50/30 rounded-b-2xl">
               <slot name="footer" />
             </div>
           </div>
@@ -72,6 +72,12 @@ const onOverlayClick = () => {
 </script>
 
 <style scoped>
-.modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
-.modal-enter-from, .modal-leave-to       { opacity: 0; }
+.modal-enter-active { transition: opacity 0.2s ease; }
+.modal-enter-active > div:last-child > div { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.modal-leave-active { transition: opacity 0.15s ease; }
+.modal-leave-active > div:last-child > div { transition: all 0.15s ease; }
+.modal-enter-from       { opacity: 0; }
+.modal-enter-from > div:last-child > div { opacity: 0; transform: scale(0.95) translateY(10px); }
+.modal-leave-to         { opacity: 0; }
+.modal-leave-to > div:last-child > div { opacity: 0; transform: scale(0.95) translateY(10px); }
 </style>

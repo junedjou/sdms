@@ -1,8 +1,8 @@
 <template>
-  <div class="card p-5 flex items-center gap-4 group hover:shadow-card-md transition-shadow duration-200">
+  <div class="card p-5 flex items-center gap-4 group hover:shadow-card-md hover:-translate-y-0.5 transition-all duration-200 cursor-default">
     <!-- Icon wrapper -->
     <div
-      class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-105"
+      class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-200 group-hover:scale-105 group-hover:shadow-sm"
       :class="color"
     >
       <component :is="icon" class="w-6 h-6" :class="iconColor" />
@@ -10,10 +10,10 @@
 
     <!-- Text -->
     <div class="min-w-0 flex-1">
-      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide truncate">{{ label }}</p>
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{{ label }}</p>
 
       <!-- Loading skeleton -->
-      <div v-if="loading" class="mt-1.5 space-y-1.5">
+      <div v-if="loading" class="mt-2 space-y-1.5">
         <div class="h-7 w-20 skeleton" />
         <div class="h-3 w-16 skeleton" />
       </div>

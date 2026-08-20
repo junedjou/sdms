@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-surface-50">
     <!-- Sidebar -->
     <AppSidebar />
 
@@ -10,15 +10,15 @@
     <main
       :class="[
         'transition-all duration-300 pt-16 min-h-screen',
-        uiStore.sidebarOpen ? 'lg:pl-64' : 'lg:pl-[70px]',
+        uiStore.sidebarOpen ? 'lg:pl-64' : 'lg:pl-[72px]',
       ]"
     >
       <!-- Page loading bar -->
-      <div v-if="uiStore.pageLoading" class="fixed top-16 left-0 right-0 z-30 h-0.5 bg-gray-100">
-        <div class="h-full bg-primary-600 animate-[loading_1.5s_ease-in-out_infinite]" />
+      <div v-if="uiStore.pageLoading" class="fixed top-16 left-0 right-0 z-30 h-0.5 bg-slate-100 overflow-hidden">
+        <div class="h-full bg-gradient-to-r from-primary-500 to-primary-600 animate-[loading_1.5s_ease-in-out_infinite] rounded-full" />
       </div>
 
-      <div class="p-6">
+      <div class="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
             <component :is="Component" />
@@ -47,9 +47,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-enter-active, .page-leave-active { transition: all 0.18s ease; }
-.page-enter-from  { opacity: 0; transform: translateY(6px); }
-.page-leave-to    { opacity: 0; transform: translateY(-6px); }
+.page-enter-active { transition: all 0.2s ease-out; }
+.page-leave-active { transition: all 0.15s ease-in; }
+.page-enter-from  { opacity: 0; transform: translateY(8px); }
+.page-leave-to    { opacity: 0; transform: translateY(-4px); }
 
 @keyframes loading {
   0%   { width: 0%; margin-left: 0; }

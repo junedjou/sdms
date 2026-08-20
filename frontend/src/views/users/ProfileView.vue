@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-2xl mx-auto space-y-6">
+  <div class="max-w-2xl mx-auto space-y-6 animate-fade-in">
     <div class="page-header">
       <div>
         <h1 class="page-title">Profil Saya</h1>
@@ -15,7 +15,7 @@
       <div class="card-body">
         <div class="flex items-center gap-5 mb-6">
           <div
-            class="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold text-white flex-shrink-0"
+            class="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold text-white flex-shrink-0 shadow-lg ring-2 ring-white/20"
             :class="avatarColor"
           >
             {{ initials }}
@@ -70,7 +70,7 @@
         <h2 class="text-sm font-semibold text-gray-700">Ganti Password</h2>
       </div>
       <div class="card-body">
-        <form @submit.prevent="handleChangePassword" class="space-y-4 max-w-md">
+        <form @submit.prevent="handleChangePassword" class="space-y-4 sm:space-y-5 max-w-md">
           <div class="form-group">
             <label class="form-label">Password Lama</label>
             <input v-model="pwForm.old_password" type="password" class="form-input" placeholder="Password saat ini" required />

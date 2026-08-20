@@ -15,7 +15,7 @@
     </div>
 
     <!-- Tab navigation -->
-    <div class="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+    <div class="flex gap-1 p-1 bg-slate-100/80 rounded-xl w-fit overflow-x-auto no-scrollbar">
       <button
         v-for="tab in tabs" :key="tab.id"
         @click="activeTab = tab.id"
@@ -32,7 +32,7 @@
     </div>
 
     <!-- ── Tab: Branding ──────────────────────────────────── -->
-    <div v-show="activeTab === 'branding'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div v-show="activeTab === 'branding'" class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
 
       <!-- Logo -->
       <div class="card">
@@ -98,7 +98,7 @@
     </div>
 
     <!-- ── Tab: Sidebar ───────────────────────────────────── -->
-    <div v-show="activeTab === 'sidebar'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div v-show="activeTab === 'sidebar'" class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
 
       <!-- Warna sidebar -->
       <div class="card">
@@ -166,7 +166,7 @@
     </div>
 
     <!-- ── Tab: Login Panel ───────────────────────────────── -->
-    <div v-show="activeTab === 'login'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div v-show="activeTab === 'login'" class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
 
       <!-- Form teks login -->
       <div class="card">

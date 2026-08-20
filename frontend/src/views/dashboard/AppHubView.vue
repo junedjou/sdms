@@ -29,7 +29,7 @@
     <!-- Kategori: Aktif -->
     <div class="mb-2">
       <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Aplikasi Tersedia</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
         <template v-for="app in activeApps" :key="app.id">
           <AppCard :app="app" :health-status="healthStatus[app.id]" @open="openApp(app)" />
         </template>
@@ -39,7 +39,7 @@
     <!-- Kategori: Dalam Pengembangan -->
     <div class="mt-6">
       <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Dalam Pengembangan</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
         <div
           v-for="app in devApps"
           :key="app.id"

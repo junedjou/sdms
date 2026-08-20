@@ -9,18 +9,25 @@
       <!-- ── Latar dekoratif ──────────────────────────────────── -->
       <div class="absolute inset-0 pointer-events-none overflow-hidden">
         <!-- Blob ungu besar kanan atas -->
-        <div class="absolute -top-32 -right-32 w-[480px] h-[480px] rounded-full opacity-20"
+        <div class="absolute -top-32 -right-32 w-[480px] h-[480px] rounded-full opacity-20 animate-float"
           style="background: radial-gradient(circle, #6366f1 0%, transparent 70%); filter: blur(40px);" />
         <!-- Blob biru kiri bawah -->
-        <div class="absolute -bottom-24 -left-24 w-[360px] h-[360px] rounded-full opacity-15"
+        <div class="absolute -bottom-24 -left-24 w-[360px] h-[360px] rounded-full opacity-15 animate-float-delay"
           style="background: radial-gradient(circle, #3b82f6 0%, transparent 70%); filter: blur(50px);" />
         <!-- Blob violet tengah -->
         <div class="absolute top-1/2 left-1/3 w-[300px] h-[300px] rounded-full opacity-10 -translate-x-1/2 -translate-y-1/2"
           style="background: radial-gradient(circle, #a855f7 0%, transparent 70%); filter: blur(60px);" />
 
+        <!-- Floating particles -->
+        <div class="absolute top-[20%] left-[15%] w-2 h-2 rounded-full bg-indigo-400/30 animate-float" />
+        <div class="absolute top-[60%] left-[25%] w-1.5 h-1.5 rounded-full bg-purple-400/25 animate-float-delay" />
+        <div class="absolute top-[35%] right-[20%] w-2.5 h-2.5 rounded-full bg-blue-400/20 animate-float" />
+        <div class="absolute bottom-[25%] right-[15%] w-1.5 h-1.5 rounded-full bg-indigo-300/25 animate-float-delay" />
+        <div class="absolute top-[15%] right-[40%] w-1 h-1 rounded-full bg-violet-400/30 animate-float" />
+
         <!-- Grid dot pattern -->
-        <div class="absolute inset-0 opacity-[0.04]"
-          style="background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 28px 28px;" />
+        <div class="absolute inset-0 opacity-[0.03]"
+          style="background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 32px 32px;" />
 
         <!-- Garis diagonal dekoratif -->
         <div class="absolute top-0 right-0 w-px h-full opacity-10"
@@ -31,8 +38,8 @@
       <div class="relative flex flex-col h-full p-10">
 
         <!-- Logo -->
-        <div class="flex items-center gap-3.5">
-          <div class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-900/60 flex-shrink-0 overflow-hidden"
+        <div class="flex items-center gap-3.5 animate-fade-in">
+          <div class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-900/60 flex-shrink-0 overflow-hidden ring-2 ring-white/10"
             :style="{ background: settingsStore.get('sidebar_accent') }">
             <img v-if="settingsStore.get('logo_url')" :src="settingsStore.get('logo_url')" class="w-full h-full object-contain" alt="Logo" />
             <AcademicCapIcon v-else class="w-6 h-6 text-white" />
@@ -47,41 +54,42 @@
         <div class="flex-1 flex flex-col justify-center py-8 space-y-8">
 
           <!-- Badge -->
-          <div class="inline-flex w-fit items-center gap-2 px-3.5 py-1.5 rounded-full border"
-            style="background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.3);">
+          <div class="inline-flex w-fit items-center gap-2 px-3.5 py-1.5 rounded-full border backdrop-blur-sm animate-fade-in"
+            style="background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.25);">
             <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
             <span class="text-xs font-semibold text-indigo-300 tracking-widest uppercase">{{ settingsStore.get('login_badge') }}</span>
           </div>
 
           <!-- Headline -->
-          <div class="space-y-3">
+          <div class="space-y-3 animate-fade-in-up">
             <h1 class="text-4xl xl:text-5xl font-black text-white leading-[1.1] tracking-tight">
               {{ settingsStore.get('login_headline') }}<br />
-              <span style="background: linear-gradient(90deg, #818cf8 0%, #c084fc 50%, #60a5fa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+              <span class="text-gradient-rainbow">
                 {{ settingsStore.get('login_headline2') }}
               </span>
             </h1>
-            <p class="text-sm text-white/50 leading-relaxed max-w-xs">
+            <p class="text-sm text-white/45 leading-relaxed max-w-xs">
               {{ settingsStore.get('login_description') }}
             </p>
           </div>
 
           <!-- Stats cards -->
-          <div class="grid grid-cols-3 gap-3">
-            <div v-for="stat in stats" :key="stat.label"
-              class="rounded-2xl p-3.5 border flex flex-col gap-1.5"
-              style="background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08);">
-              <component :is="stat.icon" class="w-4 h-4 text-indigo-400" />
-              <p class="text-xl font-black text-white leading-none">{{ stat.value }}</p>
-              <p class="text-[10px] text-white/40 font-medium uppercase tracking-wider leading-none">{{ stat.label }}</p>
+          <div class="grid grid-cols-3 gap-3 animate-fade-in-up animation-delay-200">
+            <div v-for="(stat, idx) in stats" :key="stat.label"
+              class="rounded-2xl p-3.5 border backdrop-blur-sm group hover:border-white/15 transition-all duration-200"
+              :class="`animation-delay-${(idx + 1) * 100}`"
+              style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08);">
+              <component :is="stat.icon" class="w-4 h-4 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
+              <p class="text-xl font-black text-white leading-none mt-2">{{ stat.value }}</p>
+              <p class="text-[10px] text-white/35 font-medium uppercase tracking-wider leading-none mt-1">{{ stat.label }}</p>
             </div>
           </div>
 
           <!-- Feature pills -->
-          <div class="flex flex-wrap gap-2">
+          <div class="flex flex-wrap gap-2 animate-fade-in-up animation-delay-300">
             <div v-for="feat in features" :key="feat.label"
-              class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-white/60 hover:text-white/90 transition-colors"
-              style="background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08);">
+              class="flex items-center gap-2 px-3.5 py-2 rounded-full border backdrop-blur-sm text-white/55 hover:text-white/90 hover:border-white/15 transition-all duration-200 cursor-default"
+              style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08);">
               <component :is="feat.icon" class="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
               <span class="text-xs font-medium">{{ feat.label }}</span>
             </div>
@@ -100,24 +108,35 @@
     </div>
 
     <!-- ── Panel kanan: Form login ────────────────────────────── -->
-    <div class="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 bg-surface-50 relative">
+    <div class="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 bg-surface-50 relative overflow-hidden">
+
+      <!-- Background decoration for mobile -->
+      <div class="absolute inset-0 pointer-events-none lg:hidden">
+        <div class="absolute -top-20 -right-20 w-[300px] h-[300px] rounded-full opacity-[0.04]"
+          style="background: radial-gradient(circle, #6366f1 0%, transparent 70%); filter: blur(40px);" />
+        <div class="absolute -bottom-20 -left-20 w-[250px] h-[250px] rounded-full opacity-[0.03]"
+          style="background: radial-gradient(circle, #3b82f6 0%, transparent 70%); filter: blur(50px);" />
+      </div>
+
       <!-- Mobile logo -->
-      <div class="lg:hidden flex items-center gap-3 mb-10">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg">
-          <AcademicCapIcon class="w-6 h-6 text-white" />
+      <div class="lg:hidden flex items-center gap-3 mb-10 animate-fade-in relative">
+        <div class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-600/30 ring-2 ring-primary-100 overflow-hidden"
+          :style="{ background: settingsStore.get('sidebar_accent') }">
+          <img v-if="settingsStore.get('logo_url')" :src="settingsStore.get('logo_url')" class="w-full h-full object-contain" alt="Logo" />
+          <AcademicCapIcon v-else class="w-6 h-6 text-white" />
         </div>
         <div>
-          <p class="text-lg font-bold text-slate-900">SDMS</p>
-          <p class="text-xs text-slate-400">School Data Management</p>
+          <p class="text-lg font-bold text-slate-900 tracking-tight">{{ settingsStore.get('app_name') || 'SDMS' }}</p>
+          <p class="text-xs text-slate-400">{{ settingsStore.get('app_subtitle') }}</p>
         </div>
       </div>
 
-      <div class="w-full max-w-sm animate-slide-up">
+      <div class="w-full max-w-sm animate-slide-up relative">
 
         <!-- Heading -->
         <div class="mb-8">
           <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Selamat datang</h2>
-          <p class="text-sm text-slate-500 mt-1.5">Masuk ke akun SDMS Anda untuk melanjutkan</p>
+          <p class="text-sm text-slate-500 mt-2">Masuk ke akun SDMS Anda untuk melanjutkan</p>
         </div>
 
         <!-- Form -->
@@ -135,7 +154,7 @@
                 v-model="form.username"
                 type="text"
                 :class="[
-                  'form-input pl-10',
+                  'form-input pl-10 py-3',
                   errors.username ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20 bg-red-50/30' : '',
                 ]"
                 placeholder="Masukkan username atau email"
@@ -163,7 +182,7 @@
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
                 :class="[
-                  'form-input pl-10 pr-11',
+                  'form-input pl-10 pr-11 py-3',
                   errors.password ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20 bg-red-50/30' : '',
                 ]"
                 placeholder="Masukkan password"
@@ -192,7 +211,7 @@
           <Transition name="alert">
             <div
               v-if="authError"
-              class="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-200/70"
+              class="flex items-start gap-3 p-4 rounded-xl bg-red-50/80 border border-red-200/60 backdrop-blur-sm"
               role="alert"
             >
               <ExclamationCircleIcon class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -204,16 +223,16 @@
           <button
             type="submit"
             :disabled="loading"
-            class="btn-primary w-full py-3 text-sm font-semibold rounded-xl shadow-md shadow-primary-500/25 hover:shadow-lg hover:shadow-primary-500/30 transition-all"
+            class="btn-primary w-full py-3.5 text-sm font-semibold rounded-xl shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 transition-all duration-200"
           >
-            <span v-if="loading" class="flex items-center gap-2">
+            <span v-if="loading" class="flex items-center justify-center gap-2">
               <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
               Memproses...
             </span>
-            <span v-else class="flex items-center gap-2">
+            <span v-else class="flex items-center justify-center gap-2">
               <ArrowRightOnRectangleIcon class="w-4 h-4" />
               Masuk ke Sistem
             </span>

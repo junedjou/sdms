@@ -18,7 +18,7 @@
           </button>
         </div>
         <button v-if="authStore.hasPermission('guru:create')" @click="openForm()" class="btn-primary">
-          <PlusIcon class="w-4 h-4" /> Tambah Guru
+          <PlusIcon class="w-4 h-4" /> <span class="hidden sm:inline">Tambah</span> Guru
         </button>
       </div>
     </div>
@@ -41,7 +41,7 @@
         <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
       <template v-else-if="items.length">
-        <div class="table-container border-0">
+        <div class="table-wrapper border-0">
           <table class="table">
             <thead>
               <tr>
@@ -145,7 +145,7 @@
 
     <!-- Form Modal -->
     <BaseModal v-model="showForm" :title="editItem ? 'Edit Data Guru' : 'Tambah Guru'" size="lg">
-      <form @submit.prevent="submitForm" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <form @submit.prevent="submitForm" class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
         <div class="form-group sm:col-span-2">
           <label class="form-label">Nama Lengkap <span class="text-red-500">*</span></label>
           <input v-model="form.nama" type="text" class="form-input" required />

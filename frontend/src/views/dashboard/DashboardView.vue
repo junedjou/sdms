@@ -4,7 +4,7 @@
     <!-- ── Page header ───────────────────────────────────────── -->
     <div class="page-header">
       <div>
-        <h1 class="page-title">Executive Dashboard</h1>
+        <h1 class="page-title text-2xl">Executive Dashboard</h1>
         <p class="page-subtitle">
           {{ masterStore.tahunAktif?.nama
             ? `Tahun Pelajaran ${masterStore.tahunAktif.nama}`
@@ -31,7 +31,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
       <!-- Siswa per Jurusan -->
-      <div class="lg:col-span-2 card">
+      <div class="lg:col-span-2 card overflow-hidden">
         <div class="card-header">
           <div>
             <h2 class="text-sm font-bold text-slate-800">Siswa per Jurusan</h2>
@@ -60,7 +60,7 @@
       </div>
 
       <!-- Agenda -->
-      <div class="card flex flex-col">
+      <div class="card flex flex-col overflow-hidden">
         <div class="card-header">
           <div>
             <h2 class="text-sm font-bold text-slate-800">Agenda Terdekat</h2>
@@ -84,7 +84,7 @@
           <div
             v-for="item in agenda"
             :key="item.id"
-            class="px-5 py-3 flex items-start gap-3 hover:bg-slate-50/70 transition-colors"
+            class="px-5 py-3.5 flex items-start gap-3 hover:bg-slate-50/50 transition-colors cursor-default"
           >
             <div
               class="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ring-2 ring-offset-1"
@@ -111,7 +111,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 
       <!-- Siswa per JK -->
-      <div class="card">
+      <div class="card overflow-hidden">
         <div class="card-header">
           <div>
             <h2 class="text-sm font-bold text-slate-800">Jenis Kelamin Siswa</h2>
@@ -131,7 +131,7 @@
       </div>
 
       <!-- Guru per Status -->
-      <div class="card">
+      <div class="card overflow-hidden">
         <div class="card-header">
           <div>
             <h2 class="text-sm font-bold text-slate-800">Status Guru</h2>
@@ -151,24 +151,24 @@
       </div>
 
       <!-- Quick access -->
-      <div class="card">
+      <div class="card overflow-hidden">
         <div class="card-header">
           <div>
             <h2 class="text-sm font-bold text-slate-800">Akses Cepat</h2>
             <p class="text-xs text-slate-400 mt-0.5">Menu yang sering digunakan</p>
           </div>
         </div>
-        <div class="card-body grid grid-cols-2 gap-2 p-3">
+        <div class="card-body grid grid-cols-2 gap-2.5 p-3.5">
           <RouterLink
             v-for="link in quickLinks"
             :key="link.to"
             :to="link.to"
-            class="flex flex-col items-center gap-2.5 p-4 rounded-xl hover:scale-[1.03] transition-all duration-150 group"
-            :style="{ backgroundColor: link.color + '0f' }"
+            class="flex flex-col items-center gap-2.5 p-4 rounded-xl hover:scale-[1.03] hover:shadow-md transition-all duration-200 group"
+            :style="{ backgroundColor: link.color + '0a' }"
           >
             <div
-              class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 group-hover:scale-105"
-              :style="{ backgroundColor: link.color + '18' }"
+              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 group-hover:scale-110 group-hover:shadow-sm"
+              :style="{ backgroundColor: link.color + '15' }"
             >
               <component :is="link.icon" class="w-5 h-5" :style="{ color: link.color }" />
             </div>
@@ -226,22 +226,22 @@ const jenisColor = {
 const statCards = computed(() => [
   {
     label: 'Total Guru',    value: stats.value?.guru,
-    icon: UserGroupIcon,      color: 'bg-blue-50',    iconColor: 'text-blue-600',
+    icon: UserGroupIcon,      color: 'bg-gradient-to-br from-blue-50 to-blue-100/50',    iconColor: 'text-blue-600',
     trend: 'Tenaga pendidik aktif',
   },
   {
     label: 'Total Siswa',   value: stats.value?.siswa,
-    icon: AcademicCapIcon,    color: 'bg-emerald-50', iconColor: 'text-emerald-600',
+    icon: AcademicCapIcon,    color: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50', iconColor: 'text-emerald-600',
     trend: 'Peserta didik aktif',
   },
   {
     label: 'Total Pegawai', value: stats.value?.pegawai,
-    icon: BriefcaseIcon,      color: 'bg-violet-50',  iconColor: 'text-violet-600',
+    icon: BriefcaseIcon,      color: 'bg-gradient-to-br from-violet-50 to-violet-100/50',  iconColor: 'text-violet-600',
     trend: 'Tenaga kependidikan',
   },
   {
     label: 'Total Kelas',   value: stats.value?.kelas,
-    icon: RectangleStackIcon, color: 'bg-amber-50',   iconColor: 'text-amber-600',
+    icon: RectangleStackIcon, color: 'bg-gradient-to-br from-amber-50 to-amber-100/50',   iconColor: 'text-amber-600',
     trend: stats.value?.tahun_pelajaran || '—',
   },
 ]);
@@ -256,9 +256,10 @@ const barChartData = computed(() => {
     datasets: [{
       label: 'Jumlah Siswa',
       data: items.map((i) => i.total),
-      backgroundColor: chartColors,
+      backgroundColor: chartColors.map(c => c + 'cc'),
       borderRadius: 8,
       borderWidth: 0,
+      borderSkipped: false,
     }],
   };
 });
@@ -272,8 +273,9 @@ const barOptions = {
       backgroundColor: '#1e293b',
       titleColor: '#94a3b8',
       bodyColor: '#f1f5f9',
-      padding: 10,
-      cornerRadius: 8,
+      padding: 12,
+      cornerRadius: 10,
+      displayColors: false,
       callbacks: { label: (ctx) => ` ${ctx.raw} siswa` },
     },
   },
@@ -294,7 +296,7 @@ const jkChartData = computed(() => {
   const items = summary.value?.siswa_per_jk || [];
   return {
     labels: items.map((i) => i.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'),
-    datasets: [{ data: items.map((i) => i.total), backgroundColor: ['#6366f1', '#ec4899'], borderWidth: 0, hoverOffset: 6 }],
+    datasets: [{ data: items.map((i) => i.total), backgroundColor: ['#6366f1', '#ec4899'], borderWidth: 0, hoverOffset: 8 }],
   };
 });
 
@@ -302,7 +304,7 @@ const guruStatusData = computed(() => {
   const items = summary.value?.guru_per_status || [];
   return {
     labels: items.map((i) => i.status),
-    datasets: [{ data: items.map((i) => i.total), backgroundColor: chartColors, borderWidth: 0, hoverOffset: 6 }],
+    datasets: [{ data: items.map((i) => i.total), backgroundColor: chartColors, borderWidth: 0, hoverOffset: 8 }],
   };
 });
 
@@ -313,14 +315,14 @@ const doughnutOptions = {
   plugins: {
     legend: {
       position: 'bottom',
-      labels: { font: { size: 11 }, boxWidth: 10, padding: 14, color: '#64748b' },
+      labels: { font: { size: 11 }, boxWidth: 10, padding: 14, color: '#64748b', usePointStyle: true },
     },
     tooltip: {
       backgroundColor: '#1e293b',
       titleColor: '#94a3b8',
       bodyColor: '#f1f5f9',
-      padding: 10,
-      cornerRadius: 8,
+      padding: 12,
+      cornerRadius: 10,
     },
   },
 };

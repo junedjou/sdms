@@ -161,7 +161,7 @@
           <div v-for="i in 3" :key="i" class="h-12 bg-gray-50 rounded-lg animate-pulse" />
         </div>
         <template v-else-if="backupFiles.length">
-          <div class="table-container">
+          <div class="table-wrapper">
             <table class="table">
               <thead>
                 <tr>
