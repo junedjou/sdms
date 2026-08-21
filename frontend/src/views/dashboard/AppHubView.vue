@@ -161,7 +161,7 @@
           <!-- Actions -->
           <div class="flex gap-2 pt-3 border-t border-gray-100">
             <button @click="testClient(client)" class="flex-1 btn-secondary btn-sm text-xs" :disabled="testingId === client.id">
-              <VirusIcon v-if="testingId !== client.id" class="w-3.5 h-3.5" />
+              <PlayIcon v-if="testingId !== client.id" class="w-3.5 h-3.5" />
               <div v-else class="w-3.5 h-3.5 border-2 border-gray-300 border-t-primary-600 rounded-full animate-spin" />
               {{ testingId === client.id ? 'Testing...' : 'Test' }}
             </button>
@@ -523,7 +523,7 @@ const { data } = await response.json();
         <!-- Test & Regenerate -->
         <div class="flex gap-2 pt-3 border-t border-gray-100">
           <button @click="testClient(detailClient)" class="btn-secondary btn-sm flex-1" :disabled="testingId === detailClient.id">
-            <VirusIcon class="w-4 h-4" /> Test Webhook
+            <PlayIcon class="w-4 h-4" /> Test Webhook
           </button>
           <button @click="confirmRegenerateKeys(detailClient)" class="btn-secondary btn-sm flex-1 text-amber-600">
             <ArrowPathIcon class="w-4 h-4" /> Regenerate Keys
@@ -556,7 +556,7 @@ import BaseModal from '@/components/common/BaseModal.vue';
 import {
   ArrowPathIcon, PlusIcon, InformationCircleIcon, LinkIcon,
   CheckCircleIcon, XCircleIcon, EyeIcon, PencilIcon, TrashIcon,
-  KeyIcon, ClipboardIcon, VirusIcon,
+  KeyIcon, ClipboardIcon, PlayIcon,
   BookOpenIcon, ClipboardDocumentListIcon, MoonIcon,
   CalendarDaysIcon, AcademicCapIcon, GlobeAltIcon,
 } from '@heroicons/vue/24/outline';
