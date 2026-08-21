@@ -26,4 +26,10 @@ router.post('/bulk-sync', requirePermission('master:update'), asyncHandler(ctrl.
 router.get('/logs',        requirePermission('master:view'),   asyncHandler(ctrl.getLogs));
 router.delete('/logs',     requirePermission('master:update'), asyncHandler(ctrl.clearLogs));
 
+// ── Integration Test ───────────────────────────────────────
+const testCtrl = require('../controllers/integrationTest.controller');
+router.post('/test-receiver',  asyncHandler(testCtrl.testReceiver));  // tanpa auth — untuk testing
+router.post('/test-sender',    requirePermission('master:update'), asyncHandler(testCtrl.testSender));
+router.get('/sample-payload/:event', requirePermission('master:view'), asyncHandler(testCtrl.samplePayload));
+
 module.exports = router;
