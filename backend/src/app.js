@@ -16,6 +16,7 @@ const dashboardRoutes  = require('./routes/dashboard.routes');
 const masterRoutes     = require('./routes/master.routes');
 const gatewayRoutes    = require('./gateway/gateway.routes');
 const settingsRoutes   = require('./routes/settings.routes');
+const apiHubRoutes     = require('./routes/apiHub.routes');
 
 const app = express();
 
@@ -69,6 +70,7 @@ app.use(`${API_PREFIX}/dashboard`, dashboardRoutes);
 app.use(`${API_PREFIX}/master`,    masterRoutes);
 app.use(`${API_PREFIX}/gateway`,   gatewayRoutes);
 app.use(`${API_PREFIX}/settings`,  settingsRoutes);
+app.use(`${API_PREFIX}/apihub`,    apiHubRoutes);
 
 // 404 handler
 app.use((req, res) => {

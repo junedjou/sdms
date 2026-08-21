@@ -122,10 +122,23 @@ router.get('/health',
 router.get('/sync/targets',
   authenticate, adminOnly,
   asyncHandler(async (req, res) => {
-    const targets = SYNC_TARGETS.map(({ name, url, webhookPath, events }) => ({
-      name, url, webhookPath, subscribed_events: events,
+    // Gabungkan hardcoded + DB-registered targets
+    const hardcoded = SYNC_TARGETS.map(({ name, url, webhookPath, events }) => ({
+      name, url, webhookPath, subscribed_events: events, source: 'hardcoded',
     }));
-    return success(res, targets);
+
+    let dbTargets = [];
+    try {
+      const { ApiClient } = require('../models');
+      const clients = await ApiClient.findAll({ where: { status: 'active' } });
+      dbTargets = clients.map(c => ({
+        name: c.name, url: c.webhook_url, subscribed_events: c.events,
+        total_delivered: c.total_delivered, total_failed: c.total_failed,
+        source: 'registered',
+      }));
+    } catch { /* fallback */ }
+
+    return success(res, [...hardcoded, ...dbTargets]);
   })
 );
 

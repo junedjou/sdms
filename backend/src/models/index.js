@@ -19,6 +19,8 @@ const MataPelajaran   = require('./MataPelajaran');
 const KalenderAkademik = require('./KalenderAkademik');
 const { AuditLog }   = require('../middleware/auditLog');
 const AppSetting     = require('./AppSetting');
+const ApiClient      = require('./ApiClient');
+const WebhookLog     = require('./WebhookLog');
 
 // ============================================================
 // ASOSIASI / RELASI
@@ -92,6 +94,10 @@ KalenderAkademik.belongsTo(TahunPelajaran, { foreignKey: 'tahun_pelajaran_id', a
 KalenderAkademik.belongsTo(Semester,       { foreignKey: 'semester_id',        as: 'semester' });
 TahunPelajaran.hasMany(KalenderAkademik,   { foreignKey: 'tahun_pelajaran_id', as: 'kalender' });
 
+// ApiClient -> WebhookLog
+ApiClient.hasMany(WebhookLog, { foreignKey: 'api_client_id', as: 'logs' });
+WebhookLog.belongsTo(ApiClient, { foreignKey: 'api_client_id', as: 'client' });
+
 // ============================================================
 // SYNC ke database
 // ============================================================
@@ -116,4 +122,5 @@ module.exports = {
   Guru, Pegawai, OrangTua, Siswa,
   Kelas, SiswaKelas, MataPelajaran,
   KalenderAkademik, AuditLog, AppSetting,
+  ApiClient, WebhookLog,
 };

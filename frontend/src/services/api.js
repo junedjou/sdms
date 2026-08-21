@@ -187,6 +187,23 @@ export const gatewayService = {
   deleteBackup: (file) => api.delete(`/gateway/backup/${file}`),
 };
 
+export const apiHubService = {
+  // Clients
+  listClients:     ()       => api.get('/apihub/clients'),
+  getClient:       (id)     => api.get(`/apihub/clients/${id}`),
+  createClient:    (data)   => api.post('/apihub/clients', data),
+  updateClient:    (id, d)  => api.put(`/apihub/clients/${id}`, d),
+  deleteClient:    (id)     => api.delete(`/apihub/clients/${id}`),
+  regenerateKeys:  (id)     => api.post(`/apihub/clients/${id}/regenerate-key`),
+  testWebhook:     (id)     => api.post(`/apihub/clients/${id}/test`),
+  bulkSync:        (data)   => api.post('/apihub/bulk-sync', data),
+  // Events
+  availableEvents: ()       => api.get('/apihub/events'),
+  // Logs
+  getLogs:         (params) => api.get('/apihub/logs', { params }),
+  clearLogs:       (data)   => api.delete('/apihub/logs', { data }),
+};
+
 export const settingsService = {
   get:        ()       => api.get('/settings'),
   save:       (data)   => api.put('/settings', { settings: data }),
