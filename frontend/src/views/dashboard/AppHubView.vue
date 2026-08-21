@@ -394,9 +394,9 @@ const { data } = await response.json();
     <!-- Register / Edit Modal -->
     <!-- ═══════════════════════════════════════════════════════ -->
     <BaseModal
-      :show="showRegisterModal || showEditModal"
+      v-model="showRegisterModal"
       :title="showEditModal ? 'Edit Aplikasi' : 'Daftarkan Aplikasi Baru'"
-      max-width="lg"
+      size="lg"
       @close="closeModals"
     >
       <div class="space-y-4">
@@ -446,10 +446,9 @@ const { data } = await response.json();
     <!-- Detail Modal (shows API keys after creation) -->
     <!-- ═══════════════════════════════════════════════════════ -->
     <BaseModal
-      :show="showDetailModal"
+      v-model="showDetailModal"
       :title="`Detail: ${detailClient?.name || ''}`"
-      max-width="lg"
-      @close="showDetailModal = false"
+      size="lg"
     >
       <div v-if="detailClient" class="space-y-4">
         <!-- API Keys (only show when freshly created) -->
@@ -533,7 +532,7 @@ const { data } = await response.json();
     </BaseModal>
 
     <!-- Delete Confirmation -->
-    <BaseModal :show="showDeleteConfirm" title="Hapus Aplikasi" @close="showDeleteConfirm = false" max-width="sm">
+    <BaseModal v-model="showDeleteConfirm" title="Hapus Aplikasi" size="sm">
       <p class="text-sm text-gray-600">
         Yakin ingin menghapus <strong>{{ deleteTarget?.name }}</strong>? Aplikasi ini tidak akan menerima webhook lagi.
       </p>
@@ -741,6 +740,7 @@ const editClient = (client) => {
     events: client.events || ['*'],
   };
   showEditModal.value = true;
+  showRegisterModal.value = true;
 };
 
 const viewClient = (client) => {
