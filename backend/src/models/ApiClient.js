@@ -41,7 +41,7 @@ const ApiClient = masterDB.define('ApiClient', {
     comment: 'URL endpoint yang akan menerima webhook dari SDMS',
   },
   api_key: {
-    type: DataTypes.STRING(64),
+    type: DataTypes.STRING(100),
     allowNull: false,
     unique: true,
     comment: 'API key untuk autentikasi request dari aplikasi ini',
