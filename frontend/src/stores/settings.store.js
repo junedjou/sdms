@@ -8,6 +8,7 @@ const DEFAULTS = {
   app_subtitle:      'School Data Management System',
   school_name:       'SMK Negeri 1 Kras',
   logo_url:          '',
+  sidebar_theme:     'light',
   sidebar_bg:        '#0f172a',
   sidebar_accent:    '#6366f1',
   sidebar_text:      'rgba(255,255,255,0.7)',
