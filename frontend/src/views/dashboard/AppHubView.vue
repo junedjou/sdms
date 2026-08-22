@@ -61,8 +61,12 @@
 
           <!-- Status dot -->
           <div class="absolute top-3 right-3 flex items-center gap-1.5 bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-1">
-            <span class="w-2 h-2 rounded-full animate-pulse" :class="app.status === 'online' ? 'bg-emerald-400' : 'bg-red-400'" />
-            <span class="text-[10px] font-medium text-white">{{ app.status === 'online' ? 'Online' : 'Offline' }}</span>
+            <span v-if="app.status === 'online'" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span v-else-if="app.status === 'offline'" class="w-2 h-2 rounded-full bg-red-400" />
+            <span v-else class="w-2 h-2 rounded-full bg-gray-300 animate-pulse" />
+            <span class="text-[10px] font-medium text-white">
+              {{ app.status === 'online' ? 'Online' : app.status === 'offline' ? 'Offline' : 'Checking...' }}
+            </span>
           </div>
         </div>
 
@@ -252,7 +256,7 @@ const builtinApps = [
     category: 'Akademik',
     sso_enabled: true,
     sync_enabled: true,
-    status: 'online',
+    status: 'unknown',
   },
   {
     id: 'piket', name: 'Jurnal Piket', slug: 'piket',
@@ -262,7 +266,7 @@ const builtinApps = [
     category: 'Kesiswaan',
     sso_enabled: true,
     sync_enabled: true,
-    status: 'online',
+    status: 'unknown',
   },
   {
     id: 'sholat', name: 'Sholat & Ibadah', slug: 'sholat',
@@ -272,7 +276,7 @@ const builtinApps = [
     category: 'Keagamaan',
     sso_enabled: true,
     sync_enabled: true,
-    status: 'online',
+    status: 'unknown',
   },
   {
     id: 'kegiatan', name: 'Kegiatan Sekolah', slug: 'kegiatan',
@@ -282,7 +286,7 @@ const builtinApps = [
     category: 'Kegiatan',
     sso_enabled: true,
     sync_enabled: false,
-    status: 'online',
+    status: 'unknown',
   },
   {
     id: 'kelulusan', name: 'Kelulusan', slug: 'kelulusan',
@@ -292,7 +296,7 @@ const builtinApps = [
     category: 'Akademik',
     sso_enabled: true,
     sync_enabled: false,
-    status: 'online',
+    status: 'unknown',
   },
   {
     id: 'website', name: 'Website Sekolah', slug: 'website',
@@ -302,7 +306,7 @@ const builtinApps = [
     category: 'Publik',
     sso_enabled: false,
     sync_enabled: true,
-    status: 'online',
+    status: 'unknown',
   },
 ];
 
@@ -389,9 +393,15 @@ const checkHealth = async () => {
         found.latency = item.latency_ms;
       }
     });
-    // Do NOT override configured apps to offline — they are always reachable
+
+    // Remaining 'unknown' → offline (health check couldn't reach them)
+    apps.value.forEach(a => {
+      if (a.status === 'unknown') a.status = 'offline';
+    });
   } catch {
-    // Health check failed — keep current status (default: online)
+    apps.value.forEach(a => {
+      if (a.status === 'unknown') a.status = 'offline';
+    });
   }
 };
 
@@ -417,7 +427,7 @@ const loadClients = async () => {
           category: 'Terdaftar',
           sso_enabled: true,
           sync_enabled: !!client.webhook_url,
-          status: 'online',
+          status: 'unknown',
           client_id: client.id,
         });
       }
