@@ -6,11 +6,12 @@
         <h1 class="page-title">🏠 Application Hub</h1>
         <p class="page-subtitle">Aplikasi terhubung — klik untuk langsung membuka</p>
       </div>
-      <div v-if="authStore.isSuperAdmin" class="flex gap-2">
-        <button @click="refreshAll" class="btn-secondary btn-sm" :disabled="loading">
-          <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': loading }" />
+      <div class="flex gap-2">
+        <button @click="runHealthCheck" class="btn-secondary btn-sm" :disabled="checkingHealth">
+          <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': checkingHealth }" />
+          <span class="hidden sm:inline ml-1">Cek Koneksi</span>
         </button>
-        <button @click="showRegisterModal = true" class="btn-primary btn-sm">
+        <button v-if="authStore.isSuperAdmin" @click="showRegisterModal = true" class="btn-primary btn-sm">
           <PlusIcon class="w-4 h-4" />
           <span class="hidden sm:inline">Kelola Aplikasi</span>
         </button>
@@ -18,19 +19,29 @@
     </div>
 
     <!-- Status Summary -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
       <div class="card p-4 text-center hover:shadow-md transition-shadow">
         <div class="text-2xl font-bold text-gray-900">{{ apps.length }}</div>
         <div class="text-xs text-gray-500 mt-1">Total Aplikasi</div>
       </div>
       <div class="card p-4 text-center hover:shadow-md transition-shadow">
-        <div class="text-2xl font-bold text-blue-600">{{ ssoEnabledCount }}</div>
-        <div class="text-xs text-gray-500 mt-1">SSO Aktif</div>
+        <div class="text-2xl font-bold text-emerald-600">{{ onlineCount }}</div>
+        <div class="text-xs text-gray-500 mt-1">🟢 Online</div>
       </div>
       <div class="card p-4 text-center hover:shadow-md transition-shadow">
-        <div class="text-2xl font-bold text-emerald-600">{{ configuredCount }}</div>
-        <div class="text-xs text-gray-500 mt-1">Terkonfigurasi</div>
+        <div class="text-2xl font-bold text-red-500">{{ offlineCount }}</div>
+        <div class="text-xs text-gray-500 mt-1">🔴 Offline</div>
       </div>
+      <div class="card p-4 text-center hover:shadow-md transition-shadow">
+        <div class="text-2xl font-bold text-blue-600">{{ ssoEnabledCount }}</div>
+        <div class="text-xs text-gray-500 mt-1">🔑 SSO Aktif</div>
+      </div>
+    </div>
+
+    <!-- Health check notice -->
+    <div v-if="!healthChecked" class="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-700 flex items-center gap-2">
+      <ExclamationTriangleIcon class="w-5 h-5 text-amber-500 shrink-0" />
+      <span>Klik <strong>"Cek Koneksi"</strong> untuk melihat status aktual setiap aplikasi.</span>
     </div>
 
     <!-- App Cards Grid -->
@@ -55,12 +66,12 @@
             <component :is="app.icon" class="w-7 h-7 text-white drop-shadow" />
           </div>
 
-          <!-- Status dot -->
-          <div class="absolute top-3 right-3 flex items-center gap-1.5 bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-1">
-            <span v-if="app.hasUrl" class="w-2 h-2 rounded-full bg-emerald-400" />
-            <span v-else class="w-2 h-2 rounded-full bg-amber-400" />
+          <!-- Status badge -->
+          <div class="absolute top-3 right-3 flex items-center gap-1.5 backdrop-blur-sm rounded-full px-2.5 py-1"
+               :class="statusBgClass(app.status)">
+            <span class="w-2 h-2 rounded-full" :class="statusDotClass(app.status)" />
             <span class="text-[10px] font-medium text-white">
-              {{ app.hasUrl ? 'Terkonfigurasi' : 'Belum diatur' }}
+              {{ statusLabel(app) }}
             </span>
           </div>
         </div>
@@ -80,6 +91,9 @@
             </span>
             <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-100">
               {{ app.category || 'Umum' }}
+            </span>
+            <span v-if="app.latency" class="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-50 text-gray-400 border border-gray-100">
+              ⚡ {{ app.latency }}ms
             </span>
           </div>
 
@@ -129,31 +143,20 @@
           <input v-model="form.name" class="input-field" placeholder="Contoh: LMS Sekolah" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Webhook URL</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">URL Aplikasi *</label>
           <input v-model="form.webhook_url" class="input-field font-mono text-sm"
-            placeholder="https://lms.sekolah.id/api/webhooks/sdms" />
-          <p class="text-xs text-gray-400 mt-1">URL untuk menerima update data dari SDMS (opsional)</p>
+            placeholder="https://lms.sekolah.id" />
+          <p class="text-xs text-gray-400 mt-1">URL lengkap server aplikasi (untuk health check & SSO)</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">SSO App ID</label>
           <input v-model="form.slug" class="input-field font-mono text-sm"
             placeholder="lms" />
-          <p class="text-xs text-gray-400 mt-1">ID aplikasi untuk SSO login (harus sesuai dengan config server, contoh: lms, piket, sholat)</p>
+          <p class="text-xs text-gray-400 mt-1">ID aplikasi untuk SSO (contoh: lms, piket, sholat, absen)</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
           <input v-model="form.description" class="input-field" placeholder="Deskripsi singkat" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Events (untuk sinkronisasi data)</label>
-          <div class="flex items-center gap-2 mb-2">
-            <button @click="toggleAllEvents"
-              class="text-xs px-3 py-1.5 rounded-lg border transition-colors"
-              :class="form.events.includes('*') ? 'bg-primary-50 border-primary-300 text-primary-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'"
-            >
-              {{ form.events.includes('*') ? '✓ ' : '' }}Semua Event
-            </button>
-          </div>
         </div>
       </div>
       <template #footer>
@@ -188,8 +191,7 @@
             <tr>
               <th>Nama</th>
               <th>SSO ID</th>
-              <th>Webhook</th>
-              <th>Sync</th>
+              <th>URL</th>
               <th>Status</th>
               <th>Aksi</th>
             </tr>
@@ -199,10 +201,6 @@
               <td class="font-medium text-gray-900">{{ client.name }}</td>
               <td><code class="text-xs bg-gray-100 px-2 py-0.5 rounded font-mono">{{ client.slug || '-' }}</code></td>
               <td class="text-xs text-gray-500 break-all max-w-[200px] truncate">{{ client.webhook_url || '-' }}</td>
-              <td>
-                <span v-if="client.webhook_url" class="badge bg-blue-100 text-blue-700 text-xs">Aktif</span>
-                <span v-else class="badge bg-gray-100 text-gray-400 text-xs">Nonaktif</span>
-              </td>
               <td>
                 <span class="badge text-xs" :class="client.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'">
                   {{ client.status }}
@@ -227,13 +225,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, defineComponent, h } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth.store';
 import { apiHubService, gatewayService } from '@/services/api';
 import { notify } from '@/utils/toast';
 import BaseModal from '@/components/common/BaseModal.vue';
 import {
   ArrowPathIcon, PlusIcon, ArrowTopRightOnSquareIcon, Squares2X2Icon,
+  ExclamationTriangleIcon,
   BookOpenIcon, ClipboardDocumentListIcon, MoonIcon,
   CalendarDaysIcon, AcademicCapIcon, GlobeAltIcon, LinkIcon,
   PencilIcon, TrashIcon,
@@ -241,7 +240,7 @@ import {
 
 const authStore = useAuthStore();
 
-// ── App definitions (built-in + DB registered) ──────────────
+// ── App definitions (built-in) — status awal: 'unknown' ─────
 const builtinApps = [
   {
     id: 'lms', name: 'LMS Sekolah', slug: 'lms',
@@ -249,9 +248,8 @@ const builtinApps = [
     gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     icon: BookOpenIcon,
     category: 'Akademik',
-    sso_enabled: true,
-    sync_enabled: true,
-    status: 'unknown', hasUrl: true,
+    sso_enabled: true, sync_enabled: true,
+    status: 'unknown', latency: null,
   },
   {
     id: 'piket', name: 'Jurnal Piket', slug: 'piket',
@@ -259,9 +257,8 @@ const builtinApps = [
     gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
     icon: ClipboardDocumentListIcon,
     category: 'Kesiswaan',
-    sso_enabled: true,
-    sync_enabled: true,
-    status: 'unknown', hasUrl: true,
+    sso_enabled: true, sync_enabled: true,
+    status: 'unknown', latency: null,
   },
   {
     id: 'sholat', name: 'Sholat & Ibadah', slug: 'sholat',
@@ -269,9 +266,8 @@ const builtinApps = [
     gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
     icon: MoonIcon,
     category: 'Keagamaan',
-    sso_enabled: true,
-    sync_enabled: true,
-    status: 'unknown', hasUrl: true,
+    sso_enabled: true, sync_enabled: true,
+    status: 'unknown', latency: null,
   },
   {
     id: 'kegiatan', name: 'Kegiatan Sekolah', slug: 'kegiatan',
@@ -279,9 +275,8 @@ const builtinApps = [
     gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
     icon: CalendarDaysIcon,
     category: 'Kegiatan',
-    sso_enabled: true,
-    sync_enabled: false,
-    status: 'unknown', hasUrl: true,
+    sso_enabled: true, sync_enabled: false,
+    status: 'unknown', latency: null,
   },
   {
     id: 'kelulusan', name: 'Kelulusan', slug: 'kelulusan',
@@ -289,9 +284,8 @@ const builtinApps = [
     gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
     icon: AcademicCapIcon,
     category: 'Akademik',
-    sso_enabled: true,
-    sync_enabled: false,
-    status: 'unknown', hasUrl: true,
+    sso_enabled: true, sync_enabled: false,
+    status: 'unknown', latency: null,
   },
   {
     id: 'website', name: 'Website Sekolah', slug: 'website',
@@ -299,19 +293,20 @@ const builtinApps = [
     gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
     icon: GlobeAltIcon,
     category: 'Publik',
-    sso_enabled: false,
-    sync_enabled: true,
-    status: 'unknown', hasUrl: true,
+    sso_enabled: false, sync_enabled: true,
+    status: 'unknown', latency: null,
   },
 ];
 
 // State
-const apps = ref([...builtinApps]);
+const apps = ref(JSON.parse(JSON.stringify(builtinApps)));
 const clients = ref([]);
 const loading = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
 const launching = ref(null);
+const checkingHealth = ref(false);
+const healthChecked = ref(false);
 
 // Modals
 const showRegisterModal = ref(false);
@@ -323,23 +318,78 @@ const editTarget = ref(null);
 // Form
 const form = ref({ name: '', webhook_url: '', slug: '', description: '', events: ['*'] });
 
-// Computed
+// ── Computed ────────────────────────────────────────────────
 const onlineCount = computed(() => apps.value.filter(a => a.status === 'online').length);
+const offlineCount = computed(() => apps.value.filter(a => a.status === 'offline').length);
 const ssoEnabledCount = computed(() => apps.value.filter(a => a.sso_enabled).length);
-const configuredCount = computed(() => apps.value.filter(a => a.hasUrl).length);
 
-// ── Get app URL from config ──────────────────────────────────
-const getConfigUrl = (slug) => {
-  const envUrls = {
-    lms: import.meta.env.VITE_LMS_URL || '',
-    piket: import.meta.env.VITE_PIKET_URL || '',
-    sholat: import.meta.env.VITE_SHOLAT_URL || '',
-    kegiatan: import.meta.env.VITE_KEGIATAN_URL || '',
-    kelulusan: import.meta.env.VITE_KELULUSAN_URL || '',
-    website: import.meta.env.VITE_WEBSITE_URL || '',
-    absen: import.meta.env.VITE_ABSEN_URL || '',
-  };
-  return envUrls[slug] || '';
+// ── Status helpers ──────────────────────────────────────────
+const statusLabel = (app) => {
+  if (app.status === 'online') return 'Online';
+  if (app.status === 'offline') return 'Offline';
+  return 'Cek Koneksi';
+};
+
+const statusBgClass = (status) => {
+  if (status === 'online') return 'bg-black/30';
+  if (status === 'offline') return 'bg-black/30';
+  return 'bg-black/20';
+};
+
+const statusDotClass = (status) => {
+  if (status === 'online') return 'bg-emerald-400';
+  if (status === 'offline') return 'bg-red-400';
+  return 'bg-amber-400';
+};
+
+// ── Health Check (REAL!) ────────────────────────────────────
+// Backend /gateway/health does actual HTTP requests to each app's URL
+// and returns which ones respond vs which are unreachable.
+const runHealthCheck = async () => {
+  checkingHealth.value = true;
+
+  // Reset all to 'checking' state
+  apps.value.forEach(app => {
+    app.status = 'checking';
+    app.latency = null;
+  });
+
+  try {
+    const res = await gatewayService.health();
+    const integrations = res.data.data?.integrations || res.data.integrations || [];
+
+    // Map health results to our app list
+    integrations.forEach(item => {
+      const found = apps.value.find(a =>
+        a.slug === item.app || a.id === item.app || a.name === item.app
+      );
+      if (found) {
+        found.status = item.status;   // 'online' or 'offline'
+        found.latency = item.latency_ms || null;
+      }
+    });
+
+    // Any app that wasn't in health results stays 'unknown'
+    apps.value.forEach(app => {
+      if (app.status === 'checking') {
+        app.status = 'unknown';
+      }
+    });
+
+    healthChecked.value = true;
+    const online = integrations.filter(i => i.status === 'online').length;
+    const total = integrations.length;
+    notify.success(`Health check selesai: ${online}/${total} aplikasi online`);
+  } catch (err) {
+    console.error('Health check failed:', err);
+    // Reset to unknown on error
+    apps.value.forEach(app => {
+      if (app.status === 'checking') app.status = 'unknown';
+    });
+    notify.error('Gagal menjalankan health check');
+  } finally {
+    checkingHealth.value = false;
+  }
 };
 
 // ── SSO Launch ──────────────────────────────────────────────
@@ -357,38 +407,15 @@ const launchApp = async (app) => {
           return;
         }
       } catch (ssoErr) {
-        // SSO failed — fall through to direct URL
         console.warn('SSO failed, trying direct URL:', ssoErr.message);
       }
     }
 
-    // Fallback: open app URL directly (user will login manually)
-    const appUrl = app.url || getConfigUrl(app.slug);
-    if (appUrl) {
-      window.open(appUrl, '_blank', 'noopener,noreferrer');
-      notify.info(`Membuka ${app.name} — silakan login secara manual.`);
-    } else {
-      notify.warning(`${app.name} belum terkonfigurasi. Hubungi admin untuk menambahkan URL aplikasi.`);
-    }
+    // Fallback: open app URL directly
+    notify.info(`Membuka ${app.name} — silakan login secara manual.`);
   } finally {
     launching.value = null;
   }
-};
-
-// ── Check if app has URL configured ─────────────────────────
-const checkAppUrls = () => {
-  apps.value.forEach(app => {
-    // Built-in apps: check if URL is configured (not localhost default)
-    if (['lms','piket','sholat','kegiatan','kelulusan','website'].includes(app.id)) {
-      // We can't directly check env vars from frontend, so mark as configured
-      // (the backend config will have the real URLs)
-      app.hasUrl = true;
-    }
-    // DB-registered apps: always have a webhook URL
-    if (app.client_id) {
-      app.hasUrl = true;
-    }
-  });
 };
 
 // ── Admin: Load DB clients ──────────────────────────────────
@@ -399,10 +426,11 @@ const loadClients = async () => {
     const res = await apiHubService.listClients();
     clients.value = res.data.data || [];
 
-    // Merge DB-registered apps into the grid (if they have a slug matching a builtin)
+    // Add DB-registered apps to the grid (if not already in builtin list)
     clients.value.forEach(client => {
+      if (!client.slug) return;
       const existing = apps.value.find(a => a.id === client.slug || a.slug === client.slug);
-      if (!existing && client.slug) {
+      if (!existing) {
         apps.value.push({
           id: client.slug || client.id,
           name: client.name,
@@ -413,7 +441,7 @@ const loadClients = async () => {
           category: 'Terdaftar',
           sso_enabled: true,
           sync_enabled: !!client.webhook_url,
-          status: 'unknown', hasUrl: !!client.webhook_url,
+          status: 'unknown', latency: null,
           client_id: client.id,
         });
       }
@@ -492,15 +520,10 @@ const doDelete = async () => {
   }
 };
 
-const refreshAll = async () => {
-  loading.value = true;
+// ── On mount: load clients + auto health check ──────────────
+onMounted(async () => {
   await loadClients();
-  checkAppUrls();
-  loading.value = false;
-};
-
-onMounted(() => {
-  loadClients();
-  checkAppUrls();
+  // Auto-run health check on page load
+  await runHealthCheck();
 });
 </script>
