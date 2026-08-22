@@ -231,7 +231,7 @@ const fetchData = async () => { loading.value = true; try { items.value = (await
 const openForm = (item = null) => {
   editItem.value = item;
   form.value = item
-    ? { ...item, jurusan_id: item.jurusan_id || '', tahun_pelajaran_id: item.tahun_pelajaran_id || '', wali_kelas_id: item.wali_kelas_id || '' }
+    ? { nama: item.nama, tingkat: item.tingkat, jurusan_id: item.jurusan_id || '', tahun_pelajaran_id: item.tahun_pelajaran_id || '', kapasitas: item.kapasitas || 36, ruangan: item.ruangan || '', wali_kelas_id: item.wali_kelas_id || '' }
     : emptyForm();
   // Set nama guru di search box kalau sudah ada wali kelas
   guruSearch.value = item?.waliKelas?.nama || '';

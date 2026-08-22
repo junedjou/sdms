@@ -97,7 +97,7 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
 const emptyForm = () => ({ kode: '', nama: '', kelompok: '', jurusan_id: '', jam_per_minggu: '' });
 const form = ref(emptyForm());
 const fetchData = async () => { loading.value = true; try { items.value = (await masterService.mapelList()).data.data || []; } finally { loading.value = false; } };
-const openForm = (item = null) => { editItem.value = item; form.value = item ? { ...item, jurusan_id: item.jurusan_id || '' } : emptyForm(); showForm.value = true; };
+const openForm = (item = null) => { editItem.value = item; form.value = item ? { kode: item.kode, nama: item.nama, kelompok: item.kelompok || '', jurusan_id: item.jurusan_id || '', jam_per_minggu: item.jam_per_minggu || '' } : emptyForm(); showForm.value = true; };
 const submitForm = async () => { formLoading.value = true; try { if (editItem.value) { await masterService.mapelUpdate(editItem.value.id, form.value); notify.success('Mapel diperbarui'); } else { await masterService.mapelCreate(form.value); notify.success('Mapel ditambahkan'); } showForm.value = false; fetchData(); } catch (err) { notify.error(err.response?.data?.message || 'Gagal menyimpan'); } finally { formLoading.value = false; } };
 onMounted(fetchData);
 </script>

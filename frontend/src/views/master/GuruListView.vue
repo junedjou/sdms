@@ -302,7 +302,7 @@ const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
 
 const openForm = (item = null) => {
   editItem.value = item;
-  form.value = item ? { ...item, jurusan_id: item.jurusan_id || '' } : emptyForm();
+  form.value = item ? { nama: item.nama, nip: item.nip || '', niy: item.niy || '', jenis_kelamin: item.jenis_kelamin || '', status_kepegawaian: item.status_kepegawaian || '', jurusan_id: item.jurusan_id || '', jabatan: item.jabatan || '', mata_pelajaran: item.mata_pelajaran || '', no_hp: item.no_hp || '', email: item.email || '', tempat_lahir: item.tempat_lahir || '', tanggal_lahir: item.tanggal_lahir || '', agama: item.agama || '', alamat: item.alamat || '' } : emptyForm();
   showForm.value = true;
 };
 

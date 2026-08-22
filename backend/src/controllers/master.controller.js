@@ -50,9 +50,17 @@ const createGuru = async (req, res) => {
 const updateGuru = async (req, res) => {
   const guru = await Guru.findByPk(req.params.id);
   if (!guru) return notFound(res, 'Data guru tidak ditemukan');
+  // Hanya ambil field yang valid, bersihkan nested objects
+  const allowed = ['nama', 'nip', 'niy', 'jenis_kelamin', 'status_kepegawaian', 'jurusan_id', 'jabatan', 'mata_pelajaran', 'no_hp', 'email', 'tempat_lahir', 'tanggal_lahir', 'agama', 'alamat', 'foto'];
+  const data = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) {
+      data[key] = ['jurusan_id'].includes(key) ? (req.body[key] || null) : req.body[key];
+    }
+  }
   const oldData = guru.toJSON();
-  await guru.update(req.body);
-  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'UPDATE', resource: 'guru', resourceId: guru.id, description: `Guru ${guru.nama} diperbarui`, oldData, newData: req.body });
+  await guru.update(data);
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'UPDATE', resource: 'guru', resourceId: guru.id, description: `Guru ${guru.nama} diperbarui`, oldData, newData: data });
   await syncEvent('guru.updated', guru.toJSON());
   return success(res, guru, 'Data guru berhasil diperbarui');
 };
@@ -116,9 +124,17 @@ const createSiswa = async (req, res) => {
 const updateSiswa = async (req, res) => {
   const siswa = await Siswa.findByPk(req.params.id);
   if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
+  // Hanya ambil field yang valid
+  const allowed = ['nama', 'nisn', 'nis', 'jenis_kelamin', 'kelas_id', 'jurusan_id', 'tahun_masuk', 'status', 'tempat_lahir', 'tanggal_lahir', 'agama', 'no_hp', 'alamat'];
+  const data = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) {
+      data[key] = ['jurusan_id', 'kelas_id'].includes(key) ? (req.body[key] || null) : req.body[key];
+    }
+  }
   const oldData = siswa.toJSON();
-  await siswa.update(req.body);
-  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'UPDATE', resource: 'siswa', resourceId: siswa.id, description: `Siswa ${siswa.nama} diperbarui`, oldData, newData: req.body });
+  await siswa.update(data);
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'UPDATE', resource: 'siswa', resourceId: siswa.id, description: `Siswa ${siswa.nama} diperbarui`, oldData, newData: data });
   await syncEvent('siswa.updated', siswa.toJSON());
   return success(res, siswa, 'Data siswa berhasil diperbarui');
 };
@@ -234,7 +250,22 @@ const createKelas = async (req, res) => {
 const updateKelas = async (req, res) => {
   const kelas = await Kelas.findByPk(req.params.id);
   if (!kelas) return notFound(res, 'Kelas tidak ditemukan');
-  await kelas.update(req.body);
+  // Hanya ambil field yang valid, bersihkan nested objects & convert empty string ke null
+  const allowed = ['nama', 'tingkat', 'jurusan_id', 'wali_kelas_id', 'tahun_pelajaran_id', 'kapasitas', 'ruangan', 'is_active'];
+  const data = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) {
+      // FK fields: empty string → null
+      if (['jurusan_id', 'wali_kelas_id', 'tahun_pelajaran_id'].includes(key)) {
+        data[key] = req.body[key] || null;
+      } else {
+        data[key] = req.body[key];
+      }
+    }
+  }
+  const oldData = kelas.toJSON();
+  await kelas.update(data);
+  await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'UPDATE', resource: 'kelas', resourceId: kelas.id, description: `Kelas ${kelas.nama} diperbarui`, oldData, newData: data });
   syncEvent('kelas.updated', kelas.toJSON());
   return success(res, kelas, 'Kelas berhasil diperbarui');
 };

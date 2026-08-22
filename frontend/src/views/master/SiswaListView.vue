@@ -325,7 +325,7 @@ const clearFilter = (type) => {
 const clearAllFilters = () => { search.value = ''; filterJurusan.value = ''; filterKelas.value = ''; filterStatus.value = 'Aktif'; page.value = 1; fetchData(); };
 
 const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
-const openForm = (item = null) => { editItem.value = item; form.value = item ? { ...item, jurusan_id: item.jurusan_id || '', kelas_id: item.kelas_id || '' } : emptyForm(); showForm.value = true; };
+const openForm = (item = null) => { editItem.value = item; form.value = item ? { nama: item.nama, nisn: item.nisn || '', nis: item.nis || '', jenis_kelamin: item.jenis_kelamin || '', kelas_id: item.kelas_id || '', jurusan_id: item.jurusan_id || '', tahun_masuk: item.tahun_masuk || '', status: item.status || 'Aktif', tempat_lahir: item.tempat_lahir || '', tanggal_lahir: item.tanggal_lahir || '', agama: item.agama || '', no_hp: item.no_hp || '', alamat: item.alamat || '' } : emptyForm(); showForm.value = true; };
 const submitForm = async () => {
   formLoading.value = true;
   try {
