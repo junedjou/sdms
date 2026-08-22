@@ -17,7 +17,7 @@
       </button>
     </div>
 
-    <!-- ── Stat cards ─────────────────────────────────────────── -->
+    <!-- ── Stat cards — warm gradient icons ────────────────────── -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
         v-for="card in statCards"
@@ -34,7 +34,7 @@
       <div class="lg:col-span-2 card overflow-hidden">
         <div class="card-header">
           <div>
-            <h2 class="text-sm font-bold text-slate-800">Siswa per Jurusan</h2>
+            <h2 class="text-sm font-bold text-slate-700">Siswa per Jurusan</h2>
             <p class="text-xs text-slate-400 mt-0.5">Distribusi berdasarkan jurusan aktif</p>
           </div>
           <span class="badge-indigo">{{ stats?.siswa ?? 0 }} Total Siswa</span>
@@ -42,7 +42,7 @@
         <div class="card-body">
           <div v-if="summaryLoading" class="h-56 flex items-center justify-center">
             <div class="flex flex-col items-center gap-3 text-slate-400">
-              <svg class="w-6 h-6 animate-spin text-primary-500" viewBox="0 0 24 24" fill="none">
+              <svg class="w-6 h-6 animate-spin text-primary-400" viewBox="0 0 24 24" fill="none">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
@@ -63,12 +63,12 @@
       <div class="card flex flex-col overflow-hidden">
         <div class="card-header">
           <div>
-            <h2 class="text-sm font-bold text-slate-800">Agenda Terdekat</h2>
+            <h2 class="text-sm font-bold text-slate-700">Agenda Terdekat</h2>
             <p class="text-xs text-slate-400 mt-0.5">30 hari ke depan</p>
           </div>
           <RouterLink
             to="/master/kalender"
-            class="text-xs font-semibold text-primary-600 hover:text-primary-700 hover:underline transition-colors"
+            class="text-xs font-semibold text-primary-500 hover:text-primary-600 hover:underline transition-colors"
           >
             Lihat semua
           </RouterLink>
@@ -80,21 +80,21 @@
         </div>
 
         <!-- Items -->
-        <div v-else-if="agenda.length" class="flex-1 overflow-y-auto no-scrollbar divide-y divide-slate-50">
+        <div v-else-if="agenda.length" class="flex-1 overflow-y-auto no-scrollbar divide-y divide-slate-50/80">
           <div
             v-for="item in agenda"
             :key="item.id"
-            class="px-5 py-3.5 flex items-start gap-3 hover:bg-slate-50/50 transition-colors cursor-default"
+            class="px-5 py-3.5 flex items-start gap-3 hover:bg-primary-50/20 transition-colors cursor-default"
           >
             <div
               class="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ring-2 ring-offset-1"
               :style="{
                 backgroundColor: item.warna || jenisColor[item.jenis] || '#94a3b8',
-                ringColor: (item.warna || jenisColor[item.jenis] || '#94a3b8') + '30',
+                ringColor: (item.warna || jenisColor[item.jenis] || '#94a3b8') + '25',
               }"
             />
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-slate-800 truncate">{{ item.judul }}</p>
+              <p class="text-sm font-medium text-slate-700 truncate">{{ item.judul }}</p>
               <div class="flex items-center gap-1.5 mt-0.5">
                 <CalendarDaysIcon class="w-3 h-3 text-slate-400" />
                 <p class="text-xs text-slate-400">{{ formatDate(item.tanggal_mulai) }}</p>
@@ -114,12 +114,12 @@
       <div class="card overflow-hidden">
         <div class="card-header">
           <div>
-            <h2 class="text-sm font-bold text-slate-800">Jenis Kelamin Siswa</h2>
+            <h2 class="text-sm font-bold text-slate-700">Jenis Kelamin Siswa</h2>
             <p class="text-xs text-slate-400 mt-0.5">Rasio laki-laki / perempuan</p>
           </div>
         </div>
         <div class="card-body flex items-center justify-center py-6">
-          <div v-if="summaryLoading" class="w-8 h-8 rounded-full border-2 border-slate-200 border-t-primary-500 animate-spin" />
+          <div v-if="summaryLoading" class="w-8 h-8 rounded-full border-2 border-slate-200 border-t-primary-400 animate-spin" />
           <Doughnut
             v-else-if="jkChartData.labels.length"
             :data="jkChartData"
@@ -134,12 +134,12 @@
       <div class="card overflow-hidden">
         <div class="card-header">
           <div>
-            <h2 class="text-sm font-bold text-slate-800">Status Guru</h2>
+            <h2 class="text-sm font-bold text-slate-700">Status Guru</h2>
             <p class="text-xs text-slate-400 mt-0.5">Per status kepegawaian</p>
           </div>
         </div>
         <div class="card-body flex items-center justify-center py-6">
-          <div v-if="summaryLoading" class="w-8 h-8 rounded-full border-2 border-slate-200 border-t-primary-500 animate-spin" />
+          <div v-if="summaryLoading" class="w-8 h-8 rounded-full border-2 border-slate-200 border-t-primary-400 animate-spin" />
           <Doughnut
             v-else-if="guruStatusData.labels.length"
             :data="guruStatusData"
@@ -150,11 +150,11 @@
         </div>
       </div>
 
-      <!-- Quick access -->
+      <!-- Quick access — warm colorful -->
       <div class="card overflow-hidden">
         <div class="card-header">
           <div>
-            <h2 class="text-sm font-bold text-slate-800">Akses Cepat</h2>
+            <h2 class="text-sm font-bold text-slate-700">Akses Cepat</h2>
             <p class="text-xs text-slate-400 mt-0.5">Menu yang sering digunakan</p>
           </div>
         </div>
@@ -163,16 +163,16 @@
             v-for="link in quickLinks"
             :key="link.to"
             :to="link.to"
-            class="flex flex-col items-center gap-2.5 p-4 rounded-xl hover:scale-[1.03] hover:shadow-md transition-all duration-200 group"
+            class="flex flex-col items-center gap-2.5 p-4 rounded-2xl hover:scale-[1.03] hover:shadow-md transition-all duration-200 group"
             :style="{ backgroundColor: link.color + '0a' }"
           >
             <div
-              class="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 group-hover:scale-110 group-hover:shadow-sm"
+              class="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-md"
               :style="{ backgroundColor: link.color + '15' }"
             >
-              <component :is="link.icon" class="w-5 h-5" :style="{ color: link.color }" />
+              <component :is="link.icon" class="w-5 h-5 transition-colors" :style="{ color: link.color }" />
             </div>
-            <span class="text-xs font-semibold text-slate-700 text-center leading-tight">{{ link.label }}</span>
+            <span class="text-xs font-semibold text-slate-600 text-center leading-tight">{{ link.label }}</span>
           </RouterLink>
         </div>
       </div>
@@ -215,39 +215,40 @@ const summaryLoading = ref(true);
 const agendaLoading  = ref(true);
 
 const jenisColor = {
-  libur:      '#ef4444',
+  libur:      '#f43f5e',
   ujian:      '#f59e0b',
-  kegiatan:   '#3b82f6',
+  kegiatan:   '#6366f1',
   penerimaan: '#10b981',
-  lainnya:    '#8b5cf6',
+  lainnya:    '#a78bfa',
 };
 
-// ── Stat cards ───────────────────────────────────────────────
+// ── Stat cards — warm gradient backgrounds ────────────────────
 const statCards = computed(() => [
   {
     label: 'Total Guru',    value: stats.value?.guru,
-    icon: UserGroupIcon,      color: 'bg-gradient-to-br from-blue-50 to-blue-100/50',    iconColor: 'text-blue-600',
+    icon: UserGroupIcon,      color: 'bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50',    iconColor: 'text-indigo-500',
     trend: 'Tenaga pendidik aktif',
   },
   {
     label: 'Total Siswa',   value: stats.value?.siswa,
-    icon: AcademicCapIcon,    color: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50', iconColor: 'text-emerald-600',
+    icon: AcademicCapIcon,    color: 'bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50',     iconColor: 'text-emerald-500',
     trend: 'Peserta didik aktif',
   },
   {
     label: 'Total Pegawai', value: stats.value?.pegawai,
-    icon: BriefcaseIcon,      color: 'bg-gradient-to-br from-violet-50 to-violet-100/50',  iconColor: 'text-violet-600',
+    icon: BriefcaseIcon,      color: 'bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50',    iconColor: 'text-amber-500',
     trend: 'Tenaga kependidikan',
   },
   {
     label: 'Total Kelas',   value: stats.value?.kelas,
-    icon: RectangleStackIcon, color: 'bg-gradient-to-br from-amber-50 to-amber-100/50',   iconColor: 'text-amber-600',
+    icon: RectangleStackIcon, color: 'bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50', iconColor: 'text-violet-500',
     trend: stats.value?.tahun_pelajaran || '—',
   },
 ]);
 
-// ── Chart configs ────────────────────────────────────────────
-const chartColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16'];
+// ── Chart configs — warm bright palette ──────────────────────
+const chartColors = ['#818cf8', '#34d399', '#fbbf24', '#f87171', '#c084fc', '#22d3ee', '#f472b6', '#a3e635'];
+const chartColorsBg = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#a78bfa', '#06b6d4', '#ec4899', '#84cc16'];
 
 const barChartData = computed(() => {
   const items = summary.value?.siswa_per_jurusan || [];
@@ -257,7 +258,8 @@ const barChartData = computed(() => {
       label: 'Jumlah Siswa',
       data: items.map((i) => i.total),
       backgroundColor: chartColors.map(c => c + 'cc'),
-      borderRadius: 8,
+      hoverBackgroundColor: chartColorsBg,
+      borderRadius: 10,
       borderWidth: 0,
       borderSkipped: false,
     }],
@@ -270,24 +272,28 @@ const barOptions = {
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: '#1e293b',
-      titleColor: '#94a3b8',
-      bodyColor: '#f1f5f9',
-      padding: 12,
-      cornerRadius: 10,
-      displayColors: false,
+      backgroundColor: '#ffffff',
+      titleColor: '#475569',
+      bodyColor: '#1e293b',
+      borderColor: '#e2e8f0',
+      borderWidth: 1,
+      padding: 14,
+      cornerRadius: 12,
+      displayColors: true,
+      boxPadding: 4,
+      bodyFont: { weight: '600' },
       callbacks: { label: (ctx) => ` ${ctx.raw} siswa` },
     },
   },
   scales: {
     y: {
       beginAtZero: true,
-      grid: { color: '#f1f5f9', drawBorder: false },
-      ticks: { font: { size: 11 }, color: '#94a3b8' },
+      grid: { color: '#f8fafc', drawBorder: false },
+      ticks: { font: { size: 11, weight: '500' }, color: '#94a3b8' },
     },
     x: {
       grid: { display: false },
-      ticks: { font: { size: 11 }, color: '#94a3b8' },
+      ticks: { font: { size: 11, weight: '500' }, color: '#94a3b8' },
     },
   },
 };
@@ -296,7 +302,7 @@ const jkChartData = computed(() => {
   const items = summary.value?.siswa_per_jk || [];
   return {
     labels: items.map((i) => i.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'),
-    datasets: [{ data: items.map((i) => i.total), backgroundColor: ['#6366f1', '#ec4899'], borderWidth: 0, hoverOffset: 8 }],
+    datasets: [{ data: items.map((i) => i.total), backgroundColor: ['#818cf8', '#f472b6'], borderWidth: 0, hoverOffset: 8 }],
   };
 });
 
@@ -315,24 +321,27 @@ const doughnutOptions = {
   plugins: {
     legend: {
       position: 'bottom',
-      labels: { font: { size: 11 }, boxWidth: 10, padding: 14, color: '#64748b', usePointStyle: true },
+      labels: { font: { size: 11, weight: '500' }, boxWidth: 10, padding: 14, color: '#64748b', usePointStyle: true },
     },
     tooltip: {
-      backgroundColor: '#1e293b',
-      titleColor: '#94a3b8',
-      bodyColor: '#f1f5f9',
-      padding: 12,
-      cornerRadius: 10,
+      backgroundColor: '#ffffff',
+      titleColor: '#475569',
+      bodyColor: '#1e293b',
+      borderColor: '#e2e8f0',
+      borderWidth: 1,
+      padding: 14,
+      cornerRadius: 12,
+      bodyFont: { weight: '600' },
     },
   },
 };
 
-// ── Quick links ──────────────────────────────────────────────
+// ── Quick links — warm colorful ──────────────────────────────
 const quickLinks = [
   { label: 'Data Guru',   to: '/master/guru',   icon: UserGroupIcon,      color: '#6366f1' },
   { label: 'Data Siswa',  to: '/master/siswa',  icon: AcademicCapIcon,    color: '#10b981' },
   { label: 'Data Kelas',  to: '/master/kelas',  icon: RectangleStackIcon, color: '#f59e0b' },
-  { label: 'App Hub',     to: '/app-hub',        icon: BookOpenIcon,       color: '#8b5cf6' },
+  { label: 'App Hub',     to: '/app-hub',        icon: BookOpenIcon,       color: '#a78bfa' },
 ];
 
 // ── Data loading ─────────────────────────────────────────────
