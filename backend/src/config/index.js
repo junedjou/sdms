@@ -72,6 +72,7 @@ const config = {
     kegiatan:  process.env.KEGIATAN_URL  || 'http://localhost:4004',
     kelulusan: process.env.KELULUSAN_URL || 'http://localhost:4005',
     website:   process.env.WEBSITE_URL   || 'http://localhost:4006',
+    absen:     process.env.ABSEN_URL     || 'http://localhost:4007',
   },
 };
 

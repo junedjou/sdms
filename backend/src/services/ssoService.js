@@ -26,6 +26,7 @@ const APP_SSO_SECRETS = {
   kegiatan:   process.env.SSO_SECRET_KEGIATAN    || 'sso_secret_kegiatan',
   kelulusan:  process.env.SSO_SECRET_KELULUSAN   || 'sso_secret_kelulusan',
   website:    process.env.SSO_SECRET_WEBSITE     || 'sso_secret_website',
+  absen:      process.env.SSO_SECRET_ABSEN       || 'sso_secret_absen',
 };
 
 /**

@@ -90,19 +90,60 @@ router.post('/proxy',
 router.get('/health',
   authenticate,
   asyncHandler(async (req, res) => {
-    const checks = Object.entries(config.apps).map(async ([name, url]) => {
-      try {
-        const start = Date.now();
-       try {
-         await axios.get(`${url}/health`, { timeout: 3000 });
+    const checks = [];
+
+    // 1. Check hardcoded apps from config
+    for (const [name, url] of Object.entries(config.apps)) {
+      checks.push((async () => {
+        try {
+          const start = Date.now();
+          // Try /health, /healthz, or just GET / — any response = online
+          try {
+            await axios.get(`${url}/health`, { timeout: 3000 });
+          } catch {
+            try {
+              await axios.get(`${url}/healthz`, { timeout: 3000 });
+            } catch {
+              // Just check if the server responds at all
+              await axios.get(url, { timeout: 3000, maxRedirects: 0 });
+            }
+          }
+          return { app: name, url, status: 'online', latency_ms: Date.now() - start };
         } catch {
-         await axios.get(`${url}/healthz`, { timeout: 3000 });
+          return { app: name, url, status: 'offline', latency_ms: null };
         }
-        return { app: name, url, status: 'online', latency_ms: Date.now() - start };
-      } catch {
-        return { app: name, url, status: 'offline', latency_ms: null };
+      })());
+    }
+
+    // 2. Check DB-registered apps (webhook targets)
+    try {
+      const { ApiClient } = require('../models');
+      const clients = await ApiClient.findAll({ where: { status: 'active' }, attributes: ['name', 'slug', 'webhook_url'] });
+      for (const client of clients) {
+        // Skip if already checked via config
+        if (config.apps[client.slug]) continue;
+        const url = client.webhook_url?.replace(/\/api\/webhooks\/.*$/, '').replace(/\/webhook.*$/, '');
+        if (!url) continue;
+        checks.push((async () => {
+          try {
+            const start = Date.now();
+            try {
+              await axios.get(`${url}/health`, { timeout: 3000 });
+            } catch {
+              try {
+                await axios.get(`${url}/healthz`, { timeout: 3000 });
+              } catch {
+                await axios.get(url, { timeout: 3000, maxRedirects: 0 });
+              }
+            }
+            return { app: client.slug || client.name, url, status: 'online', latency_ms: Date.now() - start };
+          } catch {
+            return { app: client.slug || client.name, url, status: 'offline', latency_ms: null };
+          }
+        })());
       }
-    });
+    } catch { /* fallback */ }
+
     const results = await Promise.all(checks);
     return res.json({
       status: 'success', sdms: 'online', integrations: results,
