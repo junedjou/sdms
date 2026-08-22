@@ -2,17 +2,17 @@
   <header
     :class="[
       'fixed top-0 right-0 h-16 z-20 flex items-center justify-between px-4 sm:px-5 transition-all duration-300',
-      'bg-white/80 backdrop-blur-2xl border-b border-primary-100/30',
+      'bg-white/90 backdrop-blur-2xl border-b border-slate-100/80',
       uiStore.sidebarOpen ? 'lg:left-64' : 'lg:left-[72px]',
     ]"
-    style="box-shadow: 0 1px 8px -2px rgba(99,102,241,0.08);"
+    style="box-shadow: 0 1px 6px -1px rgba(0,0,0,0.04);"
   >
     <!-- ── Kiri: toggle + breadcrumb ─────────────────────── -->
     <div class="flex items-center gap-2 min-w-0">
       <!-- Mobile hamburger -->
       <button
         @click="uiStore.toggleMobileSidebar()"
-        class="p-2 rounded-2xl text-slate-400 hover:bg-primary-50 hover:text-primary-500 transition-all duration-200 active:scale-95 lg:hidden touch-target"
+        class="p-2 rounded-2xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all duration-200 active:scale-95 lg:hidden touch-target"
         aria-label="Toggle menu"
       >
         <Bars3Icon class="w-5 h-5" />
@@ -21,7 +21,7 @@
       <!-- Desktop collapse toggle -->
       <button
         @click="uiStore.toggleSidebar()"
-        class="hidden lg:flex p-2 rounded-2xl text-slate-400 hover:bg-primary-50 hover:text-primary-500 transition-all duration-200 active:scale-95"
+        class="hidden lg:flex p-2 rounded-2xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all duration-200 active:scale-95"
         :aria-label="uiStore.sidebarOpen ? 'Tutup sidebar' : 'Buka sidebar'"
       >
         <Bars3Icon class="w-4 h-4" />

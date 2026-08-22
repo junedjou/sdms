@@ -3,7 +3,7 @@
   <Transition name="overlay">
     <div
       v-if="uiStore.sidebarMobile"
-      class="fixed inset-0 z-30 bg-indigo-900/30 backdrop-blur-md lg:hidden"
+      class="fixed inset-0 z-30 bg-slate-900/20 backdrop-blur-md lg:hidden"
       @click="uiStore.closeMobileSidebar()"
     />
   </Transition>
@@ -13,28 +13,28 @@
     :class="[
       'fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] select-none',
       uiStore.sidebarOpen ? 'w-64' : 'w-[72px]',
-      uiStore.sidebarMobile ? 'translate-x-0 shadow-sidebar' : '-translate-x-full lg:translate-x-0',
+      uiStore.sidebarMobile ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0',
     ]"
-    :style="{ background: sidebarGradient }"
+    style="background: linear-gradient(180deg, #ffffff 0%, #faf9ff 50%, #fff9f5 100%); border-right: 1px solid rgba(0,0,0,0.04);"
   >
-    <!-- Decorative blobs -->
+    <!-- Decorative subtle blobs -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-white/[0.06] blur-3xl" />
-      <div class="absolute top-1/3 -left-10 w-32 h-32 rounded-full bg-white/[0.04] blur-2xl" />
-      <div class="absolute bottom-20 right-0 w-24 h-24 rounded-full bg-white/[0.05] blur-2xl" />
+      <div class="absolute -top-16 -right-16 w-40 h-40 rounded-full opacity-30"
+        style="background: radial-gradient(circle, rgba(167,139,250,0.12) 0%, transparent 70%); filter: blur(30px);" />
+      <div class="absolute bottom-32 -left-10 w-32 h-32 rounded-full opacity-25"
+        style="background: radial-gradient(circle, rgba(251,191,36,0.1) 0%, transparent 70%); filter: blur(25px);" />
     </div>
 
     <!-- ── Logo / Brand ─────────────────────────────────────── -->
     <div
       :class="[
-        'relative flex items-center h-16 border-b border-white/[0.08] flex-shrink-0 transition-all duration-300',
+        'relative flex items-center h-16 border-b border-slate-100/80 flex-shrink-0 transition-all duration-300',
         uiStore.sidebarOpen ? 'px-4 gap-3' : 'px-0 justify-center',
       ]"
     >
       <!-- Logo -->
       <div
-        class="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden transition-all duration-300 hover:scale-110 hover:rotate-3"
-        :class="uiStore.sidebarOpen ? 'shadow-lg shadow-white/10' : 'shadow-md'"
+        class="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden transition-all duration-300 hover:scale-110 hover:rotate-3 shadow-md"
         :style="{ background: settingsStore.get('sidebar_accent') || 'linear-gradient(135deg, #818cf8, #a78bfa)' }"
       >
         <img
@@ -49,10 +49,10 @@
       <!-- Brand text -->
       <Transition name="label">
         <div v-if="uiStore.sidebarOpen" class="overflow-hidden min-w-0">
-          <p class="text-sm font-bold text-white tracking-tight leading-none">
+          <p class="text-sm font-bold text-slate-800 tracking-tight leading-none">
             {{ settingsStore.get('app_name') || 'SDMS' }}
           </p>
-          <p class="text-[10px] text-white/40 leading-none mt-1.5 tracking-wider font-medium">
+          <p class="text-[10px] text-slate-400 leading-none mt-1.5 tracking-wider font-medium">
             {{ settingsStore.get('app_subtitle') || 'School Data Management' }}
           </p>
         </div>
@@ -74,9 +74,9 @@
         >
           <span
             v-if="uiStore.sidebarOpen"
-            class="text-[10px] font-bold text-white/25 uppercase tracking-[0.18em]"
+            class="text-[10px] font-bold text-slate-300 uppercase tracking-[0.18em]"
           >{{ section.label }}</span>
-          <div v-else class="w-5 h-px bg-white/15" />
+          <div v-else class="w-5 h-px bg-slate-200" />
         </div>
 
         <!-- Menu items -->
@@ -91,24 +91,28 @@
                   'w-full flex items-center rounded-2xl text-sm transition-all duration-200 group',
                   uiStore.sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center py-2.5',
                   isActiveParent(item)
-                    ? 'bg-white/[0.12] text-white shadow-sm shadow-white/[0.05]'
-                    : 'text-white/55 hover:text-white hover:bg-white/[0.08]',
+                    ? 'bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-600 font-medium shadow-sm shadow-indigo-100/50'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
                 ]"
                 :title="!uiStore.sidebarOpen ? item.label : ''"
               >
                 <div class="relative flex-shrink-0 transition-transform duration-200 group-hover:scale-110">
-                  <component :is="item.icon" class="w-[18px] h-[18px]" />
+                  <component
+                    :is="item.icon"
+                    class="w-[18px] h-[18px]"
+                    :class="isActiveParent(item) ? 'text-indigo-500' : 'text-slate-400 group-hover:text-slate-600'"
+                  />
                   <span
                     v-if="!uiStore.sidebarOpen && isActiveParent(item)"
-                    class="absolute -right-0.5 -top-0.5 w-1.5 h-1.5 rounded-full bg-white shadow-sm"
+                    class="absolute -right-0.5 -top-0.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-sm shadow-indigo-200"
                   />
                 </div>
                 <Transition name="label">
                   <div v-if="uiStore.sidebarOpen" class="flex flex-1 items-center justify-between min-w-0">
                     <span class="truncate font-medium">{{ item.label }}</span>
                     <ChevronDownIcon
-                      class="w-3.5 h-3.5 flex-shrink-0 transition-all duration-300 text-white/25"
-                      :class="expandedItems.includes(item.name) ? 'rotate-180 text-white/60' : ''"
+                      class="w-3.5 h-3.5 flex-shrink-0 transition-all duration-300"
+                      :class="expandedItems.includes(item.name) ? 'rotate-180 text-indigo-400' : 'text-slate-300'"
                     />
                   </div>
                 </Transition>
@@ -128,14 +132,13 @@
                     :class="[
                       'flex items-center gap-3 pl-9 pr-3 py-2 rounded-xl text-sm transition-all duration-200',
                       isActive(child.to)
-                        ? 'bg-white/[0.12] text-white font-medium shadow-sm shadow-white/[0.04]'
-                        : 'text-white/40 hover:text-white/80 hover:bg-white/[0.06]',
+                        ? 'bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-600 font-medium shadow-sm shadow-indigo-50'
+                        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50',
                     ]"
                   >
                     <span
                       class="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all duration-200"
-                      :class="isActive(child.to) ? 'scale-110 shadow-sm shadow-white/20' : 'bg-white/15'"
-                      :style="isActive(child.to) ? { background: settingsStore.get('sidebar_accent') || '#a5b4fc' } : {}"
+                      :class="isActive(child.to) ? 'scale-110 bg-indigo-400 shadow-sm shadow-indigo-200' : 'bg-slate-200'"
                     />
                     <span class="truncate">{{ child.label }}</span>
                   </RouterLink>
@@ -152,8 +155,8 @@
                 'flex items-center rounded-2xl text-sm transition-all duration-200 group relative',
                 uiStore.sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center py-2.5',
                 isActive(item.to)
-                  ? 'text-white font-medium shadow-sm shadow-white/[0.05]'
-                  : 'text-white/55 hover:text-white hover:bg-white/[0.08]',
+                  ? 'font-medium shadow-sm shadow-indigo-50'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
               ]"
               :style="isActive(item.to) ? activeMenuStyle : {}"
               :title="!uiStore.sidebarOpen ? item.label : ''"
@@ -161,9 +164,13 @@
               <!-- Active indicator bar -->
               <div
                 v-if="isActive(item.to)"
-                class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-white/60"
+                class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-gradient-to-b from-indigo-400 to-violet-400"
               />
-              <component :is="item.icon" class="w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+              <component
+                :is="item.icon"
+                class="w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
+                :class="isActive(item.to) ? 'text-indigo-500' : 'text-slate-400 group-hover:text-slate-600'"
+              />
               <Transition name="label">
                 <span v-if="uiStore.sidebarOpen" class="truncate font-medium">{{ item.label }}</span>
               </Transition>
@@ -175,10 +182,10 @@
     </nav>
 
     <!-- ── User Profile Footer ───────────────────────────────── -->
-    <div class="relative flex-shrink-0 border-t border-white/[0.08] p-3">
+    <div class="relative flex-shrink-0 border-t border-slate-100/80 p-3">
       <div
         :class="[
-          'flex items-center rounded-2xl transition-all duration-200 hover:bg-white/[0.08] cursor-default',
+          'flex items-center rounded-2xl transition-all duration-200 hover:bg-slate-50 cursor-default',
           uiStore.sidebarOpen ? 'gap-3 p-2' : 'justify-center p-2',
         ]"
       >
@@ -191,8 +198,8 @@
         </div>
         <Transition name="label">
           <div v-if="uiStore.sidebarOpen" class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-white/90 truncate leading-none">{{ authStore.user?.full_name }}</p>
-            <p class="text-[11px] text-white/35 truncate mt-1 leading-none">{{ authStore.user?.role_label }}</p>
+            <p class="text-sm font-semibold text-slate-700 truncate leading-none">{{ authStore.user?.full_name }}</p>
+            <p class="text-[11px] text-slate-400 truncate mt-1 leading-none">{{ authStore.user?.role_label }}</p>
           </div>
         </Transition>
       </div>
@@ -227,16 +234,12 @@ const avatarColor = computed(() => getAvatarColor(authStore.user?.full_name));
 const isActive       = (path) => route.path === path;
 const isActiveParent = (item) => item.children?.some((c) => route.path.startsWith(c.to));
 
-// Bright happy sidebar gradient
-const sidebarGradient = computed(() => {
-  const bg = settingsStore.get('sidebar_bg');
-  if (bg && !bg.includes('#0f172a') && !bg.includes('#1e293b')) return `linear-gradient(180deg, ${bg} 0%, ${bg}ee 100%)`;
-  return 'linear-gradient(180deg, #6366f1 0%, #8b5cf6 40%, #a78bfa 70%, #c4b5fd 100%)';
-});
-
+// Bright active menu style — warm gradient
 const activeMenuStyle = computed(() => {
-  const accent = settingsStore.get('sidebar_accent');
-  return accent ? { background: accent } : { background: 'linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08))' };
+  return {
+    background: 'linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.04))',
+    color: '#6366f1',
+  };
 });
 
 const toggleExpanded = (name) => {
