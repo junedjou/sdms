@@ -1,4 +1,8 @@
-require('dotenv').config();
+const path = require('path');
+// Cari .env dari root project (2 level di atas backend/src/)
+const envPath = process.env.DOTENV_PATH
+  || path.resolve(__dirname, '../../../.env');
+require('dotenv').config({ path: envPath });
 
 const config = {
   app: {
