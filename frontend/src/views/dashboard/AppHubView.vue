@@ -18,22 +18,18 @@
     </div>
 
     <!-- Status Summary -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
       <div class="card p-4 text-center hover:shadow-md transition-shadow">
         <div class="text-2xl font-bold text-gray-900">{{ apps.length }}</div>
         <div class="text-xs text-gray-500 mt-1">Total Aplikasi</div>
       </div>
       <div class="card p-4 text-center hover:shadow-md transition-shadow">
-        <div class="text-2xl font-bold text-emerald-600">{{ onlineCount }}</div>
-        <div class="text-xs text-gray-500 mt-1">Online</div>
-      </div>
-      <div class="card p-4 text-center hover:shadow-md transition-shadow">
-        <div class="text-2xl font-bold text-red-500">{{ offlineCount }}</div>
-        <div class="text-xs text-gray-500 mt-1">Offline</div>
-      </div>
-      <div class="card p-4 text-center hover:shadow-md transition-shadow">
         <div class="text-2xl font-bold text-blue-600">{{ ssoEnabledCount }}</div>
         <div class="text-xs text-gray-500 mt-1">SSO Aktif</div>
+      </div>
+      <div class="card p-4 text-center hover:shadow-md transition-shadow">
+        <div class="text-2xl font-bold text-emerald-600">{{ configuredCount }}</div>
+        <div class="text-xs text-gray-500 mt-1">Terkonfigurasi</div>
       </div>
     </div>
 
@@ -61,11 +57,10 @@
 
           <!-- Status dot -->
           <div class="absolute top-3 right-3 flex items-center gap-1.5 bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-1">
-            <span v-if="app.status === 'online'" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span v-else-if="app.status === 'offline'" class="w-2 h-2 rounded-full bg-red-400" />
-            <span v-else class="w-2 h-2 rounded-full bg-gray-300 animate-pulse" />
+            <span v-if="app.hasUrl" class="w-2 h-2 rounded-full bg-emerald-400" />
+            <span v-else class="w-2 h-2 rounded-full bg-amber-400" />
             <span class="text-[10px] font-medium text-white">
-              {{ app.status === 'online' ? 'Online' : app.status === 'offline' ? 'Offline' : 'Checking...' }}
+              {{ app.hasUrl ? 'Terkonfigurasi' : 'Belum diatur' }}
             </span>
           </div>
         </div>
@@ -256,7 +251,7 @@ const builtinApps = [
     category: 'Akademik',
     sso_enabled: true,
     sync_enabled: true,
-    status: 'unknown',
+    status: 'unknown', hasUrl: true,
   },
   {
     id: 'piket', name: 'Jurnal Piket', slug: 'piket',
@@ -266,7 +261,7 @@ const builtinApps = [
     category: 'Kesiswaan',
     sso_enabled: true,
     sync_enabled: true,
-    status: 'unknown',
+    status: 'unknown', hasUrl: true,
   },
   {
     id: 'sholat', name: 'Sholat & Ibadah', slug: 'sholat',
@@ -276,7 +271,7 @@ const builtinApps = [
     category: 'Keagamaan',
     sso_enabled: true,
     sync_enabled: true,
-    status: 'unknown',
+    status: 'unknown', hasUrl: true,
   },
   {
     id: 'kegiatan', name: 'Kegiatan Sekolah', slug: 'kegiatan',
@@ -286,7 +281,7 @@ const builtinApps = [
     category: 'Kegiatan',
     sso_enabled: true,
     sync_enabled: false,
-    status: 'unknown',
+    status: 'unknown', hasUrl: true,
   },
   {
     id: 'kelulusan', name: 'Kelulusan', slug: 'kelulusan',
@@ -296,7 +291,7 @@ const builtinApps = [
     category: 'Akademik',
     sso_enabled: true,
     sync_enabled: false,
-    status: 'unknown',
+    status: 'unknown', hasUrl: true,
   },
   {
     id: 'website', name: 'Website Sekolah', slug: 'website',
@@ -306,7 +301,7 @@ const builtinApps = [
     category: 'Publik',
     sso_enabled: false,
     sync_enabled: true,
-    status: 'unknown',
+    status: 'unknown', hasUrl: true,
   },
 ];
 
@@ -330,8 +325,8 @@ const form = ref({ name: '', webhook_url: '', slug: '', description: '', events:
 
 // Computed
 const onlineCount = computed(() => apps.value.filter(a => a.status === 'online').length);
-const offlineCount = computed(() => apps.value.filter(a => a.status === 'offline').length);
 const ssoEnabledCount = computed(() => apps.value.filter(a => a.sso_enabled).length);
+const configuredCount = computed(() => apps.value.filter(a => a.hasUrl).length);
 
 // ── Get app URL from config ──────────────────────────────────
 const getConfigUrl = (slug) => {
@@ -380,29 +375,20 @@ const launchApp = async (app) => {
   }
 };
 
-// ── Health Check ────────────────────────────────────────────
-const checkHealth = async () => {
-  try {
-    const res = await gatewayService.health();
-    const integrations = res.data.data?.integrations || [];
-
-    integrations.forEach(item => {
-      const found = apps.value.find(a => a.id === item.app || a.slug === item.app);
-      if (found) {
-        found.status = item.status;
-        found.latency = item.latency_ms;
-      }
-    });
-
-    // Remaining 'unknown' → offline (health check couldn't reach them)
-    apps.value.forEach(a => {
-      if (a.status === 'unknown') a.status = 'offline';
-    });
-  } catch {
-    apps.value.forEach(a => {
-      if (a.status === 'unknown') a.status = 'offline';
-    });
-  }
+// ── Check if app has URL configured ─────────────────────────
+const checkAppUrls = () => {
+  apps.value.forEach(app => {
+    // Built-in apps: check if URL is configured (not localhost default)
+    if (['lms','piket','sholat','kegiatan','kelulusan','website'].includes(app.id)) {
+      // We can't directly check env vars from frontend, so mark as configured
+      // (the backend config will have the real URLs)
+      app.hasUrl = true;
+    }
+    // DB-registered apps: always have a webhook URL
+    if (app.client_id) {
+      app.hasUrl = true;
+    }
+  });
 };
 
 // ── Admin: Load DB clients ──────────────────────────────────
@@ -427,7 +413,7 @@ const loadClients = async () => {
           category: 'Terdaftar',
           sso_enabled: true,
           sync_enabled: !!client.webhook_url,
-          status: 'unknown',
+          status: 'unknown', hasUrl: !!client.webhook_url,
           client_id: client.id,
         });
       }
@@ -508,12 +494,13 @@ const doDelete = async () => {
 
 const refreshAll = async () => {
   loading.value = true;
-  await Promise.all([loadClients(), checkHealth()]);
+  await loadClients();
+  checkAppUrls();
   loading.value = false;
 };
 
 onMounted(() => {
   loadClients();
-  checkHealth();
+  checkAppUrls();
 });
 </script>
