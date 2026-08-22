@@ -88,7 +88,7 @@ const ApiClient = masterDB.define('ApiClient', {
     comment: 'Total webhook gagal',
   },
   created_by: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     allowNull: true,
     comment: 'User ID yang mendaftarkan aplikasi',
   },
