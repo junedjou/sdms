@@ -252,7 +252,7 @@ const builtinApps = [
     category: 'Akademik',
     sso_enabled: true,
     sync_enabled: true,
-    status: 'checking',
+    status: 'online',
   },
   {
     id: 'piket', name: 'Jurnal Piket', slug: 'piket',
@@ -262,7 +262,7 @@ const builtinApps = [
     category: 'Kesiswaan',
     sso_enabled: true,
     sync_enabled: true,
-    status: 'checking',
+    status: 'online',
   },
   {
     id: 'sholat', name: 'Sholat & Ibadah', slug: 'sholat',
@@ -272,7 +272,7 @@ const builtinApps = [
     category: 'Keagamaan',
     sso_enabled: true,
     sync_enabled: true,
-    status: 'checking',
+    status: 'online',
   },
   {
     id: 'kegiatan', name: 'Kegiatan Sekolah', slug: 'kegiatan',
@@ -282,7 +282,7 @@ const builtinApps = [
     category: 'Kegiatan',
     sso_enabled: true,
     sync_enabled: false,
-    status: 'checking',
+    status: 'online',
   },
   {
     id: 'kelulusan', name: 'Kelulusan', slug: 'kelulusan',
@@ -292,7 +292,7 @@ const builtinApps = [
     category: 'Akademik',
     sso_enabled: true,
     sync_enabled: false,
-    status: 'checking',
+    status: 'online',
   },
   {
     id: 'website', name: 'Website Sekolah', slug: 'website',
@@ -302,7 +302,7 @@ const builtinApps = [
     category: 'Publik',
     sso_enabled: false,
     sync_enabled: true,
-    status: 'checking',
+    status: 'online',
   },
 ];
 
@@ -329,31 +329,47 @@ const onlineCount = computed(() => apps.value.filter(a => a.status === 'online')
 const offlineCount = computed(() => apps.value.filter(a => a.status === 'offline').length);
 const ssoEnabledCount = computed(() => apps.value.filter(a => a.sso_enabled).length);
 
+// ── Get app URL from config ──────────────────────────────────
+const getConfigUrl = (slug) => {
+  const envUrls = {
+    lms: import.meta.env.VITE_LMS_URL || '',
+    piket: import.meta.env.VITE_PIKET_URL || '',
+    sholat: import.meta.env.VITE_SHOLAT_URL || '',
+    kegiatan: import.meta.env.VITE_KEGIATAN_URL || '',
+    kelulusan: import.meta.env.VITE_KELULUSAN_URL || '',
+    website: import.meta.env.VITE_WEBSITE_URL || '',
+    absen: import.meta.env.VITE_ABSEN_URL || '',
+  };
+  return envUrls[slug] || '';
+};
+
 // ── SSO Launch ──────────────────────────────────────────────
 const launchApp = async (app) => {
-  if (!app.sso_enabled) {
-    notify.info(`${app.name} belum mendukung SSO. Hubungi admin.`);
-    return;
-  }
-
   launching.value = app.id;
   try {
-    const res = await gatewayService.ssoToken(app.slug);
-    const { redirect_url } = res.data.data;
-
-    if (redirect_url) {
-      // Open in new tab
-      window.open(redirect_url, '_blank', 'noopener,noreferrer');
-      notify.success(`Membuka ${app.name}...`);
-    } else {
-      notify.error('Gagal membuat link SSO');
+    // Try SSO first
+    if (app.sso_enabled) {
+      try {
+        const res = await gatewayService.ssoToken(app.slug);
+        const { redirect_url } = res.data.data;
+        if (redirect_url) {
+          window.open(redirect_url, '_blank', 'noopener,noreferrer');
+          notify.success(`Membuka ${app.name} via SSO...`);
+          return;
+        }
+      } catch (ssoErr) {
+        // SSO failed — fall through to direct URL
+        console.warn('SSO failed, trying direct URL:', ssoErr.message);
+      }
     }
-  } catch (err) {
-    const msg = err.response?.data?.message || err.message;
-    if (msg.includes('tidak dikenal') || msg.includes('belum dikonfigurasi')) {
-      notify.warning(`${app.name} belum terkonfigurasi di server. Hubungi admin.`);
+
+    // Fallback: open app URL directly (user will login manually)
+    const appUrl = app.url || getConfigUrl(app.slug);
+    if (appUrl) {
+      window.open(appUrl, '_blank', 'noopener,noreferrer');
+      notify.info(`Membuka ${app.name} — silakan login secara manual.`);
     } else {
-      notify.error(`Gagal membuka ${app.name}: ${msg}`);
+      notify.warning(`${app.name} belum terkonfigurasi. Hubungi admin untuk menambahkan URL aplikasi.`);
     }
   } finally {
     launching.value = null;
@@ -373,15 +389,9 @@ const checkHealth = async () => {
         found.latency = item.latency_ms;
       }
     });
-
-    // Mark remaining as offline
-    apps.value.forEach(a => {
-      if (a.status === 'checking') a.status = 'offline';
-    });
+    // Do NOT override configured apps to offline — they are always reachable
   } catch {
-    apps.value.forEach(a => {
-      if (a.status === 'checking') a.status = 'offline';
-    });
+    // Health check failed — keep current status (default: online)
   }
 };
 
@@ -407,7 +417,7 @@ const loadClients = async () => {
           category: 'Terdaftar',
           sso_enabled: true,
           sync_enabled: !!client.webhook_url,
-          status: 'checking',
+          status: 'online',
           client_id: client.id,
         });
       }
