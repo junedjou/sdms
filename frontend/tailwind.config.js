@@ -36,10 +36,18 @@ export default {
           muted:   '#334155',
         },
         surface: {
-          50:  '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          300: '#cbd5e1',
+          50:  '#faf9ff',
+          100: '#f3f1ff',
+          200: '#e8e5f5',
+          300: '#d5d0e8',
+        },
+        warm: {
+          50:  '#fff9f5',
+          100: '#fff3ea',
+          200: '#ffe8d6',
+          300: '#ffd5b8',
+          400: '#ffbf96',
+          500: '#ffa870',
         },
       },
       fontFamily: {
@@ -59,6 +67,8 @@ export default {
         'inner-sm': 'inset 0 1px 2px 0 rgb(0 0 0 / 0.04)',
         'glow-primary': '0 0 20px -5px rgb(99 102 241 / 0.25)',
         'glow-emerald': '0 0 20px -5px rgb(16 185 129 / 0.25)',
+        'sidebar': '4px 0 24px -4px rgb(99 102 241 / 0.12)',
+        'warm': '0 4px 20px -4px rgb(255 168 112 / 0.15)',
       },
       animation: {
         'fade-in':    'fadeIn 0.3s ease-out',
@@ -71,6 +81,8 @@ export default {
         'float':      'float 6s ease-in-out infinite',
         'float-delay':'float 6s ease-in-out 2s infinite',
         'glow':       'glow 2s ease-in-out infinite alternate',
+        'shimmer':    'shimmer 2.5s ease-in-out infinite',
+        'bounce-gentle': 'bounceGentle 2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn:      { from: { opacity: 0 },                                           to: { opacity: 1 } },
@@ -81,6 +93,8 @@ export default {
         pulseSoft:   { '0%,100%': { opacity: 1 },                                      '50%': { opacity: 0.6 } },
         float:       { '0%, 100%': { transform: 'translateY(0px)' },                   '50%': { transform: 'translateY(-10px)' } },
         glow:        { from: { boxShadow: '0 0 15px -3px rgb(99 102 241 / 0.15)' },   to: { boxShadow: '0 0 25px -3px rgb(99 102 241 / 0.3)' } },
+        shimmer:     { '0%': { backgroundPosition: '200% 0' }, '100%': { backgroundPosition: '-200% 0' } },
+        bounceGentle: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-4px)' } },
       },
       transitionTimingFunction: {
         'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ============================================================
-   SDMS Design System v2 — Modern & Responsive
+   SDMS Design System v3 — Bright, Happy & Elegant
    ============================================================ */
 
 @layer base {
@@ -18,19 +18,21 @@
   }
 
   body {
-    @apply font-sans text-slate-800 bg-surface-50 text-sm leading-relaxed;
+    @apply font-sans text-slate-700 text-sm leading-relaxed;
+    background: linear-gradient(135deg, #faf9ff 0%, #fff9f5 50%, #f0f4ff 100%);
+    background-attachment: fixed;
     font-variant-numeric: tabular-nums;
   }
 
-  /* ── Custom Scrollbar ──────────────────────────────────── */
+  /* ── Custom Scrollbar — Elegant & Translucent ──────────── */
   ::-webkit-scrollbar        { @apply w-1.5 h-1.5; }
   ::-webkit-scrollbar-track  { @apply bg-transparent; }
-  ::-webkit-scrollbar-thumb  { @apply bg-slate-200/80 rounded-full; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-300; }
+  ::-webkit-scrollbar-thumb  { background: linear-gradient(180deg, #c7d2fe, #ddd6fe); @apply rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #a5b4fc, #c4b5fd); }
 
   /* ── Focus ring default ────────────────────────────────── */
   :focus-visible {
-    @apply outline-none ring-2 ring-primary-500/50 ring-offset-1;
+    @apply outline-none ring-2 ring-primary-400/40 ring-offset-1;
   }
 
   /* ── Smooth image rendering ────────────────────────────── */
@@ -40,10 +42,10 @@
 @layer components {
 
   /* ====================================================
-     BUTTONS v2 — Gradient-ready with modern states
+     BUTTONS v3 — Bright Gradient Buttons
      ==================================================== */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold
            transition-all duration-200 ease-out cursor-pointer select-none
            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none;
@@ -54,66 +56,67 @@
   }
   .btn-primary {
     @apply btn text-white shadow-md
-           bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700
-           hover:from-primary-600 hover:via-primary-700 hover:to-primary-800
-           hover:shadow-lg hover:shadow-primary-500/25
+           bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600
+           hover:from-primary-500 hover:via-primary-600 hover:to-primary-700
+           hover:shadow-lg hover:shadow-primary-400/30
            active:shadow-sm
-           focus-visible:ring-primary-500;
+           focus-visible:ring-primary-400;
   }
   .btn-secondary {
-    @apply btn bg-white text-slate-700 border border-slate-200/80 shadow-sm
-           hover:bg-slate-50/80 hover:border-slate-300 hover:shadow-md
-           active:bg-slate-100 active:shadow-sm
-           focus-visible:ring-primary-500;
+    @apply btn bg-white text-slate-600 border border-slate-200/60 shadow-sm
+           hover:bg-white hover:border-primary-200 hover:text-primary-600 hover:shadow-md
+           active:bg-slate-50 active:shadow-sm
+           focus-visible:ring-primary-400;
   }
   .btn-danger {
     @apply btn text-white shadow-md
-           bg-gradient-to-br from-red-500 via-red-600 to-red-700
-           hover:from-red-600 hover:via-red-700 hover:to-red-800
-           hover:shadow-lg hover:shadow-red-500/25
-           focus-visible:ring-red-500;
+           bg-gradient-to-br from-red-400 via-red-500 to-red-600
+           hover:from-red-500 hover:via-red-600 hover:to-red-700
+           hover:shadow-lg hover:shadow-red-400/30
+           focus-visible:ring-red-400;
   }
   .btn-ghost {
-    @apply btn text-slate-600 rounded-xl
-           hover:bg-slate-100/80 hover:text-slate-800 active:bg-slate-200
-           focus-visible:ring-slate-400;
+    @apply btn text-slate-500 rounded-2xl
+           hover:bg-primary-50/60 hover:text-primary-600 active:bg-primary-100
+           focus-visible:ring-primary-400;
   }
   .btn-success {
     @apply btn text-white shadow-md
-           bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700
-           hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800
-           hover:shadow-lg hover:shadow-emerald-500/25
-           focus-visible:ring-emerald-500;
+           bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600
+           hover:from-emerald-500 hover:via-emerald-600 hover:to-emerald-700
+           hover:shadow-lg hover:shadow-emerald-400/30
+           focus-visible:ring-emerald-400;
   }
-  .btn-sm  { @apply px-3 py-1.5 text-xs rounded-lg; }
+  .btn-sm  { @apply px-3 py-1.5 text-xs rounded-xl; }
   .btn-lg  { @apply px-6 py-3 text-base rounded-2xl; }
-  .btn-icon { @apply p-2.5 rounded-xl; }
+  .btn-icon { @apply p-2.5 rounded-2xl; }
 
   /* ====================================================
-     FORM ELEMENTS v2 — Modern inputs with better states
+     FORM ELEMENTS v3 — Bright & Clean
      ==================================================== */
   .form-input {
-    @apply block w-full rounded-xl border-slate-200/80 bg-white shadow-inner-sm
-           text-sm text-slate-800 placeholder:text-slate-400/70
+    @apply block w-full rounded-2xl border-slate-200/60 bg-white
+           text-sm text-slate-700 placeholder:text-slate-400/60
            transition-all duration-200 ease-out
-           focus:border-primary-400 focus:ring-2 focus:ring-primary-500/15
+           focus:border-primary-300 focus:ring-2 focus:ring-primary-100
            focus:shadow-md focus:shadow-primary-500/5
            hover:border-slate-300;
+    box-shadow: inset 0 1px 2px 0 rgb(0 0 0 / 0.02);
   }
   .form-input:not(:placeholder-shown) {
-    @apply text-slate-800;
+    @apply text-slate-700;
   }
   .form-select {
-    @apply form-input pr-10 cursor-pointer appearance-none bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")] bg-[length:18px] bg-[right_10px_center] bg-no-repeat;
+    @apply form-input pr-10 cursor-pointer appearance-none bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")] bg-[length:18px] bg-[right_12px_center] bg-no-repeat;
   }
   .form-textarea {
     @apply form-input resize-none;
   }
   .form-label {
-    @apply block text-xs font-semibold text-slate-600 mb-1.5 tracking-wide;
+    @apply block text-xs font-semibold text-slate-500 mb-1.5 tracking-wide;
   }
   .form-error {
-    @apply flex items-center gap-1.5 text-xs text-red-600 mt-1.5 font-medium;
+    @apply flex items-center gap-1.5 text-xs text-red-500 mt-1.5 font-medium;
   }
   .form-hint {
     @apply text-xs text-slate-400 mt-1.5;
@@ -123,64 +126,64 @@
   }
 
   /* ====================================================
-     CARD v2 — Refined shadows and glassmorphism
+     CARD v3 — Bright Glassmorphism & Warm Shadows
      ==================================================== */
   .card {
-    @apply bg-white rounded-2xl shadow-card border border-slate-100/60
+    @apply bg-white/80 backdrop-blur-sm rounded-3xl shadow-card border border-white/60
            transition-all duration-200;
   }
   .card-elevated {
-    @apply bg-white rounded-2xl shadow-card-md border border-slate-100/60;
+    @apply bg-white rounded-3xl shadow-card-md border border-white/60;
   }
   .card-glass {
-    @apply bg-white/70 backdrop-blur-xl rounded-2xl shadow-card border border-white/40;
+    @apply bg-white/60 backdrop-blur-2xl rounded-3xl shadow-card border border-white/50;
   }
   .card-header {
-    @apply px-5 py-4 border-b border-slate-100/80 flex items-center justify-between gap-3;
+    @apply px-6 py-4 border-b border-slate-100/60 flex items-center justify-between gap-3;
   }
   .card-body {
-    @apply px-5 py-4;
+    @apply px-6 py-4;
   }
   .card-footer {
-    @apply px-5 py-3 border-t border-slate-100/80 bg-slate-50/50 rounded-b-2xl;
+    @apply px-6 py-3 border-t border-slate-100/60 bg-slate-50/40 rounded-b-3xl;
   }
 
   /* ====================================================
-     BADGE v2 — Subtle gradients
+     BADGE v3 — Cheerful Colors
      ==================================================== */
   .badge {
     @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold
            transition-colors duration-150;
   }
-  .badge-blue    { @apply badge bg-blue-50/80 text-blue-700 ring-1 ring-blue-100/80; }
-  .badge-indigo  { @apply badge bg-indigo-50/80 text-indigo-700 ring-1 ring-indigo-100/80; }
-  .badge-green   { @apply badge bg-emerald-50/80 text-emerald-700 ring-1 ring-emerald-100/80; }
-  .badge-yellow  { @apply badge bg-amber-50/80 text-amber-700 ring-1 ring-amber-100/80; }
-  .badge-red     { @apply badge bg-red-50/80 text-red-700 ring-1 ring-red-100/80; }
-  .badge-gray    { @apply badge bg-slate-100/80 text-slate-600 ring-1 ring-slate-200/80; }
-  .badge-purple  { @apply badge bg-violet-50/80 text-violet-700 ring-1 ring-violet-100/80; }
-  .badge-teal    { @apply badge bg-teal-50/80 text-teal-700 ring-1 ring-teal-100/80; }
+  .badge-blue    { @apply badge bg-blue-50 text-blue-600 ring-1 ring-blue-100; }
+  .badge-indigo  { @apply badge bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100; }
+  .badge-green   { @apply badge bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100; }
+  .badge-yellow  { @apply badge bg-amber-50 text-amber-600 ring-1 ring-amber-100; }
+  .badge-red     { @apply badge bg-red-50 text-red-500 ring-1 ring-red-100; }
+  .badge-gray    { @apply badge bg-slate-100 text-slate-500 ring-1 ring-slate-200; }
+  .badge-purple  { @apply badge bg-violet-50 text-violet-600 ring-1 ring-violet-100; }
+  .badge-teal    { @apply badge bg-teal-50 text-teal-600 ring-1 ring-teal-100; }
 
   /* ====================================================
-     TABLE v2 — Better mobile scroll hints
+     TABLE v3 — Clean & Elegant
      ==================================================== */
   .table-wrapper {
-    @apply w-full overflow-x-auto rounded-2xl border border-slate-100/80;
+    @apply w-full overflow-x-auto rounded-2xl border border-slate-100/60;
   }
   .table {
     @apply w-full text-sm text-left border-collapse;
   }
   .table thead {
-    @apply bg-slate-50/80 backdrop-blur-sm border-b border-slate-100;
+    @apply bg-gradient-to-r from-slate-50/80 to-primary-50/30 backdrop-blur-sm border-b border-slate-100/60;
   }
   .table th {
     @apply px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap;
   }
   .table td {
-    @apply px-4 py-3.5 text-slate-700 border-b border-slate-50/80;
+    @apply px-4 py-3.5 text-slate-600 border-b border-slate-50/80;
   }
   .table tbody tr {
-    @apply hover:bg-slate-50/60 transition-colors duration-150;
+    @apply hover:bg-primary-50/20 transition-colors duration-150;
   }
   .table tbody tr:last-child td {
     @apply border-b-0;
@@ -192,7 +195,7 @@
   .table-wrapper::after {
     content: '';
     @apply absolute top-0 right-0 bottom-0 w-8 pointer-events-none;
-    background: linear-gradient(to right, transparent, rgba(255,255,255,0.9));
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.95));
     @apply hidden;
   }
   @media (max-width: 640px) {
@@ -202,33 +205,33 @@
   }
 
   /* ====================================================
-     PAGE STRUCTURE v2
+     PAGE STRUCTURE v3
      ==================================================== */
   .page-header {
     @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6;
   }
   .page-title {
-    @apply text-xl font-bold text-slate-900 tracking-tight;
+    @apply text-xl font-bold text-slate-800 tracking-tight;
   }
   .page-subtitle {
-    @apply text-sm text-slate-500 mt-0.5;
+    @apply text-sm text-slate-400 mt-0.5;
   }
 
   /* ====================================================
-     STAT CARD v2
+     STAT CARD v3 — Cheerful Gradient Icons
      ==================================================== */
   .stat-card {
-    @apply card p-5 flex items-center gap-4 hover:shadow-card-md transition-all duration-200;
+    @apply card p-5 flex items-center gap-4 hover:shadow-card-md hover:-translate-y-0.5 transition-all duration-200;
   }
   .stat-icon {
     @apply w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0;
   }
 
   /* ====================================================
-     SKELETON / LOADING v2 — Smoother pulse
+     SKELETON / LOADING v3 — Shimmer
      ==================================================== */
   .skeleton {
-    @apply bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 rounded-lg;
+    @apply bg-gradient-to-r from-slate-100 via-white to-slate-100 rounded-xl;
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
   }
@@ -252,7 +255,7 @@
   }
 
   /* ====================================================
-     EMPTY STATE v2
+     EMPTY STATE v3
      ==================================================== */
   .empty-state {
     @apply flex flex-col items-center justify-center py-16 text-center;
@@ -267,21 +270,35 @@
 
   /* Glassmorphism */
   .glass {
-    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-lg;
+    @apply bg-white/60 backdrop-blur-2xl border border-white/50 shadow-lg;
   }
   .glass-dark {
-    @apply bg-slate-900/70 backdrop-blur-xl border border-white/10;
+    @apply bg-slate-900/70 backdrop-blur-2xl border border-white/10;
   }
 
   /* Gradient text */
   .text-gradient {
-    @apply bg-gradient-to-r from-primary-600 via-primary-500 to-indigo-500 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary-500 via-primary-400 to-indigo-400 bg-clip-text text-transparent;
   }
   .text-gradient-rainbow {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 30%, #f472b6 60%, #fb923c 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+  .text-gradient-warm {
+    background: linear-gradient(135deg, #f97316 0%, #ec4899 50%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Warm background gradients */
+  .bg-gradient-warm {
+    background: linear-gradient(135deg, #fff9f5 0%, #faf5ff 50%, #f0f4ff 100%);
+  }
+  .bg-gradient-happy {
+    background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 50%, #dbeafe 100%);
   }
 
   /* Smooth transitions */

@@ -2,16 +2,17 @@
   <header
     :class="[
       'fixed top-0 right-0 h-16 z-20 flex items-center justify-between px-4 sm:px-5 transition-all duration-300',
-      'bg-white/80 backdrop-blur-xl border-b border-slate-100/60 shadow-[0_1px_3px_0_rgb(0,0,0,0.03)]',
+      'bg-white/80 backdrop-blur-2xl border-b border-primary-100/30',
       uiStore.sidebarOpen ? 'lg:left-64' : 'lg:left-[72px]',
     ]"
+    style="box-shadow: 0 1px 8px -2px rgba(99,102,241,0.08);"
   >
     <!-- ── Kiri: toggle + breadcrumb ─────────────────────── -->
     <div class="flex items-center gap-2 min-w-0">
       <!-- Mobile hamburger -->
       <button
         @click="uiStore.toggleMobileSidebar()"
-        class="p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all duration-150 active:scale-95 lg:hidden touch-target"
+        class="p-2 rounded-2xl text-slate-400 hover:bg-primary-50 hover:text-primary-500 transition-all duration-200 active:scale-95 lg:hidden touch-target"
         aria-label="Toggle menu"
       >
         <Bars3Icon class="w-5 h-5" />
@@ -20,20 +21,20 @@
       <!-- Desktop collapse toggle -->
       <button
         @click="uiStore.toggleSidebar()"
-        class="hidden lg:flex p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all duration-150 active:scale-95"
+        class="hidden lg:flex p-2 rounded-2xl text-slate-400 hover:bg-primary-50 hover:text-primary-500 transition-all duration-200 active:scale-95"
         :aria-label="uiStore.sidebarOpen ? 'Tutup sidebar' : 'Buka sidebar'"
       >
         <Bars3Icon class="w-4 h-4" />
       </button>
 
       <!-- Divider -->
-      <div class="hidden lg:block w-px h-5 bg-slate-200/80 mx-1" />
+      <div class="hidden lg:block w-px h-5 bg-slate-200/60 mx-1" />
 
       <!-- Breadcrumb -->
       <nav class="hidden sm:flex items-center gap-1 text-sm min-w-0" aria-label="breadcrumb">
         <RouterLink
           to="/dashboard"
-          class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 transition-colors flex-shrink-0"
+          class="p-1.5 rounded-xl text-slate-400 hover:text-primary-500 hover:bg-primary-50/60 transition-colors flex-shrink-0"
         >
           <HomeIcon class="w-4 h-4" />
         </RouterLink>
@@ -42,11 +43,11 @@
           <RouterLink
             v-if="crumb.to && idx < uiStore.breadcrumbs.length - 1"
             :to="crumb.to"
-            class="px-1.5 py-1 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100/80 transition-colors truncate max-w-[140px]"
+            class="px-1.5 py-1 rounded-xl text-slate-400 hover:text-primary-600 hover:bg-primary-50/60 transition-colors truncate max-w-[140px]"
           >{{ crumb.label }}</RouterLink>
           <span
             v-else
-            class="px-1.5 py-1 text-slate-800 font-semibold truncate max-w-[180px]"
+            class="px-1.5 py-1 text-slate-700 font-semibold truncate max-w-[180px]"
           >{{ crumb.label }}</span>
         </template>
       </nav>
@@ -59,35 +60,35 @@
       <Transition name="fade-up">
         <div
           v-if="masterStore.tahunAktif"
-          class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50/80 border border-emerald-100/60 text-emerald-700 backdrop-blur-sm"
+          class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-emerald-50 border border-emerald-200/40 text-emerald-600"
         >
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse-soft flex-shrink-0" />
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-soft flex-shrink-0" />
           <span class="text-xs font-semibold whitespace-nowrap">TP {{ masterStore.tahunAktif.nama }}</span>
         </div>
       </Transition>
 
       <!-- Divider -->
-      <div class="w-px h-5 bg-slate-200/80 hidden md:block" />
+      <div class="w-px h-5 bg-slate-200/50 hidden md:block" />
 
       <!-- User dropdown -->
       <div class="relative" ref="dropdownRef">
         <button
           @click="dropdownOpen = !dropdownOpen"
           :class="[
-            'flex items-center gap-2.5 px-2 py-1.5 rounded-xl transition-all duration-150',
-            dropdownOpen ? 'bg-slate-100' : 'hover:bg-slate-50/80',
+            'flex items-center gap-2.5 px-2 py-1.5 rounded-2xl transition-all duration-200',
+            dropdownOpen ? 'bg-primary-50/60' : 'hover:bg-slate-50',
           ]"
         >
           <!-- Avatar -->
           <div
-            class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm ring-1 ring-white/20"
+            class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm transition-transform duration-200 hover:scale-105"
             :class="avatarColor"
           >
             {{ initials }}
           </div>
           <!-- Name + role (hidden on small screens) -->
           <div class="text-left hidden sm:block">
-            <p class="text-sm font-semibold text-slate-800 leading-none">{{ authStore.user?.full_name }}</p>
+            <p class="text-sm font-semibold text-slate-700 leading-none">{{ authStore.user?.full_name }}</p>
             <p class="text-[11px] text-slate-400 leading-none mt-0.5">{{ authStore.user?.role_label }}</p>
           </div>
           <ChevronDownIcon
@@ -100,21 +101,21 @@
         <Transition name="dropdown">
           <div
             v-if="dropdownOpen"
-            class="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-card-xl border border-slate-100/80 py-1.5 z-50 overflow-hidden"
+            class="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-2xl rounded-3xl shadow-card-xl border border-slate-100/60 py-1.5 z-50 overflow-hidden"
           >
             <!-- User info header -->
-            <div class="px-4 py-3.5 border-b border-slate-100/80 bg-slate-50/50">
+            <div class="px-4 py-3.5 border-b border-slate-100/60 bg-gradient-to-br from-primary-50/40 to-violet-50/30">
               <div class="flex items-center gap-3">
                 <div
-                  class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0 shadow-sm ring-1 ring-white/20"
+                  class="w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0 shadow-md"
                   :class="avatarColor"
                 >
                   {{ initials }}
                 </div>
                 <div class="min-w-0">
                   <p class="text-sm font-bold text-slate-800 truncate">{{ authStore.user?.full_name }}</p>
-                  <p class="text-xs text-slate-500 truncate">{{ authStore.user?.email }}</p>
-                  <span class="inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-[10px] font-semibold bg-primary-50/80 text-primary-700 border border-primary-100/60">
+                  <p class="text-xs text-slate-400 truncate">{{ authStore.user?.email }}</p>
+                  <span class="inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-[10px] font-semibold bg-primary-50 text-primary-600 ring-1 ring-primary-100">
                     {{ authStore.user?.role_label }}
                   </span>
                 </div>
@@ -126,10 +127,10 @@
               <RouterLink
                 to="/profile"
                 @click="dropdownOpen = false"
-                class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-primary-50/40 hover:text-primary-600 transition-colors"
               >
-                <div class="w-8 h-8 rounded-xl bg-slate-100/80 flex items-center justify-center flex-shrink-0">
-                  <UserCircleIcon class="w-4 h-4 text-slate-500" />
+                <div class="w-8 h-8 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+                  <UserCircleIcon class="w-4 h-4 text-primary-400" />
                 </div>
                 <div>
                   <p class="font-medium leading-none">Profil Saya</p>
@@ -139,13 +140,13 @@
             </div>
 
             <!-- Logout -->
-            <div class="border-t border-slate-100/80 pt-1 pb-1">
+            <div class="border-t border-slate-100/60 pt-1 pb-1">
               <button
                 @click="handleLogout"
-                class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50/80 transition-colors"
+                class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50/60 transition-colors"
               >
-                <div class="w-8 h-8 rounded-xl bg-red-50/80 flex items-center justify-center flex-shrink-0">
-                  <ArrowRightOnRectangleIcon class="w-4 h-4 text-red-500" />
+                <div class="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                  <ArrowRightOnRectangleIcon class="w-4 h-4 text-red-400" />
                 </div>
                 <span class="font-medium">Keluar</span>
               </button>
@@ -191,7 +192,7 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
-.dropdown-enter-active { transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.dropdown-enter-active { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .dropdown-leave-active { transition: all 0.15s ease; }
 .dropdown-enter-from, .dropdown-leave-to {
   opacity: 0;

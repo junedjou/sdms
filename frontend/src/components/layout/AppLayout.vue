@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-surface-50">
+  <div class="min-h-screen bg-gradient-warm">
     <!-- Sidebar -->
     <AppSidebar />
 
@@ -14,8 +14,8 @@
       ]"
     >
       <!-- Page loading bar -->
-      <div v-if="uiStore.pageLoading" class="fixed top-16 left-0 right-0 z-30 h-0.5 bg-slate-100 overflow-hidden">
-        <div class="h-full bg-gradient-to-r from-primary-500 to-primary-600 animate-[loading_1.5s_ease-in-out_infinite] rounded-full" />
+      <div v-if="uiStore.pageLoading" class="fixed top-16 left-0 right-0 z-30 h-0.5 bg-primary-100 overflow-hidden">
+        <div class="h-full bg-gradient-to-r from-primary-400 via-primary-500 to-violet-500 animate-[loading_1.5s_ease-in-out_infinite] rounded-full" />
       </div>
 
       <div class="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
@@ -47,9 +47,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page-enter-active { transition: all 0.2s ease-out; }
+.page-enter-active { transition: all 0.25s ease-out; }
 .page-leave-active { transition: all 0.15s ease-in; }
-.page-enter-from  { opacity: 0; transform: translateY(8px); }
+.page-enter-from  { opacity: 0; transform: translateY(10px); }
 .page-leave-to    { opacity: 0; transform: translateY(-4px); }
 
 @keyframes loading {
