@@ -175,30 +175,58 @@ const importGuru = async (req, res) => {
 const SISWA_LABELS = [
   'Nama Lengkap*','NISN','NIS','Jenis Kelamin (L/P)*','Kelas','Kode Jurusan',
   'Tahun Masuk','Status','Tempat Lahir','Tanggal Lahir (YYYY-MM-DD)',
-  'Agama','No HP','Alamat',
+  'Agama','No HP','Alamat','HP Orang Tua','Nama Ayah','Nama Ibu','Pernah Dapat Bantuan (1/0)',
+];
+
+// Kolom aman untuk export — fallback jika migration belum dijalankan
+const SISWA_EXPORT_SAFE_ATTRS = [
+  'id','nisn','nis','nama','jenis_kelamin','kelas_id','jurusan_id',
+  'tahun_masuk','status','tempat_lahir','tanggal_lahir','agama','no_hp','alamat',
+];
+const SISWA_EXPORT_FULL_ATTRS = [
+  ...SISWA_EXPORT_SAFE_ATTRS,
+  'hp_ortu','nama_ayah','nama_ibu','pernah_dapat_bantuan',
 ];
 
 const exportSiswa = async (req, res) => {
-  const where = { status: 'Aktif' };
-  const rows = await Siswa.findAll({
-    where, include: [
-      { association: 'jurusan', attributes: ['kode'] },
-      { association: 'kelas', attributes: ['nama'] },
-    ],
-    order: [['nama', 'ASC']],
+  const where = {};
+  if (req.query.status) where.status = req.query.status;
+  const include = [
+    { association: 'jurusan', attributes: ['kode'] },
+    { association: 'kelas', attributes: ['nama'] },
+  ];
+
+  let rows;
+  let hasNewCols = true;
+  try {
+    rows = await Siswa.findAll({ where, attributes: SISWA_EXPORT_FULL_ATTRS, include, order: [['nama', 'ASC']] });
+  } catch (e) {
+    if (e.original?.code === 'ER_BAD_FIELD_ERROR') {
+      hasNewCols = false;
+      rows = await Siswa.findAll({ where, attributes: SISWA_EXPORT_SAFE_ATTRS, include, order: [['nama', 'ASC']] });
+    } else { throw e; }
+  }
+
+  const labels = hasNewCols ? SISWA_LABELS : SISWA_LABELS.slice(0, 13);
+  const data = rows.map(s => {
+    const base = [
+      s.nama, s.nisn||'', s.nis||'', s.jenis_kelamin||'',
+      s.kelas?.nama||'', s.jurusan?.kode||'', s.tahun_masuk||'', s.status||'Aktif',
+      s.tempat_lahir||'', s.tanggal_lahir ? String(s.tanggal_lahir).slice(0,10) : '',
+      s.agama||'', s.no_hp||'', s.alamat||'',
+    ];
+    if (hasNewCols) base.push(
+      s.hp_ortu||'', s.nama_ayah||'', s.nama_ibu||'',
+      s.pernah_dapat_bantuan ? 1 : 0,
+    );
+    return base;
   });
-  const data = rows.map(s => [
-    s.nama, s.nisn||'', s.nis||'', s.jenis_kelamin||'',
-    s.kelas?.nama||'', s.jurusan?.kode||'', s.tahun_masuk||'', s.status||'Aktif',
-    s.tempat_lahir||'', s.tanggal_lahir ? String(s.tanggal_lahir).slice(0,10) : '',
-    s.agama||'', s.no_hp||'', s.alamat||'',
-  ]);
-  const buf = buildWorkbook('Siswa', SISWA_LABELS, data);
+  const buf = buildWorkbook('Siswa', labels, data);
   sendExcel(res, buf, `data_siswa_${Date.now()}.xlsx`);
 };
 
 const templateSiswa = async (req, res) => {
-  const sample = [['Andi Pratama','1234567890','2024001','L','X TKJ 1','TKJ','2024','Aktif','Surabaya','2008-06-15','Islam','08123456789','Jl. Pahlawan No.5']];
+  const sample = [['Andi Pratama','1234567890','2024001','L','X TKJ 1','TKJ','2024','Aktif','Surabaya','2008-06-15','Islam','08123456789','Jl. Pahlawan No.5','081234567890','Bapak Pratama','Ibu Sari',0]];
   const buf = buildWorkbook('Siswa', SISWA_LABELS, sample);
   sendExcel(res, buf, 'template_import_siswa.xlsx');
 };
@@ -241,6 +269,10 @@ const importSiswa = async (req, res) => {
         agama:  str(r['Agama']  ?? r['agama']),
         no_hp:  str(r['No HP']  ?? r['no_hp']),
         alamat: str(r['Alamat'] ?? r['alamat']),
+        hp_ortu:   str(r['HP Orang Tua'] ?? r['hp_ortu']),
+        nama_ayah: str(r['Nama Ayah']    ?? r['nama_ayah']),
+        nama_ibu:  str(r['Nama Ibu']     ?? r['nama_ibu']),
+        pernah_dapat_bantuan: (r['Pernah Dapat Bantuan (1/0)'] == 1 || r['pernah_dapat_bantuan'] == 1),
       });
       syncEvent('siswa.created', siswa.toJSON());
       ok.push(nama);
