@@ -29,17 +29,17 @@ const rateLimiter = rateLimit({
 
 /**
  * Rate limiter ketat untuk endpoint login
- * Maks 10 percobaan per 15 menit per IP
+ * Maks 10 percobaan per 3 menit per IP
  */
 const loginRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 3 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
     return error(
       res,
-      'Terlalu banyak percobaan login. Coba lagi setelah 15 menit.',
+      'Terlalu banyak percobaan login. Coba lagi setelah 3 menit.',
       429
     );
   },

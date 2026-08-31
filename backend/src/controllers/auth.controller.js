@@ -30,8 +30,8 @@ const login = async (req, res) => {
   const ip = getClientIp(req);
 
   try {
-    // Cari user beserta role-nya (unscoped agar password ikut)
-    const user = await User.unscoped().findOne({
+    // Cari user: by username, email, atau — jika input angka — by no_hp siswa
+    let user = await User.unscoped().findOne({
       where: {
         [Op.or]: [{ username }, { email: username }],
         is_active: true,
@@ -39,8 +39,27 @@ const login = async (req, res) => {
       include: [
         { model: Role, as: 'role' },
         { association: 'guru', attributes: ['id', 'nama'] },
+        { association: 'siswa', attributes: ['id', 'nama', 'no_hp', 'hp_ortu'] },
       ],
     });
+
+    // Fallback: cari by no_hp siswa (untuk yang login pakai HP)
+    if (!user && /^\d+$/.test(username.trim())) {
+      const hp = username.trim();
+      const siswaMatch = await Siswa.findOne({
+        where: { [Op.or]: [{ no_hp: hp }, { hp_ortu: hp }] },
+        attributes: ['id'],
+      });
+      if (siswaMatch) {
+        user = await User.unscoped().findOne({
+          where: { siswa_id: siswaMatch.id, is_active: true },
+          include: [
+            { model: Role, as: 'role' },
+            { association: 'siswa', attributes: ['id', 'nama', 'no_hp', 'hp_ortu'] },
+          ],
+        });
+      }
+    }
 
     if (!user) {
       await writeAuditLog({ action: 'LOGIN', resource: 'auth', description: `Login gagal: username ${username} tidak ditemukan`, ipAddress: ip, status: 'failed' });
@@ -56,8 +75,8 @@ const login = async (req, res) => {
     // Ambil permissions
     const permissions = await getUserPermissions(user.role_id);
 
-    // Build token payload — pakai nama guru jika ada, fallback ke full_name
-    const displayName = user.guru?.nama || user.full_name || user.username;
+    // Build token payload — pakai nama guru/siswa jika ada, fallback ke full_name
+    const displayName = user.guru?.nama || user.siswa?.nama || user.full_name || user.username;
     const tokenPayload = {
       id: user.id,
       username: user.username,
@@ -247,6 +266,7 @@ const updateMySiswaProfile = async (req, res) => {
     return badRequest(res, 'Akun ini tidak terhubung ke data siswa');
   }
 
+  // FindByPk tanpa attributes restriction agar Sequelize instance bisa di-update
   const siswa = await Siswa.findByPk(userRecord.siswa_id);
   if (!siswa) return badRequest(res, 'Data siswa tidak ditemukan');
 
@@ -256,14 +276,28 @@ const updateMySiswaProfile = async (req, res) => {
     'no_hp','alamat',
     'nama_ayah','nama_ibu','hp_ortu','pernah_dapat_bantuan',
   ];
-  const data = {};
-  for (const key of allowed) {
-    if (req.body[key] !== undefined) {
-      data[key] = req.body[key] === '' ? null : req.body[key];
-    }
-  }
+  // Kolom yang selalu aman (ada sebelum migration baru)
+  const safeAllowed = ['tempat_lahir','tanggal_lahir','agama','no_hp','alamat'];
 
-  await siswa.update(data);
+  const buildData = (keys) => {
+    const d = {};
+    for (const key of keys) {
+      if (req.body[key] !== undefined) d[key] = req.body[key] === '' ? null : req.body[key];
+    }
+    return d;
+  };
+
+  let data = buildData(allowed);
+
+  try {
+    await siswa.update(data);
+  } catch (e) {
+    // Fallback: migration belum jalan, update hanya kolom lama
+    if (e.original?.code === 'ER_BAD_FIELD_ERROR') {
+      data = buildData(safeAllowed);
+      await siswa.update(data);
+    } else { throw e; }
+  }
 
   await writeAuditLog({
     userId: req.user.id, username: req.user.username,

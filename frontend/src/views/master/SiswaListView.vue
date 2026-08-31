@@ -141,6 +141,12 @@
                         : 'btn-ghost btn-sm p-1.5 text-emerald-600 hover:bg-emerald-50'">
                       <UserPlusIcon class="w-4 h-4" />
                     </button>
+                    <button v-if="authStore.hasPermission('siswa:update') && item.user"
+                      @click="openResetPassword(item)"
+                      title="Reset Password ke Default"
+                      class="btn-ghost btn-sm p-1.5 text-amber-500 hover:bg-amber-50">
+                      <KeyIcon class="w-4 h-4" />
+                    </button>
                     <button v-if="authStore.hasPermission('siswa:update')" @click="openForm(item)" class="btn-ghost btn-sm p-1.5">
                       <PencilSquareIcon class="w-4 h-4" />
                     </button>
@@ -189,6 +195,14 @@
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-sm font-medium transition-colors">
           <UserGroupIcon class="w-4 h-4" />
           Buat Akun
+        </button>
+        <!-- Reset Password Massal -->
+        <button
+          v-if="authStore.hasPermission('siswa:update')"
+          @click="openBulkResetPassword"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-sm font-medium transition-colors">
+          <KeyIcon class="w-4 h-4" />
+          Reset Password
         </button>
         <!-- Hapus Massal -->
         <button
@@ -329,6 +343,106 @@
     <BaseConfirm v-model="showConfirm" title="Nonaktifkan Siswa"
       :message="`Nonaktifkan siswa ${deleteTarget?.nama}?`"
       confirm-label="Ya" :danger-mode="true" :loading="formLoading" @confirm="executeDelete" />
+
+    <!-- ── Modal Reset Password 1 Siswa ── -->
+    <BaseModal v-model="showResetPassword" title="Reset Password Siswa" size="sm">
+      <div class="space-y-4">
+        <div class="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
+          <KeyIcon class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div class="text-sm text-amber-800">
+            <p class="font-semibold mb-1">Password akan direset untuk:</p>
+            <p class="font-medium">{{ resetPasswordTarget?.nama }}</p>
+            <p class="text-xs mt-1">Username: <span class="font-mono">{{ resetPasswordTarget?.user?.username }}</span></p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password Baru <span class="text-gray-400 text-xs">(kosong = smkn1kras)</span></label>
+          <input v-model="resetPasswordValue" type="text" class="form-input font-mono"
+            placeholder="smkn1kras" />
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="showResetPassword = false">Batal</button>
+        <button class="btn-primary bg-amber-600 hover:bg-amber-700 focus:ring-amber-500"
+          :disabled="resettingPassword" @click="executeResetPassword">
+          <span v-if="resettingPassword" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          <KeyIcon v-else class="w-4 h-4" />
+          Reset Password
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- ── Modal Reset Password Massal ── -->
+    <BaseModal v-model="showBulkResetPassword" title="Reset Password Massal" size="md">
+      <div v-if="!bulkResetResult" class="space-y-4">
+        <div class="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
+          <KeyIcon class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div class="text-sm text-amber-800">
+            <p class="font-semibold mb-1">Reset password untuk <span class="text-amber-900">{{ selected.length }} siswa</span></p>
+            <ul class="space-y-0.5 text-amber-700">
+              <li>• Hanya siswa yang sudah punya akun yang direset</li>
+              <li>• Siswa tanpa akun akan dilewati otomatis</li>
+            </ul>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password Baru <span class="text-gray-400 text-xs">(kosong = smkn1kras)</span></label>
+          <input v-model="bulkResetPasswordValue" type="text" class="form-input font-mono"
+            placeholder="smkn1kras" />
+        </div>
+        <div v-if="bulkResettingPassword" class="flex flex-col items-center gap-3 py-4">
+          <div class="w-10 h-10 border-4 border-amber-100 border-t-amber-600 rounded-full animate-spin" />
+          <p class="text-sm text-gray-500">Sedang mereset password...</p>
+        </div>
+      </div>
+      <!-- Hasil -->
+      <div v-else class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
+            <p class="text-2xl font-bold text-emerald-700">{{ bulkResetResult.berhasil.length }}</p>
+            <p class="text-xs text-emerald-600 mt-0.5">Password berhasil direset</p>
+          </div>
+          <div class="p-4 rounded-xl border text-center" :class="bulkResetResult.gagal.length ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'">
+            <p class="text-2xl font-bold" :class="bulkResetResult.gagal.length ? 'text-red-600' : 'text-gray-400'">
+              {{ bulkResetResult.gagal.length }}
+            </p>
+            <p class="text-xs mt-0.5" :class="bulkResetResult.gagal.length ? 'text-red-500' : 'text-gray-400'">Dilewati / Gagal</p>
+          </div>
+        </div>
+        <div v-if="bulkResetResult.berhasil.length" class="space-y-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Berhasil direset</p>
+          <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+            <div v-for="r in bulkResetResult.berhasil" :key="r.id"
+              class="flex items-center justify-between px-3 py-1.5 bg-emerald-50 rounded-lg text-sm">
+              <span class="text-gray-800 truncate">{{ r.nama }}</span>
+              <span class="font-mono text-xs text-emerald-700 flex-shrink-0 ml-2">{{ r.username }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="bulkResetResult.gagal.length" class="space-y-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dilewati / Gagal</p>
+          <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+            <div v-for="r in bulkResetResult.gagal" :key="r.id"
+              class="flex items-center justify-between px-3 py-1.5 bg-red-50 rounded-lg text-sm">
+              <span class="text-gray-800 truncate">{{ r.nama || r.id }}</span>
+              <span class="text-xs text-red-500 flex-shrink-0 ml-2">{{ r.alasan }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="closeBulkResetPassword">
+          {{ bulkResetResult ? 'Tutup' : 'Batal' }}
+        </button>
+        <button v-if="!bulkResetResult"
+          class="btn-primary bg-amber-600 hover:bg-amber-700 focus:ring-amber-500"
+          :disabled="bulkResettingPassword" @click="executeBulkResetPassword">
+          <span v-if="bulkResettingPassword" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          <KeyIcon v-else class="w-4 h-4" />
+          Reset {{ selected.length }} Password
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- ── Modal Buat Akun 1 Siswa ── -->
     <BaseModal v-model="showCreateUserConfirm" title="Buat Akun Login Siswa" size="sm">
@@ -641,6 +755,58 @@ const executeBulkCreateUser = async () => {
   } catch (err) {
     notify.error(err.response?.data?.message || 'Gagal membuat akun massal');
   } finally { bulkCreatingUser.value = false; }
+};
+
+// ── Reset Password (1 siswa) ──────────────────────────────────
+const showResetPassword   = ref(false);
+const resetPasswordTarget = ref(null);
+const resetPasswordValue  = ref('');
+const resettingPassword   = ref(false);
+
+const openResetPassword = (item) => {
+  resetPasswordTarget.value = item;
+  resetPasswordValue.value  = '';
+  showResetPassword.value   = true;
+};
+const executeResetPassword = async () => {
+  resettingPassword.value = true;
+  try {
+    const pw = resetPasswordValue.value.trim() || 'smkn1kras';
+    await masterService.siswaResetPassword(resetPasswordTarget.value.id, { new_password: pw });
+    notify.success(`Password ${resetPasswordTarget.value.user?.username} berhasil direset`);
+    showResetPassword.value = false;
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal reset password');
+  } finally { resettingPassword.value = false; }
+};
+
+// ── Reset Password Massal ─────────────────────────────────────
+const showBulkResetPassword  = ref(false);
+const bulkResettingPassword  = ref(false);
+const bulkResetResult        = ref(null);
+const bulkResetPasswordValue = ref('');
+
+const openBulkResetPassword = () => {
+  bulkResetResult.value        = null;
+  bulkResetPasswordValue.value = '';
+  showBulkResetPassword.value  = true;
+};
+const closeBulkResetPassword = () => {
+  showBulkResetPassword.value = false;
+  bulkResetResult.value       = null;
+};
+const executeBulkResetPassword = async () => {
+  bulkResettingPassword.value = true;
+  try {
+    const pw = bulkResetPasswordValue.value.trim() || 'smkn1kras';
+    const res = await masterService.siswaBulkResetPassword({ ids: selected.value, new_password: pw });
+    bulkResetResult.value = res.data.data;
+    const { berhasil, gagal } = bulkResetResult.value;
+    if (berhasil.length) notify.success(`${berhasil.length} password berhasil direset`);
+    clearSelected();
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal reset password massal');
+  } finally { bulkResettingPassword.value = false; }
 };
 
 onMounted(() => { fetchData(); loadKelas(); masterStore.fetchJurusan(); });

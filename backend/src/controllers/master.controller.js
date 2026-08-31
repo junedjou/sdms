@@ -293,6 +293,67 @@ const bulkCreateSiswaUser = async (req, res) => {
   );
 };
 
+// POST /master/siswa/:id/reset-password
+// Reset password akun siswa ke default smkn1kras
+const resetSiswaPassword = async (req, res) => {
+  const siswa = await findSiswaById(req.params.id);
+  if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
+
+  const userAkun = await User.unscoped().findOne({ where: { siswa_id: siswa.id } });
+  if (!userAkun) return notFound(res, 'Siswa ini belum memiliki akun login');
+
+  const newPassword = req.body.new_password || 'smkn1kras';
+  const hashed = await hashPassword(newPassword);
+  await userAkun.update({ password: hashed, password_changed_at: new Date() });
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'UPDATE', resource: 'users', resourceId: userAkun.id,
+    description: `Password siswa ${siswa.nama} (${userAkun.username}) direset oleh ${req.user.username}`,
+  });
+
+  return success(res, { username: userAkun.username }, `Password akun ${userAkun.username} berhasil direset`);
+};
+
+// POST /master/siswa/bulk-reset-password
+// Reset password massal akun siswa ke default smkn1kras
+const bulkResetSiswaPassword = async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return badRequest(res, 'ids harus berupa array dan tidak boleh kosong');
+  }
+
+  const newPassword = req.body.new_password || 'smkn1kras';
+  const hashed = await hashPassword(newPassword);
+
+  const results = { berhasil: [], gagal: [] };
+
+  for (const id of ids) {
+    const siswa = await findSiswaById(id);
+    if (!siswa) { results.gagal.push({ id, alasan: 'Siswa tidak ditemukan' }); continue; }
+
+    const userAkun = await User.unscoped().findOne({ where: { siswa_id: siswa.id } });
+    if (!userAkun) { results.gagal.push({ id, nama: siswa.nama, alasan: 'Belum punya akun login' }); continue; }
+
+    try {
+      await userAkun.update({ password: hashed, password_changed_at: new Date() });
+      results.berhasil.push({ id, nama: siswa.nama, username: userAkun.username });
+    } catch (e) {
+      results.gagal.push({ id, nama: siswa.nama, alasan: e.message });
+    }
+  }
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'BULK_UPDATE', resource: 'users',
+    description: `Bulk reset password siswa: ${results.berhasil.length} berhasil, ${results.gagal.length} gagal`,
+  });
+
+  return success(res, results,
+    `${results.berhasil.length} password berhasil direset, ${results.gagal.length} gagal`
+  );
+};
+
 // ============================================================
 // PEGAWAI
 // ============================================================
@@ -624,7 +685,7 @@ module.exports = {
   // Guru
   getGuru, getGuruById, createGuru, updateGuru, deleteGuru, bulkDeleteGuru,
   // Siswa
-  getSiswa, getSiswaById, createSiswa, updateSiswa, deleteSiswa, bulkDeleteSiswa, createSiswaUser, bulkCreateSiswaUser,
+  getSiswa, getSiswaById, createSiswa, updateSiswa, deleteSiswa, bulkDeleteSiswa, createSiswaUser, bulkCreateSiswaUser, resetSiswaPassword, bulkResetSiswaPassword,
   // Pegawai
   getPegawai, createPegawai, updatePegawai, deletePegawai, bulkDeletePegawai,
   // Jurusan

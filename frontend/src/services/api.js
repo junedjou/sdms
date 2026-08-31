@@ -123,6 +123,8 @@ export const masterService = {
   siswaTemplate: ()       => api.get('/master/siswa/template', { responseType: 'blob' }),
   siswaCreateUser: (id)   => api.post(`/master/siswa/${id}/create-user`),
   siswaBulkCreateUser: (data) => api.post('/master/siswa/bulk-create-user', data),
+  siswaResetPassword: (id, data) => api.post(`/master/siswa/${id}/reset-password`, data),
+  siswaBulkResetPassword: (data) => api.post('/master/siswa/bulk-reset-password', data),
   siswaImport:   (fd)     => api.post('/master/siswa/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
   // Pegawai
