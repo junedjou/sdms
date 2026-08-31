@@ -300,7 +300,9 @@ const handleUpdateSiswa = async () => {
     siswaData.value = res.data.data || siswaData.value;
     notify.success('Data pribadi berhasil disimpan');
   } catch (err) {
-    notify.error(err.response?.data?.message || 'Gagal menyimpan data pribadi');
+    const msg = err.response?.data?.message || err.message || 'Gagal menyimpan data pribadi';
+    const details = err.response?.data?.errors;
+    notify.error(details?.length ? `${msg}: ${details.map(e => e.message).join(', ')}` : msg);
   } finally { siswaSubmitting.value = false; }
 };
 
