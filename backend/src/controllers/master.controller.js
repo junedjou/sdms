@@ -163,6 +163,9 @@ const createSiswa = async (req, res) => {
   }
   if (body.jurusan_id === '') body.jurusan_id = null;
   if (body.kelas_id   === '') body.kelas_id   = null;
+  // Unique fields: string kosong → null
+  if (body.nisn === '') body.nisn = null;
+  if (body.nis  === '') body.nis  = null;
   const siswa = await Siswa.create({ ...body, orang_tua_id: orangTuaId });
   await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'CREATE', resource: 'siswa', resourceId: siswa.id, description: `Siswa ${siswa.nama} dibuat`, newData: req.body });
   await syncEvent('siswa.created', siswa.toJSON());
@@ -176,12 +179,18 @@ const updateSiswa = async (req, res) => {
   const allowed = ['nama', 'nisn', 'nis', 'jenis_kelamin', 'kelas_id', 'jurusan_id', 'tahun_masuk', 'status', 'tempat_lahir', 'tanggal_lahir', 'agama', 'no_hp', 'alamat', 'hp_ortu', 'nama_ayah', 'nama_ibu', 'pernah_dapat_bantuan'];
   // Field ENUM — string kosong harus dikonversi ke null
   const enumFields = ['jenis_kelamin', 'agama', 'status'];
+  // Field unique — string kosong harus null agar tidak conflict unique constraint
+  const uniqueFields = ['nisn', 'nis'];
   const data = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) {
       let val = req.body[key];
       // FK dan ENUM: string kosong → null
       if (['jurusan_id', 'kelas_id', ...enumFields].includes(key)) {
+        val = val === '' || val === null ? null : val;
+      }
+      // Unique fields: string kosong → null (hindari unique constraint error)
+      if (uniqueFields.includes(key)) {
         val = val === '' || val === null ? null : val;
       }
       data[key] = val;
