@@ -189,8 +189,16 @@ const SISWA_EXPORT_FULL_ATTRS = [
 ];
 
 const exportSiswa = async (req, res) => {
+  const { status, kelas_id, jurusan_id, search } = req.query;
   const where = {};
-  if (req.query.status) where.status = req.query.status;
+  if (status)     where.status     = status;
+  if (kelas_id)   where.kelas_id   = kelas_id;
+  if (jurusan_id) where.jurusan_id = jurusan_id;
+  if (search)     where[Op.or] = [
+    { nama:  { [Op.like]: `%${search}%` } },
+    { nisn:  { [Op.like]: `%${search}%` } },
+    { nis:   { [Op.like]: `%${search}%` } },
+  ];
   const include = [
     { association: 'jurusan', attributes: ['kode'] },
     { association: 'kelas', attributes: ['nama'] },

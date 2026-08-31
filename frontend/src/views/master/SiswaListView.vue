@@ -468,13 +468,36 @@ const showForm = ref(false); const editItem = ref(null);
 const showConfirm = ref(false); const deleteTarget = ref(null); const formLoading = ref(false);
 
 // ── Excel IO ─────────────────────────────────────────────────
-const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
-  exportFn:   masterService.siswaExport,
+const { showImport, doTemplate, importFn, handleImported } = useExcelIO({
   templateFn: masterService.siswaTemplate,
   importFn:   masterService.siswaImport,
   label:      'siswa',
   onImported: () => fetchData(),
 });
+
+// Export dengan filter aktif
+const exporting = ref(false);
+const doExport = async () => {
+  exporting.value = true;
+  try {
+    const res = await masterService.siswaExport({
+      status:     filterStatus.value  || undefined,
+      kelas_id:   filterKelas.value   || undefined,
+      jurusan_id: filterJurusan.value || undefined,
+      search:     search.value        || undefined,
+    });
+    const blob = new Blob([res.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `data_siswa_${Date.now()}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch { notify.error('Gagal export data siswa'); }
+  finally { exporting.value = false; }
+};
 
 // ── Bulk Delete ───────────────────────────────────────────────
 const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggleOne,
