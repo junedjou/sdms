@@ -172,20 +172,35 @@ const importGuru = async (req, res) => {
 // SISWA — Export & Import
 // ============================================================
 
+// Urutan & label kolom SAMA dengan form input UI
 const SISWA_LABELS = [
-  'Nama Lengkap*','NISN','NIS','Jenis Kelamin (L/P)*','Kelas','Kode Jurusan',
-  'Tahun Masuk','Status','Tempat Lahir','Tanggal Lahir (YYYY-MM-DD)',
-  'Agama','No HP','Alamat','HP Orang Tua','Nama Ayah','Nama Ibu','Pernah Dapat Bantuan (1/0)',
+  'Nama Lengkap*',          // form: Nama Lengkap
+  'NISN',                   // form: NISN
+  'NIS',                    // form: NIS
+  'Jenis Kelamin (L/P)*',   // form: Jenis Kelamin (L=Laki-laki, P=Perempuan)
+  'Kelas',                  // form: Kelas (nama kelas, contoh: X TKJ 1)
+  'Kode Jurusan',           // form: Jurusan (kode, contoh: TKJ)
+  'Tahun Masuk',            // form: Tahun Masuk
+  'Status',                 // form: Status (Aktif/Lulus/Pindah/Keluar)
+  'Tempat Lahir',           // form: Tempat Lahir
+  'Tanggal Lahir',          // form: Tanggal Lahir (format: YYYY-MM-DD)
+  'Agama',                  // form: Agama
+  'No. HP Siswa',           // form: No. HP
+  'Alamat',                 // form: Alamat
+  'Nama Ayah',              // form: Nama Ayah
+  'Nama Ibu',               // form: Nama Ibu
+  'No. HP Orang Tua/Wali',  // form: No. HP Orang Tua / Wali
+  'Pernah Dapat Bantuan',   // form: Pernah Dapat Bantuan (1=Ya, 0=Tidak)
 ];
 
-// Kolom aman untuk export — fallback jika migration belum dijalankan
+// Kolom DB — fallback jika migration belum dijalankan
 const SISWA_EXPORT_SAFE_ATTRS = [
   'id','nisn','nis','nama','jenis_kelamin','kelas_id','jurusan_id',
   'tahun_masuk','status','tempat_lahir','tanggal_lahir','agama','no_hp','alamat',
 ];
 const SISWA_EXPORT_FULL_ATTRS = [
   ...SISWA_EXPORT_SAFE_ATTRS,
-  'hp_ortu','nama_ayah','nama_ibu','pernah_dapat_bantuan',
+  'nama_ayah','nama_ibu','hp_ortu','pernah_dapat_bantuan',
 ];
 
 const exportSiswa = async (req, res) => {
@@ -195,17 +210,17 @@ const exportSiswa = async (req, res) => {
   if (kelas_id)   where.kelas_id   = kelas_id;
   if (jurusan_id) where.jurusan_id = jurusan_id;
   if (search)     where[Op.or] = [
-    { nama:  { [Op.like]: `%${search}%` } },
-    { nisn:  { [Op.like]: `%${search}%` } },
-    { nis:   { [Op.like]: `%${search}%` } },
+    { nama: { [Op.like]: `%${search}%` } },
+    { nisn: { [Op.like]: `%${search}%` } },
+    { nis:  { [Op.like]: `%${search}%` } },
   ];
+
   const include = [
     { association: 'jurusan', attributes: ['kode'] },
     { association: 'kelas', attributes: ['nama'] },
   ];
 
-  let rows;
-  let hasNewCols = true;
+  let rows, hasNewCols = true;
   try {
     rows = await Siswa.findAll({ where, attributes: SISWA_EXPORT_FULL_ATTRS, include, order: [['nama', 'ASC']] });
   } catch (e) {
@@ -216,25 +231,81 @@ const exportSiswa = async (req, res) => {
   }
 
   const labels = hasNewCols ? SISWA_LABELS : SISWA_LABELS.slice(0, 13);
+
   const data = rows.map(s => {
-    const base = [
-      s.nama, s.nisn||'', s.nis||'', s.jenis_kelamin||'',
-      s.kelas?.nama||'', s.jurusan?.kode||'', s.tahun_masuk||'', s.status||'Aktif',
-      s.tempat_lahir||'', s.tanggal_lahir ? String(s.tanggal_lahir).slice(0,10) : '',
-      s.agama||'', s.no_hp||'', s.alamat||'',
+    const tgl = s.tanggal_lahir ? String(s.tanggal_lahir).slice(0, 10) : '';
+    const row = [
+      s.nama,
+      s.nisn        || '',
+      s.nis         || '',
+      s.jenis_kelamin || '',
+      s.kelas?.nama || '',
+      s.jurusan?.kode || '',
+      s.tahun_masuk || '',
+      s.status      || 'Aktif',
+      s.tempat_lahir || '',
+      tgl,
+      s.agama       || '',
+      s.no_hp       || '',
+      s.alamat      || '',
     ];
-    if (hasNewCols) base.push(
-      s.hp_ortu||'', s.nama_ayah||'', s.nama_ibu||'',
-      s.pernah_dapat_bantuan ? 1 : 0,
-    );
-    return base;
+    if (hasNewCols) {
+      row.push(
+        s.nama_ayah  || '',
+        s.nama_ibu   || '',
+        s.hp_ortu    || '',
+        s.pernah_dapat_bantuan ? 1 : 0,
+      );
+    }
+    return row;
   });
+
   const buf = buildWorkbook('Siswa', labels, data);
   sendExcel(res, buf, `data_siswa_${Date.now()}.xlsx`);
 };
 
 const templateSiswa = async (req, res) => {
-  const sample = [['Andi Pratama','1234567890','2024001','L','X TKJ 1','TKJ','2024','Aktif','Surabaya','2008-06-15','Islam','08123456789','Jl. Pahlawan No.5','081234567890','Bapak Pratama','Ibu Sari',0]];
+  // 2 baris contoh realistis agar jelas cara pengisian
+  const sample = [
+    [
+      'Andi Pratama',   // Nama Lengkap*
+      '1234567890',     // NISN
+      '2024001',        // NIS
+      'L',              // Jenis Kelamin (L/P)*
+      'X TKJ 1',        // Kelas
+      'TKJ',            // Kode Jurusan
+      '2024',           // Tahun Masuk
+      'Aktif',          // Status
+      'Surabaya',       // Tempat Lahir
+      '2008-06-15',     // Tanggal Lahir
+      'Islam',          // Agama
+      '085123456789',   // No. HP Siswa
+      'Jl. Pahlawan No. 5 Surabaya', // Alamat
+      'Bapak Slamet',   // Nama Ayah
+      'Ibu Wati',       // Nama Ibu
+      '081298765432',   // No. HP Orang Tua/Wali
+      0,                // Pernah Dapat Bantuan (1=Ya, 0=Tidak)
+    ],
+    [
+      'Siti Rahmawati',
+      '9876543210',
+      '2024002',
+      'P',
+      'X TKJ 2',
+      'TKJ',
+      '2024',
+      'Aktif',
+      'Kediri',
+      '2008-03-22',
+      'Islam',
+      '085234567890',
+      'Jl. Melati No. 10 Kediri',
+      'Bapak Hasan',
+      'Ibu Rina',
+      '082134567890',
+      1,
+    ],
+  ];
   const buf = buildWorkbook('Siswa', SISWA_LABELS, sample);
   sendExcel(res, buf, 'template_import_siswa.xlsx');
 };
@@ -243,8 +314,8 @@ const importSiswa = async (req, res) => {
   if (!req.file) return badRequest(res, 'File Excel wajib diupload');
   const jurusanList = await Jurusan.findAll({ where: { is_active: true } });
   const jurusanMap  = Object.fromEntries(jurusanList.map(j => [j.kode.toUpperCase(), j.id]));
-  const kelasList = await Kelas.findAll({ where: { is_active: true } });
-  const kelasMap  = Object.fromEntries(kelasList.map(k => [k.nama.toUpperCase(), k.id]));
+  const kelasList   = await Kelas.findAll({ where: { is_active: true } });
+  const kelasMap    = Object.fromEntries(kelasList.map(k => [k.nama.toUpperCase(), k.id]));
 
   const rows = parseExcel(req.file.buffer);
   const ok = [], errors = [];
@@ -262,25 +333,32 @@ const importSiswa = async (req, res) => {
 
     const kodeJurusan = str(r['Kode Jurusan'] ?? r['jurusan_kode'])?.toUpperCase();
     const jurusan_id  = kodeJurusan ? jurusanMap[kodeJurusan] : null;
-    const namaKelas = str(r['Kelas'] ?? r['kelas'])?.toUpperCase();
-    const kelas_id  = namaKelas ? kelasMap[namaKelas] : null;
+    const namaKelas   = str(r['Kelas'] ?? r['kelas'])?.toUpperCase();
+    const kelas_id    = namaKelas ? kelasMap[namaKelas] : null;
+
+    // Baca pernah_dapat_bantuan — bisa dari kolom baru atau lama
+    const bantuanVal = r['Pernah Dapat Bantuan'] ?? r['Pernah Dapat Bantuan (1/0)'] ?? r['pernah_dapat_bantuan'];
+    const pernah_dapat_bantuan = bantuanVal == 1 || bantuanVal === 'Ya' || bantuanVal === 'ya' || bantuanVal === true;
 
     try {
       const siswa = await Siswa.create({
-        nama, nisn, nis: str(r['NIS'] ?? r['nis']),
+        nama,
+        nisn,
+        nis:           str(r['NIS']                    ?? r['nis']),
         jenis_kelamin: normJK(r['Jenis Kelamin (L/P)*'] ?? r['jenis_kelamin']),
-        jurusan_id, kelas_id,
-        tahun_masuk:  str(r['Tahun Masuk'] ?? r['tahun_masuk']),
-        status:       str(r['Status']      ?? r['status']) || 'Aktif',
-        tempat_lahir: str(r['Tempat Lahir']  ?? r['tempat_lahir']),
-        tanggal_lahir: dateStr(r['Tanggal Lahir (YYYY-MM-DD)'] ?? r['tanggal_lahir']),
-        agama:  str(r['Agama']  ?? r['agama']),
-        no_hp:  str(r['No HP']  ?? r['no_hp']),
-        alamat: str(r['Alamat'] ?? r['alamat']),
-        hp_ortu:   str(r['HP Orang Tua'] ?? r['hp_ortu']),
-        nama_ayah: str(r['Nama Ayah']    ?? r['nama_ayah']),
-        nama_ibu:  str(r['Nama Ibu']     ?? r['nama_ibu']),
-        pernah_dapat_bantuan: (r['Pernah Dapat Bantuan (1/0)'] == 1 || r['pernah_dapat_bantuan'] == 1),
+        jurusan_id,
+        kelas_id,
+        tahun_masuk:   str(r['Tahun Masuk']             ?? r['tahun_masuk']),
+        status:        str(r['Status']                  ?? r['status']) || 'Aktif',
+        tempat_lahir:  str(r['Tempat Lahir']            ?? r['tempat_lahir']),
+        tanggal_lahir: dateStr(r['Tanggal Lahir']       ?? r['tanggal_lahir']),
+        agama:         str(r['Agama']                   ?? r['agama']),
+        no_hp:         str(r['No. HP Siswa']            ?? r['No HP'] ?? r['no_hp']),
+        alamat:        str(r['Alamat']                  ?? r['alamat']),
+        nama_ayah:     str(r['Nama Ayah']               ?? r['nama_ayah']),
+        nama_ibu:      str(r['Nama Ibu']                ?? r['nama_ibu']),
+        hp_ortu:       str(r['No. HP Orang Tua/Wali']  ?? r['HP Orang Tua'] ?? r['hp_ortu']),
+        pernah_dapat_bantuan,
       });
       syncEvent('siswa.created', siswa.toJSON());
       ok.push(nama);
