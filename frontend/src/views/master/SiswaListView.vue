@@ -141,10 +141,13 @@
                         : 'btn-ghost btn-sm p-1.5 text-emerald-600 hover:bg-emerald-50'">
                       <UserPlusIcon class="w-4 h-4" />
                     </button>
-                    <button v-if="authStore.hasPermission('siswa:update') && item.user"
+                    <button v-if="authStore.hasPermission('siswa:update')"
                       @click="openResetPassword(item)"
-                      title="Reset Password ke Default"
-                      class="btn-ghost btn-sm p-1.5 text-amber-500 hover:bg-amber-50">
+                      :title="item.user ? `Reset password (${item.user.username})` : 'Reset Password'"
+                      :class="item.user
+                        ? 'btn-ghost btn-sm p-1.5 text-amber-500 hover:bg-amber-50'
+                        : 'btn-ghost btn-sm p-1.5 text-gray-300 cursor-not-allowed'"
+                      :disabled="!item.user && item.user !== undefined">
                       <KeyIcon class="w-4 h-4" />
                     </button>
                     <button v-if="authStore.hasPermission('siswa:update')" @click="openForm(item)" class="btn-ghost btn-sm p-1.5">
@@ -350,20 +353,24 @@
         <div class="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
           <KeyIcon class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div class="text-sm text-amber-800">
-            <p class="font-semibold mb-1">Password akan direset untuk:</p>
+            <p class="font-semibold mb-1">Reset password untuk:</p>
             <p class="font-medium">{{ resetPasswordTarget?.nama }}</p>
-            <p class="text-xs mt-1">Username: <span class="font-mono">{{ resetPasswordTarget?.user?.username }}</span></p>
+            <p v-if="resetPasswordTarget?.user" class="text-xs mt-1">
+              Username: <span class="font-mono font-semibold">{{ resetPasswordTarget?.user?.username }}</span>
+            </p>
+            <p v-else class="text-xs mt-1 text-amber-600">⚠ Siswa ini belum memiliki akun login</p>
           </div>
         </div>
-        <div class="form-group">
+        <div v-if="resetPasswordTarget?.user" class="form-group">
           <label class="form-label">Password Baru <span class="text-gray-400 text-xs">(kosong = smkn1kras)</span></label>
           <input v-model="resetPasswordValue" type="text" class="form-input font-mono"
             placeholder="smkn1kras" />
         </div>
       </div>
       <template #footer>
-        <button class="btn-secondary" @click="showResetPassword = false">Batal</button>
-        <button class="btn-primary bg-amber-600 hover:bg-amber-700 focus:ring-amber-500"
+        <button class="btn-secondary" @click="showResetPassword = false">Tutup</button>
+        <button v-if="resetPasswordTarget?.user"
+          class="btn-primary bg-amber-600 hover:bg-amber-700 focus:ring-amber-500"
           :disabled="resettingPassword" @click="executeResetPassword">
           <span v-if="resettingPassword" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
           <KeyIcon v-else class="w-4 h-4" />
