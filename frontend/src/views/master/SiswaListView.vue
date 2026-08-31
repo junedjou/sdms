@@ -424,5 +424,5 @@ const executeCreateUser = async () => {
   } finally { creatingUser.value = false; }
 };
 
-onMounted(() => { fetchData(); loadKelas(); masterStore.loadJurusan(); });
+onMounted(() => { fetchData(); loadKelas(); masterStore.fetchJurusan(); });
 </script>
