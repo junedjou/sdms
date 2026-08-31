@@ -2,6 +2,8 @@
  * Migration: buat tabel app_settings
  * Jalankan: node migrations/create_app_settings.js
  */
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const { masterDB } = require('../src/config/database');
 
 (async () => {

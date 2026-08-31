@@ -2,6 +2,8 @@
  * Migration: tambah kolom mata_pelajaran ke tabel guru
  * Jalankan: node migrations/add_mata_pelajaran_to_guru.js
  */
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const { masterDB } = require('../src/config/database');
 
 (async () => {

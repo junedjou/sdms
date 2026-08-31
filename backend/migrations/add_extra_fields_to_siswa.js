@@ -1,7 +1,12 @@
 /**
  * Migration: tambah kolom hp_ortu, nama_ayah, nama_ibu, pernah_dapat_bantuan ke tabel siswa
  * Jalankan: node migrations/add_extra_fields_to_siswa.js
+ *   atau:   cd /var/www/sdms/backend && node migrations/add_extra_fields_to_siswa.js
  */
+const path = require('path');
+// Load .env dari direktori backend — wajib sebelum require config
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
 const { masterDB } = require('../src/config/database');
 
 (async () => {

@@ -2,6 +2,8 @@
  * Migration: tambah kolom kelas_id ke tabel siswa
  * Jalankan: node migrations/add_kelas_id_to_siswa.js
  */
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const { masterDB } = require('../src/config/database');
 
 (async () => {

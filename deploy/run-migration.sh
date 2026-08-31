@@ -28,6 +28,7 @@ for migration_file in "$MIGRATION_DIR"/*.js; do
     SKIPPED=$((SKIPPED + 1))
   else
     warn "Menjalankan: $migration_name ..."
+    # Wajib cd ke backend agar .env terbaca dengan benar
     cd "$APP_DIR/backend"
     if node "$migration_file"; then
       echo "$migration_name" >> "$MIGRATION_DONE_FILE"
