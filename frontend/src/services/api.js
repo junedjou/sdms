@@ -68,6 +68,9 @@ export const authService = {
   refresh:        (data) => api.post('/auth/refresh', data),
   me:             ()     => api.get('/auth/me'),
   changePassword: (data) => api.patch('/auth/change-password', data),
+  // Profil data pribadi siswa
+  getMySiswaProfile:    ()     => api.get('/auth/profile/siswa'),
+  updateMySiswaProfile: (data) => api.patch('/auth/profile/siswa', data),
 };
 
 export const dashboardService = {

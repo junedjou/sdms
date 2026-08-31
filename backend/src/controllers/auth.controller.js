@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { User, Role, Permission, RolePermission } = require('../models');
+const { User, Role, Permission, RolePermission, Siswa } = require('../models');
 const {
   generateAccessToken,
   generateRefreshToken,
@@ -198,4 +198,81 @@ const changePassword = async (req, res) => {
   return success(res, null, 'Password berhasil diubah');
 };
 
-module.exports = { login, refreshToken, logout, getMe, changePassword };
+// GET /api/v1/auth/profile/siswa  — ambil data pribadi siswa yang sedang login
+const getMySiswaProfile = async (req, res) => {
+  // Ambil siswa_id dari user yang login
+  const userRecord = await User.findByPk(req.user.id, {
+    attributes: ['id', 'siswa_id'],
+  });
+  if (!userRecord?.siswa_id) {
+    return badRequest(res, 'Akun ini tidak terhubung ke data siswa');
+  }
+
+  const SAFE = ['id','nisn','nis','nama','jenis_kelamin','kelas_id','jurusan_id',
+    'tahun_masuk','status','tempat_lahir','tanggal_lahir','agama',
+    'no_hp','alamat','orang_tua_id','created_at','updated_at'];
+  const FULL = [...SAFE, 'hp_ortu','nama_ayah','nama_ibu','pernah_dapat_bantuan'];
+
+  let siswa;
+  try {
+    siswa = await Siswa.findByPk(userRecord.siswa_id, {
+      attributes: FULL,
+      include: [
+        { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
+        { association: 'kelas',   attributes: ['id', 'nama'] },
+      ],
+    });
+  } catch (e) {
+    if (e.original?.code === 'ER_BAD_FIELD_ERROR') {
+      siswa = await Siswa.findByPk(userRecord.siswa_id, {
+        attributes: SAFE,
+        include: [
+          { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
+          { association: 'kelas',   attributes: ['id', 'nama'] },
+        ],
+      });
+    } else throw e;
+  }
+
+  if (!siswa) return badRequest(res, 'Data siswa tidak ditemukan');
+  return success(res, siswa);
+};
+
+// PATCH /api/v1/auth/profile/siswa  — siswa update data pribadi sendiri
+const updateMySiswaProfile = async (req, res) => {
+  const userRecord = await User.findByPk(req.user.id, {
+    attributes: ['id', 'siswa_id'],
+  });
+  if (!userRecord?.siswa_id) {
+    return badRequest(res, 'Akun ini tidak terhubung ke data siswa');
+  }
+
+  const siswa = await Siswa.findByPk(userRecord.siswa_id);
+  if (!siswa) return badRequest(res, 'Data siswa tidak ditemukan');
+
+  // Whitelist ketat — siswa TIDAK boleh ubah data akademik (nisn, nis, kelas, jurusan, status)
+  const allowed = [
+    'tempat_lahir','tanggal_lahir','agama',
+    'no_hp','alamat',
+    'nama_ayah','nama_ibu','hp_ortu','pernah_dapat_bantuan',
+  ];
+  const data = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) {
+      data[key] = req.body[key] === '' ? null : req.body[key];
+    }
+  }
+
+  await siswa.update(data);
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'UPDATE', resource: 'siswa', resourceId: siswa.id,
+    description: `Siswa update data pribadi sendiri: ${siswa.nama}`,
+    newData: data,
+  });
+
+  return success(res, siswa, 'Data pribadi berhasil diperbarui');
+};
+
+module.exports = { login, refreshToken, logout, getMe, changePassword, getMySiswaProfile, updateMySiswaProfile };

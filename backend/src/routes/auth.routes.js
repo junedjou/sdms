@@ -39,4 +39,16 @@ router.patch('/change-password',
   asyncHandler(ctrl.changePassword)
 );
 
+// GET  /api/v1/auth/profile/siswa  — baca data pribadi siswa yang login
+router.get('/profile/siswa',
+  authenticate,
+  asyncHandler(ctrl.getMySiswaProfile)
+);
+
+// PATCH /api/v1/auth/profile/siswa  — siswa update data pribadi sendiri
+router.patch('/profile/siswa',
+  authenticate,
+  asyncHandler(ctrl.updateMySiswaProfile)
+);
+
 module.exports = router;
