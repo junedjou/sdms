@@ -155,7 +155,15 @@ const createSiswa = async (req, res) => {
     const ot = await OrangTua.create(req.body.orang_tua);
     orangTuaId = ot.id;
   }
-  const siswa = await Siswa.create({ ...req.body, orang_tua_id: orangTuaId });
+  // Sanitasi ENUM — string kosong → null agar tidak error Sequelize
+  const body = { ...req.body };
+  const enumFields = ['jenis_kelamin', 'agama', 'status'];
+  for (const f of enumFields) {
+    if (body[f] === '') body[f] = null;
+  }
+  if (body.jurusan_id === '') body.jurusan_id = null;
+  if (body.kelas_id   === '') body.kelas_id   = null;
+  const siswa = await Siswa.create({ ...body, orang_tua_id: orangTuaId });
   await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'CREATE', resource: 'siswa', resourceId: siswa.id, description: `Siswa ${siswa.nama} dibuat`, newData: req.body });
   await syncEvent('siswa.created', siswa.toJSON());
   return created(res, siswa, 'Data siswa berhasil ditambahkan');
@@ -166,10 +174,17 @@ const updateSiswa = async (req, res) => {
   if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
   // Hanya ambil field yang valid
   const allowed = ['nama', 'nisn', 'nis', 'jenis_kelamin', 'kelas_id', 'jurusan_id', 'tahun_masuk', 'status', 'tempat_lahir', 'tanggal_lahir', 'agama', 'no_hp', 'alamat', 'hp_ortu', 'nama_ayah', 'nama_ibu', 'pernah_dapat_bantuan'];
+  // Field ENUM — string kosong harus dikonversi ke null
+  const enumFields = ['jenis_kelamin', 'agama', 'status'];
   const data = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) {
-      data[key] = ['jurusan_id', 'kelas_id'].includes(key) ? (req.body[key] || null) : req.body[key];
+      let val = req.body[key];
+      // FK dan ENUM: string kosong → null
+      if (['jurusan_id', 'kelas_id', ...enumFields].includes(key)) {
+        val = val === '' || val === null ? null : val;
+      }
+      data[key] = val;
     }
   }
   const oldData = siswa.toJSON();
