@@ -60,12 +60,13 @@ Guru.belongsTo(Jurusan,    { foreignKey: 'jurusan_id', as: 'jurusan' });
 Jurusan.hasMany(Guru,      { foreignKey: 'jurusan_id', as: 'guru' });
 Jurusan.belongsTo(Guru,    { foreignKey: 'kepala_jurusan_id', as: 'kepalaJurusan' });
 
-// Siswa -> Jurusan, OrangTua
+// Siswa -> Jurusan, OrangTua, User (akun login)
 Siswa.belongsTo(Jurusan,   { foreignKey: 'jurusan_id',  as: 'jurusan' });
 Siswa.belongsTo(Kelas,     { foreignKey: 'kelas_id',    as: 'kelas' });
 Jurusan.hasMany(Siswa,     { foreignKey: 'jurusan_id',  as: 'siswa' });
 Siswa.belongsTo(OrangTua,  { foreignKey: 'orang_tua_id', as: 'orangTua' });
 OrangTua.hasOne(Siswa,     { foreignKey: 'orang_tua_id', as: 'siswa' });
+Siswa.hasOne(User,         { foreignKey: 'siswa_id',    as: 'user' });
 
 // Kelas -> Jurusan, Guru (wali kelas), TahunPelajaran
 Kelas.belongsTo(Jurusan,       { foreignKey: 'jurusan_id',       as: 'jurusan' });

@@ -109,6 +109,14 @@
                 <td class="font-mono text-xs text-gray-600">
                   <p>{{ item.nisn || '—' }}</p>
                   <p class="text-gray-400">{{ item.nis || '—' }}</p>
+                  <!-- Badge akun login -->
+                  <span v-if="item.user"
+                    class="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                    :class="item.user.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'">
+                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      :class="item.user.is_active ? 'bg-emerald-500' : 'bg-gray-400'"></span>
+                    {{ item.user.is_active ? 'Punya akun' : 'Akun nonaktif' }}
+                  </span>
                 </td>
                 <td>
                   <span v-if="item.kelas" class="badge-indigo text-xs">{{ item.kelas.nama }}</span>
@@ -124,7 +132,11 @@
                 <td class="text-right">
                   <div class="flex items-center justify-end gap-1">
                     <button v-if="authStore.hasPermission('siswa:update')" @click="openCreateUser(item)"
-                      title="Buat Akun Login" class="btn-ghost btn-sm p-1.5 text-emerald-600 hover:bg-emerald-50">
+                      :title="item.user ? `Akun sudah ada (${item.user.username})` : 'Buat Akun Login'"
+                      :disabled="!!item.user"
+                      :class="item.user
+                        ? 'btn-ghost btn-sm p-1.5 text-gray-300 cursor-not-allowed'
+                        : 'btn-ghost btn-sm p-1.5 text-emerald-600 hover:bg-emerald-50'">
                       <UserPlusIcon class="w-4 h-4" />
                     </button>
                     <button v-if="authStore.hasPermission('siswa:update')" @click="openForm(item)" class="btn-ghost btn-sm p-1.5">

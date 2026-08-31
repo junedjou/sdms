@@ -119,6 +119,7 @@ const getSiswa = async (req, res) => {
   const include = [
     { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
     { association: 'kelas', attributes: ['id', 'nama'] },
+    { association: 'user', attributes: ['id', 'username', 'is_active'], required: false },
   ];
 
   let count, rows;
