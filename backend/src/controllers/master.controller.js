@@ -2,8 +2,9 @@ const { Op } = require('sequelize');
 const {
   Guru, Siswa, Pegawai, OrangTua, Kelas, Jurusan,
   MataPelajaran, TahunPelajaran, Semester, SiswaKelas, KalenderAkademik,
+  User, Role,
 } = require('../models');
-const { getPagination } = require('../utils/helpers');
+const { getPagination, hashPassword } = require('../utils/helpers');
 const { writeAuditLog } = require('../middleware/auditLog');
 const { success, created, paginated, notFound, conflict, badRequest } = require('../utils/response');
 const { syncEvent } = require('../services/syncService');
@@ -125,7 +126,7 @@ const updateSiswa = async (req, res) => {
   const siswa = await Siswa.findByPk(req.params.id);
   if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
   // Hanya ambil field yang valid
-  const allowed = ['nama', 'nisn', 'nis', 'jenis_kelamin', 'kelas_id', 'jurusan_id', 'tahun_masuk', 'status', 'tempat_lahir', 'tanggal_lahir', 'agama', 'no_hp', 'alamat'];
+  const allowed = ['nama', 'nisn', 'nis', 'jenis_kelamin', 'kelas_id', 'jurusan_id', 'tahun_masuk', 'status', 'tempat_lahir', 'tanggal_lahir', 'agama', 'no_hp', 'alamat', 'hp_ortu', 'nama_ayah', 'nama_ibu', 'pernah_dapat_bantuan'];
   const data = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) {
@@ -145,6 +146,54 @@ const deleteSiswa = async (req, res) => {
   await siswa.update({ status: 'Keluar' });
   await syncEvent('siswa.deleted', { id: siswa.id });
   return success(res, null, 'Data siswa berhasil dinonaktifkan');
+};
+
+// POST /master/siswa/:id/create-user
+// Buat akun login siswa — username: NISN, password default: smkn1kras
+const createSiswaUser = async (req, res) => {
+  const siswa = await Siswa.findByPk(req.params.id);
+  if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
+  if (!siswa.nisn) return badRequest(res, 'Siswa belum memiliki NISN. Isi NISN terlebih dahulu');
+
+  // Cek apakah akun sudah pernah dibuat
+  const existing = await User.unscoped().findOne({ where: { siswa_id: siswa.id } });
+  if (existing) return conflict(res, `Akun login sudah ada (username: ${existing.username})`);
+
+  // Cari role 'siswa'
+  const role = await Role.findOne({ where: { name: 'siswa' } });
+  if (!role) return badRequest(res, "Role 'siswa' belum ada di sistem. Buat role siswa terlebih dahulu");
+
+  const username = siswa.nisn.trim();
+  const email    = `${username}@sdms.local`;
+  const password = 'smkn1kras';
+
+  // Pastikan username & email belum dipakai user lain
+  const dupUser = await User.unscoped().findOne({ where: { [Op.or]: [{ username }, { email }] } });
+  if (dupUser) return conflict(res, `Username ${username} sudah digunakan user lain`);
+
+  const hashed = await hashPassword(password);
+  const user = await User.create({
+    username,
+    email,
+    full_name: siswa.nama,
+    role_id:   role.id,
+    password:  hashed,
+    siswa_id:  siswa.id,
+    is_active: true,
+  });
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'CREATE', resource: 'users', resourceId: user.id,
+    description: `Akun siswa dibuat: ${username} (${siswa.nama})`,
+  });
+
+  return created(res, {
+    username,
+    full_name: siswa.nama,
+    role: role.label || role.name,
+    note: 'Password default: smkn1kras — minta siswa segera ganti password',
+  }, 'Akun login siswa berhasil dibuat');
 };
 
 // ============================================================
@@ -284,7 +333,12 @@ const getMapel = async (req, res) => {
 const createMapel = async (req, res) => {
   const dup = await MataPelajaran.findOne({ where: { kode: req.body.kode } });
   if (dup) return conflict(res, 'Kode mata pelajaran sudah ada');
-  const mapel = await MataPelajaran.create(req.body);
+  // Sanitasi: ubah string kosong ke null untuk field ENUM dan FK
+  const data = { ...req.body };
+  if (data.kelompok   === '' || data.kelompok   === '--') data.kelompok   = null;
+  if (data.jurusan_id === '' || data.jurusan_id === 'Semua') data.jurusan_id = null;
+  if (data.jam_per_minggu === '' || data.jam_per_minggu === 0) data.jam_per_minggu = null;
+  const mapel = await MataPelajaran.create(data);
   syncEvent('mapel.created', mapel.toJSON());
   return created(res, mapel, 'Mata pelajaran berhasil ditambahkan');
 };
@@ -292,7 +346,12 @@ const createMapel = async (req, res) => {
 const updateMapel = async (req, res) => {
   const mapel = await MataPelajaran.findByPk(req.params.id);
   if (!mapel) return notFound(res, 'Mata pelajaran tidak ditemukan');
-  await mapel.update(req.body);
+  // Sanitasi: ubah string kosong ke null untuk field ENUM dan FK
+  const data = { ...req.body };
+  if (data.kelompok   === '' || data.kelompok   === '--') data.kelompok   = null;
+  if (data.jurusan_id === '' || data.jurusan_id === 'Semua') data.jurusan_id = null;
+  if (data.jam_per_minggu === '' || data.jam_per_minggu === 0) data.jam_per_minggu = null;
+  await mapel.update(data);
   syncEvent('mapel.updated', mapel.toJSON());
   return success(res, mapel, 'Mata pelajaran berhasil diperbarui');
 };
@@ -468,7 +527,7 @@ module.exports = {
   // Guru
   getGuru, getGuruById, createGuru, updateGuru, deleteGuru, bulkDeleteGuru,
   // Siswa
-  getSiswa, getSiswaById, createSiswa, updateSiswa, deleteSiswa, bulkDeleteSiswa,
+  getSiswa, getSiswaById, createSiswa, updateSiswa, deleteSiswa, bulkDeleteSiswa, createSiswaUser,
   // Pegawai
   getPegawai, createPegawai, updatePegawai, deletePegawai, bulkDeletePegawai,
   // Jurusan

@@ -47,6 +47,27 @@ const Siswa = masterDB.define('Siswa', {
     type: DataTypes.STRING(20),
     allowNull: true,
   },
+  hp_ortu: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    comment: 'Nomor HP orang tua/wali',
+  },
+  nama_ayah: {
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    comment: 'Nama ayah kandung',
+  },
+  nama_ibu: {
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    comment: 'Nama ibu kandung',
+  },
+  pernah_dapat_bantuan: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Apakah siswa pernah mendapat bantuan (KIP, PIP, dll)',
+  },
   email: {
     type: DataTypes.STRING(150),
     allowNull: true,

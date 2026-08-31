@@ -124,6 +124,13 @@
                 <td><span class="badge" :class="statusClass(item.status)">{{ item.status }}</span></td>
                 <td class="text-right">
                   <div class="flex items-center justify-end gap-1">
+                    <button
+                      v-if="authStore.hasPermission('siswa:update')"
+                      @click="openCreateUser(item)"
+                      title="Buat Akun Login"
+                      class="btn-ghost btn-sm p-1.5 text-emerald-600 hover:bg-emerald-50">
+                      <UserPlusIcon class="w-4 h-4" />
+                    </button>
                     <button v-if="authStore.hasPermission('siswa:update')" @click="openForm(item)" class="btn-ghost btn-sm p-1.5">
                       <PencilSquareIcon class="w-4 h-4" />
                     </button>
@@ -228,6 +235,29 @@
           <label class="form-label">Alamat</label>
           <textarea v-model="form.alamat" class="form-input" rows="2" />
         </div>
+        <!-- ── Data Orang Tua ── -->
+        <div class="sm:col-span-2">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-3 border-t pt-3">Data Orang Tua / Wali</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nama Ayah</label>
+          <input v-model="form.nama_ayah" type="text" class="form-input" placeholder="Nama ayah kandung" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nama Ibu</label>
+          <input v-model="form.nama_ibu" type="text" class="form-input" placeholder="Nama ibu kandung" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">No. HP Orang Tua / Wali</label>
+          <input v-model="form.hp_ortu" type="tel" class="form-input" placeholder="Nomor HP yang bisa dihubungi" />
+        </div>
+        <div class="form-group flex items-center gap-3 pt-6">
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input v-model="form.pernah_dapat_bantuan" type="checkbox" class="sr-only peer" />
+            <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
+          </label>
+          <span class="text-sm text-gray-700">Pernah Dapat Bantuan <span class="text-gray-400 text-xs">(KIP, PIP, dll)</span></span>
+        </div>
       </form>
       <template #footer>
         <button class="btn-secondary" @click="showForm = false">Batal</button>
@@ -239,6 +269,41 @@
     </BaseModal>
 
     <BaseConfirm v-model="showConfirm" title="Nonaktifkan Siswa" :message="`Nonaktifkan siswa ${deleteTarget?.nama}?`" confirm-label="Ya" :danger-mode="true" :loading="formLoading" @confirm="executeDelete" />
+
+    <!-- Modal Konfirmasi Buat Akun Siswa -->
+    <BaseModal v-model="showCreateUserConfirm" title="Buat Akun Login Siswa" size="sm">
+      <div class="space-y-4">
+        <div class="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+          <KeyIcon class="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+          <div class="text-sm text-emerald-800">
+            <p class="font-semibold mb-1">Akun akan dibuat dengan:</p>
+            <ul class="space-y-1">
+              <li>• <span class="font-medium">Username:</span> NISN siswa ({{ createUserTarget?.nisn || '—' }})</li>
+              <li>• <span class="font-medium">Password default:</span> smkn1kras</li>
+            </ul>
+          </div>
+        </div>
+        <div v-if="!createUserTarget?.nisn" class="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-800">
+          <span class="font-semibold">⚠</span>
+          <span>Siswa ini belum memiliki NISN. Isi NISN terlebih dahulu sebelum membuat akun.</span>
+        </div>
+        <p class="text-sm text-gray-600">
+          Buat akun login untuk <span class="font-semibold">{{ createUserTarget?.nama }}</span>?
+          Siswa dapat login menggunakan NISN dan password default, lalu disarankan segera ganti password.
+        </p>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="showCreateUserConfirm = false">Batal</button>
+        <button
+          class="btn-primary bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+          :disabled="creatingUser || !createUserTarget?.nisn"
+          @click="executeCreateUser">
+          <span v-if="creatingUser" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          <UserPlusIcon v-else class="w-4 h-4" />
+          Buat Akun
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -258,7 +323,7 @@ import BasePagination from '@/components/common/BasePagination.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
 import BulkDeleteBar from '@/components/common/BulkDeleteBar.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon, UserPlusIcon, KeyIcon } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore(); const masterStore = useMasterStore(); const uiStore = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Data Siswa' }]);
@@ -298,7 +363,7 @@ const loadKelas = async () => {
   } catch { /* silent */ }
 };
 
-const emptyForm = () => ({ nama: '', nisn: '', nis: '', jenis_kelamin: '', kelas_id: '', jurusan_id: '', tahun_masuk: '', status: 'Aktif', tempat_lahir: '', tanggal_lahir: '', agama: '', no_hp: '', alamat: '' });
+const emptyForm = () => ({ nama: '', nisn: '', nis: '', jenis_kelamin: '', kelas_id: '', jurusan_id: '', tahun_masuk: '', status: 'Aktif', tempat_lahir: '', tanggal_lahir: '', agama: '', no_hp: '', alamat: '', hp_ortu: '', nama_ayah: '', nama_ibu: '', pernah_dapat_bantuan: false });
 const form = ref(emptyForm());
 
 const fetchData = async () => {
@@ -325,7 +390,7 @@ const clearFilter = (type) => {
 const clearAllFilters = () => { search.value = ''; filterJurusan.value = ''; filterKelas.value = ''; filterStatus.value = 'Aktif'; page.value = 1; fetchData(); };
 
 const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
-const openForm = (item = null) => { editItem.value = item; form.value = item ? { nama: item.nama, nisn: item.nisn || '', nis: item.nis || '', jenis_kelamin: item.jenis_kelamin || '', kelas_id: item.kelas_id || '', jurusan_id: item.jurusan_id || '', tahun_masuk: item.tahun_masuk || '', status: item.status || 'Aktif', tempat_lahir: item.tempat_lahir || '', tanggal_lahir: item.tanggal_lahir || '', agama: item.agama || '', no_hp: item.no_hp || '', alamat: item.alamat || '' } : emptyForm(); showForm.value = true; };
+const openForm = (item = null) => { editItem.value = item; form.value = item ? { nama: item.nama, nisn: item.nisn || '', nis: item.nis || '', jenis_kelamin: item.jenis_kelamin || '', kelas_id: item.kelas_id || '', jurusan_id: item.jurusan_id || '', tahun_masuk: item.tahun_masuk || '', status: item.status || 'Aktif', tempat_lahir: item.tempat_lahir || '', tanggal_lahir: item.tanggal_lahir || '', agama: item.agama || '', no_hp: item.no_hp || '', alamat: item.alamat || '', hp_ortu: item.hp_ortu || '', nama_ayah: item.nama_ayah || '', nama_ibu: item.nama_ibu || '', pernah_dapat_bantuan: item.pernah_dapat_bantuan || false } : emptyForm(); showForm.value = true; };
 const submitForm = async () => {
   formLoading.value = true;
   try {
@@ -341,5 +406,23 @@ const executeDelete = async () => {
   catch { notify.error('Gagal menghapus'); } finally { formLoading.value = false; }
 };
 
-onMounted(() => { fetchData(); loadKelas(); });
+// ── Buat Akun Login Siswa ─────────────────────────────────
+const showCreateUserConfirm = ref(false);
+const createUserTarget = ref(null);
+const creatingUser = ref(false);
+
+const openCreateUser = (item) => { createUserTarget.value = item; showCreateUserConfirm.value = true; };
+const executeCreateUser = async () => {
+  creatingUser.value = true;
+  try {
+    const res = await masterService.siswaCreateUser(createUserTarget.value.id);
+    const data = res.data.data;
+    notify.success(`Akun berhasil dibuat — username: ${data.username}, password default: smkn1kras`);
+    showCreateUserConfirm.value = false;
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal membuat akun');
+  } finally { creatingUser.value = false; }
+};
+
+onMounted(() => { fetchData(); loadKelas(); masterStore.loadJurusan(); });
 </script>

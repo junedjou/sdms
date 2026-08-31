@@ -29,6 +29,7 @@ router.get('/siswa/:id',           requirePermission('siswa:view'),   asyncHandl
 router.post('/siswa',              requirePermission('siswa:create'), asyncHandler(ctrl.createSiswa));
 router.put('/siswa/:id',           requirePermission('siswa:update'), asyncHandler(ctrl.updateSiswa));
 router.delete('/siswa/:id',        requirePermission('siswa:delete'), asyncHandler(ctrl.deleteSiswa));
+router.post('/siswa/:id/create-user', requirePermission('siswa:update'), asyncHandler(ctrl.createSiswaUser));
 
 // ── Pegawai ───────────────────────────────────────────────────
 router.get('/pegawai',             requirePermission('pegawai:view'),   asyncHandler(ctrl.getPegawai));
