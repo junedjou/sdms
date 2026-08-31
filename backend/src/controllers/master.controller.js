@@ -75,9 +75,38 @@ const deleteGuru = async (req, res) => {
   return success(res, null, 'Data guru berhasil dinonaktifkan');
 };
 
-// ============================================================
-// SISWA
-// ============================================================
+// Kolom siswa yang aman di-SELECT (fallback saat migration belum dijalankan)
+// Kolom baru (hp_ortu, nama_ayah, nama_ibu, pernah_dapat_bantuan) di-SELECT juga —
+// tapi jika DB belum punya kolom ini, gunakan safeAttrs saja.
+const SISWA_SAFE_ATTRS = ['id', 'nisn', 'nis', 'nama', 'jenis_kelamin',
+  'kelas_id', 'jurusan_id', 'orang_tua_id', 'tahun_masuk', 'status',
+  'tempat_lahir', 'tanggal_lahir', 'agama', 'no_hp', 'alamat',
+  'created_at', 'updated_at'];
+
+const SISWA_FULL_ATTRS = [...SISWA_SAFE_ATTRS,
+  'hp_ortu', 'nama_ayah', 'nama_ibu', 'pernah_dapat_bantuan'];
+
+/**
+ * findByPk dengan fallback kolom — aman dipakai sebelum & sesudah migration
+ */
+const findSiswaById = async (id, extraIncludes = []) => {
+  try {
+    return await Siswa.findByPk(id, {
+      attributes: SISWA_FULL_ATTRS,
+      include: extraIncludes,
+    });
+  } catch (e) {
+    if (e.original?.code === 'ER_BAD_FIELD_ERROR') {
+      return await Siswa.findByPk(id, {
+        attributes: SISWA_SAFE_ATTRS,
+        include: extraIncludes,
+      });
+    }
+    throw e;
+  }
+};
+
+
 const getSiswa = async (req, res) => {
   const { page = 1, limit = 10, search = '', jurusan_id, kelas_id, status = 'Aktif' } = req.query;
   const { limit: lim, offset } = getPagination(page, limit);
@@ -87,45 +116,28 @@ const getSiswa = async (req, res) => {
   if (jurusan_id) where.jurusan_id = jurusan_id;
   if (kelas_id) where.kelas_id = kelas_id;
 
-  // Eksplisit pilih kolom agar tidak crash jika ada kolom baru yang migration-nya belum jalan
-  const safeAttrs = ['id', 'nisn', 'nis', 'nama', 'jenis_kelamin', 'kelas_id', 'jurusan_id',
-    'tahun_masuk', 'status', 'orang_tua_id', 'created_at', 'updated_at'];
-
-  // Coba tambahkan kolom baru — jika belum ada di DB, Sequelize tetap error sehingga fallback ke safeAttrs
-  let attrs = [...safeAttrs, 'no_hp', 'hp_ortu', 'nama_ayah', 'nama_ibu', 'pernah_dapat_bantuan'];
+  const include = [
+    { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
+    { association: 'kelas', attributes: ['id', 'nama'] },
+  ];
 
   let count, rows;
   try {
     ({ count, rows } = await Siswa.findAndCountAll({
-      where, limit: lim, offset,
-      attributes: attrs,
-      include: [
-        { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
-        { association: 'kelas', attributes: ['id', 'nama'] },
-      ],
-      order: [['nama', 'ASC']],
+      where, limit: lim, offset, attributes: SISWA_FULL_ATTRS, include, order: [['nama', 'ASC']],
     }));
   } catch (e) {
-    // Fallback: query tanpa kolom baru (saat migration belum dijalankan)
     if (e.original?.code === 'ER_BAD_FIELD_ERROR') {
       ({ count, rows } = await Siswa.findAndCountAll({
-        where, limit: lim, offset,
-        attributes: safeAttrs,
-        include: [
-          { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
-          { association: 'kelas', attributes: ['id', 'nama'] },
-        ],
-        order: [['nama', 'ASC']],
+        where, limit: lim, offset, attributes: SISWA_SAFE_ATTRS, include, order: [['nama', 'ASC']],
       }));
-    } else {
-      throw e;
-    }
+    } else { throw e; }
   }
   return paginated(res, rows, { total: count, page: parseInt(page), limit: lim });
 };
 
 const getSiswaById = async (req, res) => {
-  const siswa = await Siswa.findByPk(req.params.id, { include: ['jurusan', 'kelas', 'orangTua', 'riwayatKelas'] });
+  const siswa = await findSiswaById(req.params.id, ['jurusan', 'kelas', 'orangTua', 'riwayatKelas']);
   if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
   return success(res, siswa);
 };
@@ -149,7 +161,7 @@ const createSiswa = async (req, res) => {
 };
 
 const updateSiswa = async (req, res) => {
-  const siswa = await Siswa.findByPk(req.params.id);
+  const siswa = await findSiswaById(req.params.id);
   if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
   // Hanya ambil field yang valid
   const allowed = ['nama', 'nisn', 'nis', 'jenis_kelamin', 'kelas_id', 'jurusan_id', 'tahun_masuk', 'status', 'tempat_lahir', 'tanggal_lahir', 'agama', 'no_hp', 'alamat', 'hp_ortu', 'nama_ayah', 'nama_ibu', 'pernah_dapat_bantuan'];
@@ -167,7 +179,7 @@ const updateSiswa = async (req, res) => {
 };
 
 const deleteSiswa = async (req, res) => {
-  const siswa = await Siswa.findByPk(req.params.id);
+  const siswa = await findSiswaById(req.params.id);
   if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
   await siswa.update({ status: 'Keluar' });
   await syncEvent('siswa.deleted', { id: siswa.id });
@@ -175,9 +187,8 @@ const deleteSiswa = async (req, res) => {
 };
 
 // POST /master/siswa/:id/create-user
-// Buat akun login siswa — username: NISN, password default: smkn1kras
 const createSiswaUser = async (req, res) => {
-  const siswa = await Siswa.findByPk(req.params.id);
+  const siswa = await findSiswaById(req.params.id);
   if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
   if (!siswa.nisn) return badRequest(res, 'Siswa belum memiliki NISN. Isi NISN terlebih dahulu');
 
@@ -240,7 +251,7 @@ const bulkCreateSiswaUser = async (req, res) => {
   const results = { berhasil: [], gagal: [] };
 
   for (const id of ids) {
-    const siswa = await Siswa.findByPk(id);
+    const siswa = await findSiswaById(id);
     if (!siswa) { results.gagal.push({ id, alasan: 'Siswa tidak ditemukan' }); continue; }
     if (!siswa.nisn) { results.gagal.push({ id, nama: siswa.nama, alasan: 'Belum punya NISN' }); continue; }
 
