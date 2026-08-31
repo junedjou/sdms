@@ -87,14 +87,40 @@ const getSiswa = async (req, res) => {
   if (jurusan_id) where.jurusan_id = jurusan_id;
   if (kelas_id) where.kelas_id = kelas_id;
 
-  const { count, rows } = await Siswa.findAndCountAll({
-    where, limit: lim, offset,
-    include: [
-      { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
-      { association: 'kelas', attributes: ['id', 'nama'] },
-    ],
-    order: [['nama', 'ASC']],
-  });
+  // Eksplisit pilih kolom agar tidak crash jika ada kolom baru yang migration-nya belum jalan
+  const safeAttrs = ['id', 'nisn', 'nis', 'nama', 'jenis_kelamin', 'kelas_id', 'jurusan_id',
+    'tahun_masuk', 'status', 'orang_tua_id', 'created_at', 'updated_at'];
+
+  // Coba tambahkan kolom baru — jika belum ada di DB, Sequelize tetap error sehingga fallback ke safeAttrs
+  let attrs = [...safeAttrs, 'no_hp', 'hp_ortu', 'nama_ayah', 'nama_ibu', 'pernah_dapat_bantuan'];
+
+  let count, rows;
+  try {
+    ({ count, rows } = await Siswa.findAndCountAll({
+      where, limit: lim, offset,
+      attributes: attrs,
+      include: [
+        { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
+        { association: 'kelas', attributes: ['id', 'nama'] },
+      ],
+      order: [['nama', 'ASC']],
+    }));
+  } catch (e) {
+    // Fallback: query tanpa kolom baru (saat migration belum dijalankan)
+    if (e.original?.code === 'ER_BAD_FIELD_ERROR') {
+      ({ count, rows } = await Siswa.findAndCountAll({
+        where, limit: lim, offset,
+        attributes: safeAttrs,
+        include: [
+          { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
+          { association: 'kelas', attributes: ['id', 'nama'] },
+        ],
+        order: [['nama', 'ASC']],
+      }));
+    } else {
+      throw e;
+    }
+  }
   return paginated(res, rows, { total: count, page: parseInt(page), limit: lim });
 };
 
