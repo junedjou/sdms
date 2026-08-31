@@ -119,6 +119,7 @@ export const masterService = {
   siswaExport:   ()       => api.get('/master/siswa/export', { responseType: 'blob' }),
   siswaTemplate: ()       => api.get('/master/siswa/template', { responseType: 'blob' }),
   siswaCreateUser: (id)   => api.post(`/master/siswa/${id}/create-user`),
+  siswaBulkCreateUser: (data) => api.post('/master/siswa/bulk-create-user', data),
   siswaImport:   (fd)     => api.post('/master/siswa/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
   // Pegawai

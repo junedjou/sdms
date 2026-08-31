@@ -24,8 +24,9 @@ router.get('/siswa',               requirePermission('siswa:view'),   asyncHandl
 router.get('/siswa/export',        requirePermission('siswa:view'),   asyncHandler(ie.exportSiswa));
 router.get('/siswa/template',      requirePermission('siswa:create'), asyncHandler(ie.templateSiswa));
 router.post('/siswa/import',       requirePermission('siswa:create'), upload.single('file'), asyncHandler(ie.importSiswa));
-router.delete('/siswa/bulk',       requirePermission('siswa:delete'), asyncHandler(ctrl.bulkDeleteSiswa));
-router.get('/siswa/:id',           requirePermission('siswa:view'),   asyncHandler(ctrl.getSiswaById));
+router.delete('/siswa/bulk',          requirePermission('siswa:delete'), asyncHandler(ctrl.bulkDeleteSiswa));
+router.post('/siswa/bulk-create-user', requirePermission('siswa:update'), asyncHandler(ctrl.bulkCreateSiswaUser));
+router.get('/siswa/:id',              requirePermission('siswa:view'),   asyncHandler(ctrl.getSiswaById));
 router.post('/siswa',              requirePermission('siswa:create'), asyncHandler(ctrl.createSiswa));
 router.put('/siswa/:id',           requirePermission('siswa:update'), asyncHandler(ctrl.updateSiswa));
 router.delete('/siswa/:id',        requirePermission('siswa:delete'), asyncHandler(ctrl.deleteSiswa));

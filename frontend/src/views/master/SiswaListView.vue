@@ -61,8 +61,7 @@
           {{ filterStatus || 'Semua Status' }}
           <XMarkIcon class="w-3 h-3" />
         </button>
-        <button @click="clearAllFilters"
-          class="text-xs text-slate-400 hover:text-red-500 transition-colors ml-1">
+        <button @click="clearAllFilters" class="text-xs text-slate-400 hover:text-red-500 transition-colors ml-1">
           Reset semua
         </button>
       </div>
@@ -124,11 +123,8 @@
                 <td><span class="badge" :class="statusClass(item.status)">{{ item.status }}</span></td>
                 <td class="text-right">
                   <div class="flex items-center justify-end gap-1">
-                    <button
-                      v-if="authStore.hasPermission('siswa:update')"
-                      @click="openCreateUser(item)"
-                      title="Buat Akun Login"
-                      class="btn-ghost btn-sm p-1.5 text-emerald-600 hover:bg-emerald-50">
+                    <button v-if="authStore.hasPermission('siswa:update')" @click="openCreateUser(item)"
+                      title="Buat Akun Login" class="btn-ghost btn-sm p-1.5 text-emerald-600 hover:bg-emerald-50">
                       <UserPlusIcon class="w-4 h-4" />
                     </button>
                     <button v-if="authStore.hasPermission('siswa:update')" @click="openForm(item)" class="btn-ghost btn-sm p-1.5">
@@ -155,17 +151,58 @@
       <BaseEmpty v-else :title="search ? 'Siswa tidak ditemukan' : 'Belum ada data siswa'" :icon="search ? 'search' : 'inbox'" />
     </div>
 
-    <ImportExcelModal
-      v-model="showImport"
-      title="Siswa"
-      :import-fn="importFn"
-      @download-template="doTemplate"
-      @imported="handleImported"
-    />
-    <BaseConfirm v-model="showBulkConfirm" title="Hapus Massal Siswa" :message="`Nonaktifkan ${selected.length} siswa yang dipilih?`" confirm-label="Ya, Hapus Semua" :danger-mode="true" :loading="bulkDeleting" @confirm="executeBulkDelete" />
-    <BulkDeleteBar :count="selected.length" label="siswa" :deleting="bulkDeleting" @delete="openBulkConfirm" @clear="clearSelected" />
+    <!-- ── Bulk Action Bar ── -->
+    <Transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 translate-y-4"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-200 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-4">
+      <div v-if="selected.length > 0"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-gray-900 text-white rounded-2xl shadow-2xl ring-1 ring-white/10">
+        <!-- Count badge -->
+        <div class="flex items-center gap-2 pr-3 border-r border-white/20">
+          <span class="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-xs font-bold">
+            {{ selected.length }}
+          </span>
+          <span class="text-sm font-medium">siswa dipilih</span>
+        </div>
+        <!-- Buat Akun Massal -->
+        <button
+          v-if="authStore.hasPermission('siswa:update')"
+          @click="openBulkCreateUser"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-sm font-medium transition-colors">
+          <UserGroupIcon class="w-4 h-4" />
+          Buat Akun
+        </button>
+        <!-- Hapus Massal -->
+        <button
+          v-if="authStore.hasPermission('siswa:delete')"
+          @click="openBulkConfirm"
+          :disabled="bulkDeleting"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-sm font-medium transition-colors disabled:opacity-60">
+          <TrashIcon class="w-4 h-4" />
+          {{ bulkDeleting ? 'Menghapus...' : 'Hapus' }}
+        </button>
+        <!-- Batal -->
+        <button @click="clearSelected" class="p-1.5 rounded-lg hover:bg-white/10 transition-colors" title="Batalkan seleksi">
+          <XMarkIcon class="w-4 h-4" />
+        </button>
+      </div>
+    </Transition>
 
-    <!-- Form Modal -->
+    <ImportExcelModal v-model="showImport" title="Siswa" :import-fn="importFn"
+      @download-template="doTemplate" @imported="handleImported" />
+
+    <!-- Konfirmasi Hapus Massal -->
+    <BaseConfirm v-model="showBulkConfirm"
+      title="Hapus Massal Siswa"
+      :message="`Hapus permanen ${selected.length} siswa yang dipilih? Tindakan ini tidak bisa dibatalkan.`"
+      confirm-label="Ya, Hapus Semua" :danger-mode="true" :loading="bulkDeleting"
+      @confirm="executeBulkDelete" />
+
+    <!-- ── Form Modal ── -->
     <BaseModal v-model="showForm" :title="editItem ? 'Edit Data Siswa' : 'Tambah Siswa'" size="lg">
       <form class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="form-group sm:col-span-2">
@@ -268,9 +305,12 @@
       </template>
     </BaseModal>
 
-    <BaseConfirm v-model="showConfirm" title="Nonaktifkan Siswa" :message="`Nonaktifkan siswa ${deleteTarget?.nama}?`" confirm-label="Ya" :danger-mode="true" :loading="formLoading" @confirm="executeDelete" />
+    <!-- Konfirmasi hapus 1 siswa -->
+    <BaseConfirm v-model="showConfirm" title="Nonaktifkan Siswa"
+      :message="`Nonaktifkan siswa ${deleteTarget?.nama}?`"
+      confirm-label="Ya" :danger-mode="true" :loading="formLoading" @confirm="executeDelete" />
 
-    <!-- Modal Konfirmasi Buat Akun Siswa -->
+    <!-- ── Modal Buat Akun 1 Siswa ── -->
     <BaseModal v-model="showCreateUserConfirm" title="Buat Akun Login Siswa" size="sm">
       <div class="space-y-4">
         <div class="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
@@ -278,29 +318,101 @@
           <div class="text-sm text-emerald-800">
             <p class="font-semibold mb-1">Akun akan dibuat dengan:</p>
             <ul class="space-y-1">
-              <li>• <span class="font-medium">Username:</span> NISN siswa ({{ createUserTarget?.nisn || '—' }})</li>
+              <li>• <span class="font-medium">Username:</span> {{ createUserTarget?.nisn || '—' }}</li>
               <li>• <span class="font-medium">Password default:</span> smkn1kras</li>
             </ul>
           </div>
         </div>
         <div v-if="!createUserTarget?.nisn" class="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-800">
           <span class="font-semibold">⚠</span>
-          <span>Siswa ini belum memiliki NISN. Isi NISN terlebih dahulu sebelum membuat akun.</span>
+          <span>Siswa ini belum memiliki NISN. Isi NISN terlebih dahulu.</span>
         </div>
         <p class="text-sm text-gray-600">
           Buat akun login untuk <span class="font-semibold">{{ createUserTarget?.nama }}</span>?
-          Siswa dapat login menggunakan NISN dan password default, lalu disarankan segera ganti password.
+          Siswa login menggunakan NISN dan password default, lalu disarankan segera ganti password.
         </p>
       </div>
       <template #footer>
         <button class="btn-secondary" @click="showCreateUserConfirm = false">Batal</button>
-        <button
-          class="btn-primary bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
-          :disabled="creatingUser || !createUserTarget?.nisn"
-          @click="executeCreateUser">
+        <button class="btn-primary bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+          :disabled="creatingUser || !createUserTarget?.nisn" @click="executeCreateUser">
           <span v-if="creatingUser" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
           <UserPlusIcon v-else class="w-4 h-4" />
           Buat Akun
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- ── Modal Buat Akun Massal ── -->
+    <BaseModal v-model="showBulkCreateUser" title="Buat Akun Login Massal" size="md">
+      <!-- Sebelum proses -->
+      <div v-if="!bulkCreateResult" class="space-y-4">
+        <div class="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+          <UserGroupIcon class="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+          <div class="text-sm text-emerald-800">
+            <p class="font-semibold mb-1">Akan dibuatkan akun untuk <span class="text-emerald-900">{{ selected.length }} siswa</span></p>
+            <ul class="space-y-0.5 text-emerald-700">
+              <li>• Username = NISN masing-masing siswa</li>
+              <li>• Password default: <span class="font-mono font-semibold">smkn1kras</span></li>
+              <li>• Siswa tanpa NISN akan dilewati otomatis</li>
+              <li>• Akun yang sudah ada tidak akan ditimpa</li>
+            </ul>
+          </div>
+        </div>
+        <!-- Loading -->
+        <div v-if="bulkCreatingUser" class="flex flex-col items-center gap-3 py-4">
+          <div class="w-10 h-10 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+          <p class="text-sm text-gray-500">Sedang membuat akun...</p>
+        </div>
+      </div>
+      <!-- Hasil proses -->
+      <div v-else class="space-y-4">
+        <!-- Ringkasan -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
+            <p class="text-2xl font-bold text-emerald-700">{{ bulkCreateResult.berhasil.length }}</p>
+            <p class="text-xs text-emerald-600 mt-0.5">Akun berhasil dibuat</p>
+          </div>
+          <div class="p-4 rounded-xl border text-center" :class="bulkCreateResult.gagal.length ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'">
+            <p class="text-2xl font-bold" :class="bulkCreateResult.gagal.length ? 'text-red-600' : 'text-gray-400'">
+              {{ bulkCreateResult.gagal.length }}
+            </p>
+            <p class="text-xs mt-0.5" :class="bulkCreateResult.gagal.length ? 'text-red-500' : 'text-gray-400'">Dilewati / Gagal</p>
+          </div>
+        </div>
+        <!-- List berhasil -->
+        <div v-if="bulkCreateResult.berhasil.length" class="space-y-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Berhasil dibuat</p>
+          <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+            <div v-for="r in bulkCreateResult.berhasil" :key="r.id"
+              class="flex items-center justify-between px-3 py-1.5 bg-emerald-50 rounded-lg text-sm">
+              <span class="text-gray-800 truncate">{{ r.nama }}</span>
+              <span class="font-mono text-xs text-emerald-700 flex-shrink-0 ml-2">{{ r.username }}</span>
+            </div>
+          </div>
+        </div>
+        <!-- List gagal -->
+        <div v-if="bulkCreateResult.gagal.length" class="space-y-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dilewati / Gagal</p>
+          <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+            <div v-for="r in bulkCreateResult.gagal" :key="r.id"
+              class="flex items-center justify-between px-3 py-1.5 bg-red-50 rounded-lg text-sm">
+              <span class="text-gray-800 truncate">{{ r.nama || r.id }}</span>
+              <span class="text-xs text-red-500 flex-shrink-0 ml-2">{{ r.alasan }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="closeBulkCreateUser">
+          {{ bulkCreateResult ? 'Tutup' : 'Batal' }}
+        </button>
+        <button v-if="!bulkCreateResult"
+          class="btn-primary bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+          :disabled="bulkCreatingUser" @click="executeBulkCreateUser">
+          <span v-if="bulkCreatingUser" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          <UserGroupIcon v-else class="w-4 h-4" />
+          Buat {{ selected.length }} Akun
         </button>
       </template>
     </BaseModal>
@@ -314,7 +426,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useMasterStore } from '@/stores/master.store';
 import { useUIStore } from '@/stores/ui.store';
 import { notify } from '@/utils/toast';
-import { debounce, getInitials, statusBadgeClass } from '@/utils/helpers';
+import { debounce, getInitials } from '@/utils/helpers';
 import { useExcelIO } from '@/composables/useExcelIO';
 import { useBulkDelete } from '@/composables/useBulkDelete';
 import BaseModal from '@/components/common/BaseModal.vue';
@@ -322,13 +434,18 @@ import BaseConfirm from '@/components/common/BaseConfirm.vue';
 import BasePagination from '@/components/common/BasePagination.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
-import BulkDeleteBar from '@/components/common/BulkDeleteBar.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon, UserPlusIcon, KeyIcon } from '@heroicons/vue/24/outline';
+import {
+  PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon,
+  ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon,
+  UserPlusIcon, UserGroupIcon, KeyIcon,
+} from '@heroicons/vue/24/outline';
 
-const authStore = useAuthStore(); const masterStore = useMasterStore(); const uiStore = useUIStore();
+const authStore = useAuthStore();
+const masterStore = useMasterStore();
+const uiStore = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Data Siswa' }]);
 
-// ── State (harus di atas composable yang pakai items) ────────
+// ── State ────────────────────────────────────────────────────
 const items = ref([]); const loading = ref(true);
 const page = ref(1); const limit = ref(10); const total = ref(0);
 const totalPages = computed(() => Math.ceil(total.value / limit.value));
@@ -336,6 +453,7 @@ const search = ref(''); const filterJurusan = ref(''); const filterKelas = ref('
 const showForm = ref(false); const editItem = ref(null);
 const showConfirm = ref(false); const deleteTarget = ref(null); const formLoading = ref(false);
 
+// ── Excel IO ─────────────────────────────────────────────────
 const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
   exportFn:   masterService.siswaExport,
   templateFn: masterService.siswaTemplate,
@@ -344,6 +462,7 @@ const { exporting, showImport, doExport, doTemplate, importFn, handleImported } 
   onImported: () => fetchData(),
 });
 
+// ── Bulk Delete ───────────────────────────────────────────────
 const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggleOne,
   clearSelected, openBulkConfirm, executeBulkDelete, bulkDeleting, showBulkConfirm,
 } = useBulkDelete({
@@ -354,7 +473,7 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
 
 const statusClass = (s) => ({ Aktif: 'badge-green', Lulus: 'badge-blue', Pindah: 'badge-yellow', Keluar: 'badge-red', Meninggal: 'badge-gray' }[s] || 'badge-gray');
 
-// ── Load kelas list ──────────────────────────────────────
+// ── Kelas list ────────────────────────────────────────────────
 const kelasList = ref([]);
 const loadKelas = async () => {
   try {
@@ -363,15 +482,20 @@ const loadKelas = async () => {
   } catch { /* silent */ }
 };
 
-const emptyForm = () => ({ nama: '', nisn: '', nis: '', jenis_kelamin: '', kelas_id: '', jurusan_id: '', tahun_masuk: '', status: 'Aktif', tempat_lahir: '', tanggal_lahir: '', agama: '', no_hp: '', alamat: '', hp_ortu: '', nama_ayah: '', nama_ibu: '', pernah_dapat_bantuan: false });
+// ── Form CRUD ─────────────────────────────────────────────────
+const emptyForm = () => ({
+  nama: '', nisn: '', nis: '', jenis_kelamin: '', kelas_id: '', jurusan_id: '',
+  tahun_masuk: '', status: 'Aktif', tempat_lahir: '', tanggal_lahir: '',
+  agama: '', no_hp: '', alamat: '', hp_ortu: '', nama_ayah: '', nama_ibu: '',
+  pernah_dapat_bantuan: false,
+});
 const form = ref(emptyForm());
 
 const fetchData = async () => {
   loading.value = true;
   try {
     const res = await masterService.siswaList({
-      page: page.value, limit: limit.value,
-      search: search.value,
+      page: page.value, limit: limit.value, search: search.value,
       jurusan_id: filterJurusan.value || undefined,
       kelas_id: filterKelas.value || undefined,
       status: filterStatus.value || undefined,
@@ -388,25 +512,48 @@ const clearFilter = (type) => {
   onFilterChange();
 };
 const clearAllFilters = () => { search.value = ''; filterJurusan.value = ''; filterKelas.value = ''; filterStatus.value = 'Aktif'; page.value = 1; fetchData(); };
-
 const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
-const openForm = (item = null) => { editItem.value = item; form.value = item ? { nama: item.nama, nisn: item.nisn || '', nis: item.nis || '', jenis_kelamin: item.jenis_kelamin || '', kelas_id: item.kelas_id || '', jurusan_id: item.jurusan_id || '', tahun_masuk: item.tahun_masuk || '', status: item.status || 'Aktif', tempat_lahir: item.tempat_lahir || '', tanggal_lahir: item.tanggal_lahir || '', agama: item.agama || '', no_hp: item.no_hp || '', alamat: item.alamat || '', hp_ortu: item.hp_ortu || '', nama_ayah: item.nama_ayah || '', nama_ibu: item.nama_ibu || '', pernah_dapat_bantuan: item.pernah_dapat_bantuan || false } : emptyForm(); showForm.value = true; };
+
+const openForm = (item = null) => {
+  editItem.value = item;
+  form.value = item ? {
+    nama: item.nama, nisn: item.nisn || '', nis: item.nis || '',
+    jenis_kelamin: item.jenis_kelamin || '', kelas_id: item.kelas_id || '',
+    jurusan_id: item.jurusan_id || '', tahun_masuk: item.tahun_masuk || '',
+    status: item.status || 'Aktif', tempat_lahir: item.tempat_lahir || '',
+    tanggal_lahir: item.tanggal_lahir || '', agama: item.agama || '',
+    no_hp: item.no_hp || '', alamat: item.alamat || '',
+    hp_ortu: item.hp_ortu || '', nama_ayah: item.nama_ayah || '',
+    nama_ibu: item.nama_ibu || '', pernah_dapat_bantuan: item.pernah_dapat_bantuan || false,
+  } : emptyForm();
+  showForm.value = true;
+};
+
 const submitForm = async () => {
   formLoading.value = true;
   try {
-    if (editItem.value) { await masterService.siswaUpdate(editItem.value.id, form.value); notify.success('Data siswa diperbarui'); }
-    else { await masterService.siswaCreate(form.value); notify.success('Siswa ditambahkan'); }
+    if (editItem.value) {
+      await masterService.siswaUpdate(editItem.value.id, form.value);
+      notify.success('Data siswa diperbarui');
+    } else {
+      await masterService.siswaCreate(form.value);
+      notify.success('Siswa ditambahkan');
+    }
     showForm.value = false; fetchData();
-  } catch (err) { notify.error(err.response?.data?.message || 'Gagal menyimpan'); } finally { formLoading.value = false; }
+  } catch (err) { notify.error(err.response?.data?.message || 'Gagal menyimpan'); }
+  finally { formLoading.value = false; }
 };
+
 const confirmDelete = (item) => { deleteTarget.value = item; showConfirm.value = true; };
 const executeDelete = async () => {
   formLoading.value = true;
-  try { await masterService.siswaDelete(deleteTarget.value.id); notify.success('Siswa dinonaktifkan'); showConfirm.value = false; fetchData(); }
-  catch { notify.error('Gagal menghapus'); } finally { formLoading.value = false; }
+  try {
+    await masterService.siswaDelete(deleteTarget.value.id);
+    notify.success('Siswa dinonaktifkan'); showConfirm.value = false; fetchData();
+  } catch { notify.error('Gagal menghapus'); } finally { formLoading.value = false; }
 };
 
-// ── Buat Akun Login Siswa ─────────────────────────────────
+// ── Buat Akun Login (1 siswa) ─────────────────────────────────
 const showCreateUserConfirm = ref(false);
 const createUserTarget = ref(null);
 const creatingUser = ref(false);
@@ -417,11 +564,40 @@ const executeCreateUser = async () => {
   try {
     const res = await masterService.siswaCreateUser(createUserTarget.value.id);
     const data = res.data.data;
-    notify.success(`Akun berhasil dibuat — username: ${data.username}, password default: smkn1kras`);
+    notify.success(`Akun berhasil dibuat — username: ${data.username}`);
     showCreateUserConfirm.value = false;
   } catch (err) {
     notify.error(err.response?.data?.message || 'Gagal membuat akun');
   } finally { creatingUser.value = false; }
+};
+
+// ── Buat Akun Login Massal ────────────────────────────────────
+const showBulkCreateUser = ref(false);
+const bulkCreatingUser = ref(false);
+const bulkCreateResult = ref(null);
+
+const openBulkCreateUser = () => {
+  bulkCreateResult.value = null;
+  showBulkCreateUser.value = true;
+};
+
+const closeBulkCreateUser = () => {
+  showBulkCreateUser.value = false;
+  bulkCreateResult.value = null;
+};
+
+const executeBulkCreateUser = async () => {
+  bulkCreatingUser.value = true;
+  try {
+    const res = await masterService.siswaBulkCreateUser({ ids: selected.value });
+    bulkCreateResult.value = res.data.data;
+    const { berhasil, gagal } = bulkCreateResult.value;
+    if (berhasil.length) notify.success(`${berhasil.length} akun berhasil dibuat`);
+    if (gagal.length) notify.warning?.(`${gagal.length} siswa dilewati`);
+    clearSelected();
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal membuat akun massal');
+  } finally { bulkCreatingUser.value = false; }
 };
 
 onMounted(() => { fetchData(); loadKelas(); masterStore.fetchJurusan(); });

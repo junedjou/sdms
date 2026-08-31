@@ -222,6 +222,65 @@ const createSiswaUser = async (req, res) => {
   }, 'Akun login siswa berhasil dibuat');
 };
 
+// POST /master/siswa/bulk-create-user
+// Buat akun login massal untuk banyak siswa sekaligus
+const bulkCreateSiswaUser = async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return badRequest(res, 'ids harus berupa array dan tidak boleh kosong');
+  }
+
+  // Cari role 'siswa' sekali saja
+  const role = await Role.findOne({ where: { name: 'siswa' } });
+  if (!role) return badRequest(res, "Role 'siswa' belum ada di sistem. Buat role siswa terlebih dahulu");
+
+  const password = 'smkn1kras';
+  const hashed   = await hashPassword(password);
+
+  const results = { berhasil: [], gagal: [] };
+
+  for (const id of ids) {
+    const siswa = await Siswa.findByPk(id);
+    if (!siswa) { results.gagal.push({ id, alasan: 'Siswa tidak ditemukan' }); continue; }
+    if (!siswa.nisn) { results.gagal.push({ id, nama: siswa.nama, alasan: 'Belum punya NISN' }); continue; }
+
+    const username = siswa.nisn.trim();
+    const email    = `${username}@sdms.local`;
+
+    // Cek akun sudah ada (linked ke siswa ini)
+    const existBySiswa = await User.unscoped().findOne({ where: { siswa_id: siswa.id } });
+    if (existBySiswa) { results.gagal.push({ id, nama: siswa.nama, alasan: `Akun sudah ada (${existBySiswa.username})` }); continue; }
+
+    // Cek username/email bentrok user lain
+    const existByLogin = await User.unscoped().findOne({ where: { [Op.or]: [{ username }, { email }] } });
+    if (existByLogin) { results.gagal.push({ id, nama: siswa.nama, alasan: `Username ${username} sudah dipakai user lain` }); continue; }
+
+    try {
+      await User.create({
+        username, email,
+        full_name: siswa.nama,
+        role_id:   role.id,
+        password:  hashed,
+        siswa_id:  siswa.id,
+        is_active: true,
+      });
+      results.berhasil.push({ id, nama: siswa.nama, username });
+    } catch (e) {
+      results.gagal.push({ id, nama: siswa.nama, alasan: e.message });
+    }
+  }
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'BULK_CREATE', resource: 'users',
+    description: `Bulk create akun siswa: ${results.berhasil.length} berhasil, ${results.gagal.length} gagal`,
+  });
+
+  return success(res, results,
+    `${results.berhasil.length} akun berhasil dibuat, ${results.gagal.length} gagal`
+  );
+};
+
 // ============================================================
 // PEGAWAI
 // ============================================================
@@ -553,7 +612,7 @@ module.exports = {
   // Guru
   getGuru, getGuruById, createGuru, updateGuru, deleteGuru, bulkDeleteGuru,
   // Siswa
-  getSiswa, getSiswaById, createSiswa, updateSiswa, deleteSiswa, bulkDeleteSiswa, createSiswaUser,
+  getSiswa, getSiswaById, createSiswa, updateSiswa, deleteSiswa, bulkDeleteSiswa, createSiswaUser, bulkCreateSiswaUser,
   // Pegawai
   getPegawai, createPegawai, updatePegawai, deletePegawai, bulkDeletePegawai,
   // Jurusan
