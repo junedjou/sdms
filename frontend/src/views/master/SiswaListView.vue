@@ -109,14 +109,6 @@
                 <td class="font-mono text-xs text-gray-600">
                   <p>{{ item.nisn || '—' }}</p>
                   <p class="text-gray-400">{{ item.nis || '—' }}</p>
-                  <!-- Badge akun login -->
-                  <span v-if="item.user"
-                    class="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
-                    :class="item.user.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'">
-                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      :class="item.user.is_active ? 'bg-emerald-500' : 'bg-gray-400'"></span>
-                    {{ item.user.is_active ? 'Punya akun' : 'Akun nonaktif' }}
-                  </span>
                 </td>
                 <td>
                   <span v-if="item.kelas" class="badge-indigo text-xs">{{ item.kelas.nama }}</span>
@@ -128,7 +120,17 @@
                 </td>
                 <td>{{ item.jenis_kelamin === 'L' ? '♂ L' : '♀ P' }}</td>
                 <td class="text-gray-600">{{ item.tahun_masuk || '—' }}</td>
-                <td><span class="badge" :class="statusClass(item.status)">{{ item.status }}</span></td>
+                <td>
+                  <div class="flex items-center gap-1.5">
+                    <span class="badge" :class="statusClass(item.status)">{{ item.status }}</span>
+                    <span v-if="item.user"
+                      :title="item.user.is_active ? `Sudah punya akun (${item.user.username})` : `Akun nonaktif (${item.user.username})`"
+                      class="cursor-default">
+                      <CheckCircleIcon class="w-4 h-4"
+                        :class="item.user.is_active ? 'text-emerald-500' : 'text-gray-300'" />
+                    </span>
+                  </div>
+                </td>
                 <td class="text-right">
                   <div class="flex items-center justify-end gap-1">
                     <button v-if="authStore.hasPermission('siswa:update')" @click="openCreateUser(item)"
@@ -449,7 +451,7 @@ import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
 import {
   PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon,
   ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon,
-  UserPlusIcon, UserGroupIcon, KeyIcon,
+  UserPlusIcon, UserGroupIcon, KeyIcon, CheckCircleIcon,
 } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
