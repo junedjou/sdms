@@ -54,8 +54,8 @@ const config = {
   },
 
   rateLimit: {
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
-    max:      parseInt(process.env.RATE_LIMIT_MAX, 10) || 200,
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 5 * 60 * 1000,   // default: 5 menit
+    max:      parseInt(process.env.RATE_LIMIT_MAX, 10) || 500,                    // default: 500 req/user/5 menit
   },
 
   cors: {

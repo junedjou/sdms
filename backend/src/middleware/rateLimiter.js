@@ -10,20 +10,37 @@ const getIp = (req) =>
 
 /**
  * Rate limiter umum — berlaku untuk semua /api/ routes
+ * Key: IP + user_id (dari JWT header jika ada) — sehingga banyak siswa
+ * dari jaringan sekolah yang sama tidak saling memblokir.
+ * Window: 5 menit, max 300 request per user/IP.
  */
 const rateLimiter = rateLimit({
-  windowMs: config.rateLimit.windowMs,   // default: 15 menit
-  max: config.rateLimit.max,             // default: 200 request
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.max,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
+    const minutes = Math.ceil(config.rateLimit.windowMs / 60000);
     return error(
       res,
-      `Terlalu banyak request dari IP ini. Coba lagi setelah ${Math.ceil(config.rateLimit.windowMs / 60000)} menit.`,
+      `Terlalu banyak request. Coba lagi setelah ${minutes} menit.`,
       429
     );
   },
-  keyGenerator: getIp,
+  // Key = IP + user_id dari JWT (jika ada) — per-user bukan per-IP
+  keyGenerator: (req) => {
+    const ip = getIp(req);
+    // Ambil user_id dari Authorization header tanpa verify (hanya untuk rate limit key)
+    try {
+      const authHeader = req.headers['authorization'] || '';
+      const token = authHeader.split(' ')[1];
+      if (token) {
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        if (payload?.id) return `${ip}:${payload.id}`;
+      }
+    } catch { /* abaikan error decode */ }
+    return ip;
+  },
 });
 
 /**
