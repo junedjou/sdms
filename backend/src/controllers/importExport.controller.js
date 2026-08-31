@@ -190,7 +190,7 @@ const SISWA_LABELS = [
   'Nama Ayah',              // form: Nama Ayah
   'Nama Ibu',               // form: Nama Ibu
   'No. HP Orang Tua/Wali',  // form: No. HP Orang Tua / Wali
-  'Pernah Dapat Bantuan',   // form: Pernah Dapat Bantuan (1=Ya, 0=Tidak)
+  'Bantuan (KIP/PIP/PKH/dll)', // form: Pernah Dapat Bantuan (isi jenis bantuan, kosong jika tidak)
 ];
 
 // Kolom DB — fallback jika migration belum dijalankan
@@ -254,7 +254,7 @@ const exportSiswa = async (req, res) => {
         s.nama_ayah  || '',
         s.nama_ibu   || '',
         s.hp_ortu    || '',
-        s.pernah_dapat_bantuan ? 1 : 0,
+        s.pernah_dapat_bantuan || '',
       );
     }
     return row;
@@ -284,7 +284,7 @@ const templateSiswa = async (req, res) => {
       'Bapak Slamet',   // Nama Ayah
       'Ibu Wati',       // Nama Ibu
       '081298765432',   // No. HP Orang Tua/Wali
-      0,                // Pernah Dapat Bantuan (1=Ya, 0=Tidak)
+      '',               // Bantuan (kosong = tidak dapat bantuan)
     ],
     [
       'Siti Rahmawati',
@@ -303,7 +303,7 @@ const templateSiswa = async (req, res) => {
       'Bapak Hasan',
       'Ibu Rina',
       '082134567890',
-      1,
+      'KIP',            // Bantuan (isi jenis bantuan jika ada)
     ],
   ];
   const buf = buildWorkbook('Siswa', SISWA_LABELS, sample);
@@ -336,9 +336,11 @@ const importSiswa = async (req, res) => {
     const namaKelas   = str(r['Kelas'] ?? r['kelas'])?.toUpperCase();
     const kelas_id    = namaKelas ? kelasMap[namaKelas] : null;
 
-    // Baca pernah_dapat_bantuan — bisa dari kolom baru atau lama
-    const bantuanVal = r['Pernah Dapat Bantuan'] ?? r['Pernah Dapat Bantuan (1/0)'] ?? r['pernah_dapat_bantuan'];
-    const pernah_dapat_bantuan = bantuanVal == 1 || bantuanVal === 'Ya' || bantuanVal === 'ya' || bantuanVal === true;
+    // Baca pernah_dapat_bantuan — sekarang string jenis bantuan
+    const pernah_dapat_bantuan = str(
+      r['Bantuan (KIP/PIP/PKH/dll)'] ?? r['Pernah Dapat Bantuan'] ??
+      r['Pernah Dapat Bantuan (1/0)'] ?? r['pernah_dapat_bantuan']
+    ) || null;
 
     try {
       const siswa = await Siswa.create({

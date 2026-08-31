@@ -63,10 +63,10 @@ const Siswa = masterDB.define('Siswa', {
     comment: 'Nama ibu kandung',
   },
   pernah_dapat_bantuan: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: false,
-    comment: 'Apakah siswa pernah mendapat bantuan (KIP, PIP, dll)',
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    defaultValue: null,
+    comment: 'Jenis bantuan yang pernah diterima (KIP, PIP, PKH, BSM, dll), NULL jika tidak ada',
   },
   email: {
     type: DataTypes.STRING(150),

@@ -302,12 +302,18 @@
           <label class="form-label">No. HP Orang Tua / Wali</label>
           <input v-model="form.hp_ortu" type="tel" class="form-input" placeholder="Nomor HP yang bisa dihubungi" />
         </div>
-        <div class="form-group flex items-center gap-3 pt-6">
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input v-model="form.pernah_dapat_bantuan" type="checkbox" class="sr-only peer" />
-            <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
-          </label>
-          <span class="text-sm text-gray-700">Pernah Dapat Bantuan <span class="text-gray-400 text-xs">(KIP, PIP, dll)</span></span>
+        <div class="form-group sm:col-span-2">
+          <label class="form-label">Pernah Dapat Bantuan <span class="text-gray-400 text-xs font-normal">(kosongkan jika tidak ada)</span></label>
+          <input v-model="form.pernah_dapat_bantuan" type="text" list="bantuan-list" class="form-input"
+            placeholder="Contoh: KIP, PIP, PKH, BSM — kosong jika tidak" />
+          <datalist id="bantuan-list">
+            <option value="KIP">KIP (Kartu Indonesia Pintar)</option>
+            <option value="PIP">PIP (Program Indonesia Pintar)</option>
+            <option value="PKH">PKH (Program Keluarga Harapan)</option>
+            <option value="BSM">BSM (Bantuan Siswa Miskin)</option>
+            <option value="BPNT">BPNT (Bantuan Pangan Non Tunai)</option>
+            <option value="KIP + PKH">KIP + PKH</option>
+          </datalist>
         </div>
       </form>
       <template #footer>
@@ -524,7 +530,7 @@ const emptyForm = () => ({
   nama: '', nisn: '', nis: '', jenis_kelamin: '', kelas_id: '', jurusan_id: '',
   tahun_masuk: '', status: 'Aktif', tempat_lahir: '', tanggal_lahir: '',
   agama: '', no_hp: '', alamat: '', hp_ortu: '', nama_ayah: '', nama_ibu: '',
-  pernah_dapat_bantuan: false,
+  pernah_dapat_bantuan: '',
 });
 const form = ref(emptyForm());
 
@@ -561,7 +567,7 @@ const openForm = (item = null) => {
     tanggal_lahir: item.tanggal_lahir || '', agama: item.agama || '',
     no_hp: item.no_hp || '', alamat: item.alamat || '',
     hp_ortu: item.hp_ortu || '', nama_ayah: item.nama_ayah || '',
-    nama_ibu: item.nama_ibu || '', pernah_dapat_bantuan: item.pernah_dapat_bantuan || false,
+    nama_ibu: item.nama_ibu || '', pernah_dapat_bantuan: item.pernah_dapat_bantuan || '',
   } : emptyForm();
   showForm.value = true;
 };
