@@ -201,33 +201,44 @@
             </div>
           </div>
 
-          <!-- Status -->
+          <!-- Connection Status -->
           <div class="flex items-center gap-2 mb-3">
             <span class="text-xs text-gray-500">Status:</span>
-            <span v-if="jurnalSyncStatus === 'idle'" class="text-xs text-gray-400">Siap</span>
-            <span v-else-if="jurnalSyncStatus === 'syncing'" class="text-xs text-blue-600 flex items-center gap-1">
-              <div class="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" /> Sinkronisasi...
+            <span v-if="jurnalConnection === 'checking'" class="text-xs text-amber-600 flex items-center gap-1">
+              <div class="w-3 h-3 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" /> Mengecek...
             </span>
-            <span v-else-if="jurnalSyncStatus === 'success'" class="text-xs text-emerald-600">✅ Berhasil</span>
-            <span v-else-if="jurnalSyncStatus === 'error'" class="text-xs text-red-500">❌ Gagal</span>
+            <span v-else-if="jurnalConnection === 'online'" class="text-xs text-emerald-600">🟢 Terhubung</span>
+            <span v-else-if="jurnalConnection === 'offline'" class="text-xs text-red-500">🔴 Terputus</span>
+            <span v-else-if="jurnalConnection === 'no-credentials'" class="text-xs text-amber-600">⚠️ Belum diatur</span>
+            <span v-else class="text-xs text-gray-400">—</span>
+            <span v-if="jurnalLatency" class="text-[10px] text-gray-400">{{ jurnalLatency }}ms</span>
           </div>
 
-          <!-- Quick Sync Button -->
-          <button
-            @click="syncJurnal"
-            class="w-full py-2.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 transition-all duration-200 disabled:opacity-50"
-            :disabled="jurnalSyncStatus === 'syncing'"
-          >
-            <span v-if="jurnalSyncStatus === 'syncing'" class="flex items-center justify-center gap-2">
-              <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sinkronisasi...
-            </span>
-            <span v-else class="flex items-center justify-center gap-2">
-              <ArrowPathIcon class="w-4 h-4" /> Sinkron ke Jurnal Guru
-            </span>
-          </button>
+          <!-- Sync Buttons -->
+          <div class="space-y-2">
+            <button
+              @click="syncJurnal('full')"
+              class="w-full py-2.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 transition-all duration-200 disabled:opacity-50"
+              :disabled="jurnalSyncing"
+            >
+              <span v-if="jurnalSyncing" class="flex items-center justify-center gap-2">
+                <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sinkronisasi...
+              </span>
+              <span v-else class="flex items-center justify-center gap-2">
+                <ArrowPathIcon class="w-4 h-4" /> Sinkron Semua Data
+              </span>
+            </button>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button @click="syncJurnal('kelas')" class="py-1.5 rounded-lg text-[11px] font-medium bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 transition-colors" :disabled="jurnalSyncing">🏫 Kelas</button>
+              <button @click="syncJurnal('siswa')" class="py-1.5 rounded-lg text-[11px] font-medium bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 transition-colors" :disabled="jurnalSyncing">👩‍🎓 Siswa</button>
+              <button @click="syncJurnal('guru')" class="py-1.5 rounded-lg text-[11px] font-medium bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 transition-colors" :disabled="jurnalSyncing">👨‍🏫 Guru</button>
+              <button @click="syncJurnal('mapel')" class="py-1.5 rounded-lg text-[11px] font-medium bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 transition-colors" :disabled="jurnalSyncing">📚 Mapel</button>
+            </div>
+          </div>
 
           <p class="text-[10px] text-gray-400 mt-2 text-center">
-            Kirim semua data guru, siswa, kelas & mapel ke Jurnal Guru
+            Push data dari SDMS ke Jurnal Guru (https://jurnal.smkn1kras.sch.id)
           </p>
         </div>
 
@@ -398,7 +409,9 @@ const deleting = ref(false);
 const launching = ref(null);
 const checkingHealth = ref(false);
 const healthChecked = ref(false);
-const jurnalSyncStatus = ref('idle'); // idle | syncing | success | error
+const jurnalSyncing = ref(false);
+const jurnalConnection = ref('checking'); // checking | online | offline | no-credentials
+const jurnalLatency = ref(null);
 
 // Modals
 const showRegisterModal = ref(false);
@@ -612,25 +625,44 @@ const doDelete = async () => {
   }
 };
 
-// ── Sync Jurnal Guru ────────────────────────────────────────
-const syncJurnal = async () => {
-  jurnalSyncStatus.value = 'syncing';
+// ── Jurnal Guru Sync ─────────────────────────────────────────
+const checkJurnalConnection = async () => {
+  jurnalConnection.value = 'checking';
   try {
-    await gatewayService.bulkSync({ target: 'Jurnal' });
-    jurnalSyncStatus.value = 'success';
-    notify.success('Sinkronisasi ke Jurnal Guru berhasil dimulai!');
-    setTimeout(() => { jurnalSyncStatus.value = 'idle'; }, 5000);
-  } catch (err) {
-    jurnalSyncStatus.value = 'error';
-    notify.error(err.response?.data?.message || 'Gagal sinkronisasi');
-    setTimeout(() => { jurnalSyncStatus.value = 'idle'; }, 5000);
+    const res = await gatewayService.jurnalTest();
+    const data = res.data.data;
+    if (data.success) {
+      jurnalConnection.value = 'online';
+      jurnalLatency.value = data.latency_ms;
+    } else if (data.error?.includes('belum di-set')) {
+      jurnalConnection.value = 'no-credentials';
+    } else {
+      jurnalConnection.value = 'offline';
+    }
+  } catch {
+    jurnalConnection.value = 'offline';
   }
 };
 
-// ── On mount: load clients + auto health check ──────────────
+const syncJurnal = async (type = 'full') => {
+  jurnalSyncing.value = true;
+  try {
+    const res = await gatewayService.jurnalSync({ type });
+    const msg = res.data?.message || 'Sinkronisasi dimulai';
+    notify.success(`✅ ${msg} — data sedang dikirim ke Jurnal Guru...`);
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal sinkronisasi ke Jurnal Guru');
+  } finally {
+    jurnalSyncing.value = false;
+  }
+};
+
+// ── On mount: load clients + health check + jurnal check ─────
 onMounted(async () => {
   await loadClients();
-  // Auto-run health check on page load
-  await runHealthCheck();
+  await Promise.all([
+    runHealthCheck(),
+    checkJurnalConnection(),
+  ]);
 });
 </script>

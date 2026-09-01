@@ -10,6 +10,7 @@ const { adminOnly }                      = require('../middleware/rbac');
 const { success, badRequest, error }     = require('../utils/response');
 const { createSSOToken, verifySSOToken, getAppList } = require('../services/ssoService');
 const { bulkSync, SYNC_TARGETS }         = require('../services/syncService');
+const jurnalSync                         = require('../services/jurnalSyncService');
 const logger  = require('../utils/logger');
 const config  = require('../config');
 
@@ -240,6 +241,66 @@ router.post('/sync/test',
 router.get('/apps',
   authenticate,
   asyncHandler(async (req, res) => success(res, getAppList()))
+);
+
+// ============================================================
+// JURNAL GURU SYNC
+// ============================================================
+
+router.get('/jurnal/test',
+  authenticate, adminOnly,
+  asyncHandler(async (req, res) => {
+    const result = await jurnalSync.testConnection();
+    return success(res, result, result.success ? 'Koneksi ke Jurnal Guru berhasil' : 'Gagal terhubung ke Jurnal Guru');
+  })
+);
+
+router.post('/jurnal/sync',
+  authenticate, adminOnly,
+  asyncHandler(async (req, res) => {
+    const { type } = req.body; // 'full', 'kelas', 'siswa', 'guru', 'mapel'
+
+    logger.info(`[JurnalSync] Sync dimulai oleh ${req.user.username} — type: ${type || 'full'}`);
+
+    if (type === 'full' || !type) {
+      // Full sync — kirim semua data
+      jurnalSync.fullSync()
+        .then(result => logger.info('[JurnalSync] Full sync selesai:', JSON.stringify(result.summary)))
+        .catch(err => logger.error('[JurnalSync] Full sync gagal:', err.message));
+      return success(res, { started: true, type: type || 'full' }, 'Sinkronisasi dimulai — data akan dikirim ke Jurnal Guru');
+    }
+
+    // Sync per kategori
+    const { Guru, Siswa, Kelas, MataPelajaran } = require('../models');
+    let result;
+
+    switch (type) {
+      case 'kelas': {
+        const data = await Kelas.findAll({ where: { is_active: true } });
+        result = await jurnalSync.syncKelas(data.map(k => k.toJSON()));
+        break;
+      }
+      case 'siswa': {
+        const data = await Siswa.findAll({ where: { status: 'Aktif' } });
+        result = await jurnalSync.syncSiswa(data.map(s => s.toJSON()));
+        break;
+      }
+      case 'guru': {
+        const data = await Guru.findAll({ where: { is_active: true } });
+        result = await jurnalSync.syncGuru(data.map(g => g.toJSON()));
+        break;
+      }
+      case 'mapel': {
+        const data = await MataPelajaran.findAll({ where: { is_active: true } });
+        result = await jurnalSync.syncMapel(data.map(m => m.toJSON()));
+        break;
+      }
+      default:
+        return badRequest(res, `Type '${type}' tidak dikenal. Gunakan: full, kelas, siswa, guru, mapel`);
+    }
+
+    return success(res, result, `Sinkronisasi ${type} selesai`);
+  })
 );
 
 // ============================================================

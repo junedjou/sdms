@@ -188,6 +188,9 @@ export const gatewayService = {
   syncTargets: ()     => api.get('/gateway/sync/targets'),
   bulkSync:    (data) => api.post('/gateway/sync/bulk', data),
   apps:        ()     => api.get('/gateway/apps'),
+  // Jurnal Guru Sync
+  jurnalTest:  ()     => api.get('/gateway/jurnal/test'),
+  jurnalSync:  (data) => api.post('/gateway/jurnal/sync', data),
   // Backup
   doBackup:    ()     => api.post('/gateway/backup'),
   backupList:  ()     => api.get('/gateway/backup/list'),
