@@ -180,6 +180,97 @@
       </template>
     </BaseModal>
 
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- Admin: Sinkronisasi Panel -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div v-if="authStore.isSuperAdmin" class="mt-8">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-900">🔄 Sinkronisasi Data</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Sync Jurnal Guru -->
+        <div class="card p-5">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-400 to-red-500 flex items-center justify-center">
+              <ClipboardDocumentListIcon class="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 class="font-bold text-gray-900">Jurnal Guru</h3>
+              <p class="text-xs text-gray-500">Sinkron data guru & siswa ke Jurnal Guru</p>
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs text-gray-500">Status:</span>
+            <span v-if="jurnalSyncStatus === 'idle'" class="text-xs text-gray-400">Siap</span>
+            <span v-else-if="jurnalSyncStatus === 'syncing'" class="text-xs text-blue-600 flex items-center gap-1">
+              <div class="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" /> Sinkronisasi...
+            </span>
+            <span v-else-if="jurnalSyncStatus === 'success'" class="text-xs text-emerald-600">✅ Berhasil</span>
+            <span v-else-if="jurnalSyncStatus === 'error'" class="text-xs text-red-500">❌ Gagal</span>
+          </div>
+
+          <!-- Quick Sync Button -->
+          <button
+            @click="syncJurnal"
+            class="w-full py-2.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 transition-all duration-200 disabled:opacity-50"
+            :disabled="jurnalSyncStatus === 'syncing'"
+          >
+            <span v-if="jurnalSyncStatus === 'syncing'" class="flex items-center justify-center gap-2">
+              <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sinkronisasi...
+            </span>
+            <span v-else class="flex items-center justify-center gap-2">
+              <ArrowPathIcon class="w-4 h-4" /> Sinkron ke Jurnal Guru
+            </span>
+          </button>
+
+          <p class="text-[10px] text-gray-400 mt-2 text-center">
+            Kirim semua data guru, siswa, kelas & mapel ke Jurnal Guru
+          </p>
+        </div>
+
+        <!-- Sync Info -->
+        <div class="card p-5">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+              <ExclamationTriangleIcon class="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 class="font-bold text-gray-900">Yang Disinkronkan</h3>
+              <p class="text-xs text-gray-500">Data yang dikirim ke aplikasi lain</p>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-600">👨‍🏫 Data Guru</span>
+              <span class="text-xs text-emerald-600 font-medium">Otomas saat update</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-600">👩‍🎓 Data Siswa</span>
+              <span class="text-xs text-emerald-600 font-medium">Otomas saat update</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-600">🏫 Data Kelas</span>
+              <span class="text-xs text-emerald-600 font-medium">Otomas saat update</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-600">📚 Mata Pelajaran</span>
+              <span class="text-xs text-emerald-600 font-medium">Otomas saat update</span>
+            </div>
+          </div>
+
+          <div class="mt-3 p-2 bg-blue-50 rounded-lg">
+            <p class="text-[11px] text-blue-600">
+              💡 <strong>Otomatis:</strong> Setiap kali admin update data guru/siswa di SDMS, data langsung dikirim ke aplikasi terhubung. Sinkron manual hanya untuk first-time setup atau pemulihan data.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Admin: Manage Apps Table -->
     <div v-if="authStore.isSuperAdmin && clients.length > 0" class="mt-8">
       <div class="flex items-center justify-between mb-4">
@@ -307,6 +398,7 @@ const deleting = ref(false);
 const launching = ref(null);
 const checkingHealth = ref(false);
 const healthChecked = ref(false);
+const jurnalSyncStatus = ref('idle'); // idle | syncing | success | error
 
 // Modals
 const showRegisterModal = ref(false);
@@ -517,6 +609,21 @@ const doDelete = async () => {
     notify.error('Gagal menghapus');
   } finally {
     deleting.value = false;
+  }
+};
+
+// ── Sync Jurnal Guru ────────────────────────────────────────
+const syncJurnal = async () => {
+  jurnalSyncStatus.value = 'syncing';
+  try {
+    await gatewayService.bulkSync({ target: 'Jurnal' });
+    jurnalSyncStatus.value = 'success';
+    notify.success('Sinkronisasi ke Jurnal Guru berhasil dimulai!');
+    setTimeout(() => { jurnalSyncStatus.value = 'idle'; }, 5000);
+  } catch (err) {
+    jurnalSyncStatus.value = 'error';
+    notify.error(err.response?.data?.message || 'Gagal sinkronisasi');
+    setTimeout(() => { jurnalSyncStatus.value = 'idle'; }, 5000);
   }
 };
 
