@@ -1,0 +1,235 @@
+<!-- 
+  ═══════════════════════════════════════════════════════════════
+  Halaman Sinkronisasi dari SDMS — untuk Admin Jurnal Guru
+  ═══════════════════════════════════════════════════════════════
+  
+  CARA PASANG:
+  1. Copy bagian HTML ini ke halaman admin Jurnal Guru (pengaturan / admin panel)
+  2. Copy bagian <script> ke bawah script yang sudah ada
+  3. Atau buat file terpisah dan load di admin panel
+  
+  Yang dilakukan:
+  - Fetch data dari SDMS API (guru, siswa, kelas, mapel)
+  - Upsert ke database Jurnal Guru via API yang sudah ada
+-->
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- HTML: Tambahkan di admin panel Jurnal Guru -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div id="page-sync-sdms" class="page-content hidden p-6 slide-in">
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <h3 class="font-bold text-xl text-gray-900 flex items-center gap-2">
+        <i class="fas fa-sync-alt text-blue-600"></i> Sinkronisasi dari SDMS
+      </h3>
+      <p class="text-sm text-gray-500 mt-1">Tarik data guru, siswa, kelas & mata pelajaran dari SDMS</p>
+    </div>
+
+    <div class="p-6">
+      <!-- SDMS Config -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">URL SDMS API</label>
+          <input type="text" id="sdms-url" value="https://sdms.smkn1kras.sch.id" 
+            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-300">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Secret Key</label>
+          <input type="password" id="sdms-secret" value="SDMS_SYNC_SECRET_2026" 
+            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-300">
+          <p class="text-xs text-gray-400 mt-1">Secret yang sama dengan SDMS SYNC_SECRET</p>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div id="sdms-sync-status" class="hidden mb-4 p-4 rounded-xl text-sm flex items-center gap-2"></div>
+
+      <!-- Preview Data -->
+      <div id="sdms-preview" class="hidden mb-6">
+        <h4 class="font-bold text-gray-900 mb-3">📋 Preview Data dari SDMS</h4>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div class="p-3 bg-blue-50 rounded-xl text-center">
+            <div class="text-2xl font-bold text-blue-600" id="preview-guru">0</div>
+            <div class="text-xs text-gray-500">👨‍🏫 Guru</div>
+          </div>
+          <div class="p-3 bg-green-50 rounded-xl text-center">
+            <div class="text-2xl font-bold text-green-600" id="preview-siswa">0</div>
+            <div class="text-xs text-gray-500">👩‍🎓 Siswa</div>
+          </div>
+          <div class="p-3 bg-purple-50 rounded-xl text-center">
+            <div class="text-2xl font-bold text-purple-600" id="preview-kelas">0</div>
+            <div class="text-xs text-gray-500">🏫 Kelas</div>
+          </div>
+          <div class="p-3 bg-orange-50 rounded-xl text-center">
+            <div class="text-2xl font-bold text-orange-600" id="preview-mapel">0</div>
+            <div class="text-xs text-gray-500">📚 Mapel</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="flex flex-wrap gap-3">
+        <button onclick="previewSDMSData()" id="btn-preview" 
+          class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors">
+          <i class="fas fa-eye"></i> Preview Data
+        </button>
+        <button onclick="syncFromSDMS()" id="btn-sync" disabled
+          class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fas fa-download"></i> Tarik & Sinkron ke Jurnal Guru
+        </button>
+      </div>
+
+      <!-- Log -->
+      <div id="sdms-sync-log" class="hidden mt-6">
+        <h4 class="font-bold text-gray-900 mb-3">📝 Log Sinkronisasi</h4>
+        <div id="sync-log-content" class="bg-gray-900 text-green-400 rounded-xl p-4 text-xs font-mono max-h-64 overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SCRIPT: Tambahkan di bawah script Jurnal Guru yang sudah ada -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<script>
+// ── SDMS Sync ──────────────────────────────────────────────────
+let sdmsData = null;
+
+const addSyncLog = (msg, type = 'info') => {
+  const log = document.getElementById('sync-log-content');
+  if (!log) return;
+  const colors = { info: '#60a5fa', success: '#4ade80', error: '#f87171', warn: '#fbbf24' };
+  log.innerHTML += `<div style="color:${colors[type] || colors.info}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+  log.scrollTop = log.scrollHeight;
+};
+
+const showSyncStatus = (msg, type) => {
+  const el = document.getElementById('sdms-sync-status');
+  if (!el) return;
+  el.className = `mb-4 p-4 rounded-xl text-sm flex items-center gap-2 ${
+    type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+    type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+    'bg-blue-50 text-blue-700 border border-blue-200'
+  }`;
+  el.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-spinner fa-spin'}"></i> ${msg}`;
+  el.classList.remove('hidden');
+};
+
+async function previewSDMSData() {
+  const url = document.getElementById('sdms-url').value.replace(/\/$/, '');
+  const secret = document.getElementById('sdms-secret').value;
+  
+  showSyncStatus('Mengambil data dari SDMS...', 'info');
+  addSyncLog('Fetching data dari ' + url + '/api/v1/public/sync/data');
+
+  try {
+    const res = await fetch(`${url}/api/v1/public/sync/data?secret=${encodeURIComponent(secret)}`);
+    const json = await res.json();
+
+    if (json.status !== 'success') throw new Error(json.message || 'Gagal fetch');
+
+    sdmsData = json.data;
+
+    document.getElementById('preview-guru').textContent = json.summary.guru;
+    document.getElementById('preview-siswa').textContent = json.summary.siswa;
+    document.getElementById('preview-kelas').textContent = json.summary.kelas;
+    document.getElementById('preview-mapel').textContent = json.summary.mapel;
+    document.getElementById('sdms-preview').classList.remove('hidden');
+    document.getElementById('btn-sync').disabled = false;
+
+    showSyncStatus(`Berhasil! ${json.summary.guru} guru, ${json.summary.siswa} siswa, ${json.summary.kelas} kelas, ${json.summary.mapel} mapel`, 'success');
+    addSyncLog(`✅ Data diterima: ${json.summary.guru} guru, ${json.summary.siswa} siswa, ${json.summary.kelas} kelas, ${json.summary.mapel} mapel`, 'success');
+  } catch (err) {
+    showSyncStatus('Gagal: ' + err.message, 'error');
+    addSyncLog('❌ Error: ' + err.message, 'error');
+  }
+}
+
+async function syncFromSDMS() {
+  if (!sdmsData) { showSyncStatus('Preview data dulu!', 'error'); return; }
+
+  const btn = document.getElementById('btn-sync');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sinkronisasi...';
+
+  const logEl = document.getElementById('sdms-sync-log');
+  logEl.classList.remove('hidden');
+  addSyncLog('═══ Mulai Sinkronisasi ═══');
+
+  let totalCreated = 0, totalUpdated = 0, totalFailed = 0;
+
+  // 1. Sync Kelas
+  addSyncLog('📦 Syncing Kelas...');
+  for (const kelas of sdmsData.kelas) {
+    try {
+      const res = await api.post('/api/kelas', {
+        nama: kelas.nama, tingkat: kelas.tingkat, jurusan: kelas.jurusan,
+        tahunAjaran: '2026/2027', jumlahSiswa: 0
+      });
+      if (res.success) { totalCreated++; addSyncLog(`  ✅ Kelas: ${kelas.nama}`, 'success'); }
+      else { totalUpdated++; addSyncLog(`  ℹ️ Kelas: ${kelas.nama} (${res.message})`, 'info'); }
+    } catch (e) { totalFailed++; addSyncLog(`  ❌ Kelas: ${kelas.nama} — ${e.message}`, 'error'); }
+  }
+
+  // 2. Sync Mapel
+  addSyncLog('📚 Syncing Mata Pelajaran...');
+  for (const mapel of sdmsData.mapel) {
+    try {
+      const res = await api.post('/api/mapping-mapel', { nama: mapel.nama, kode: mapel.kode });
+      if (res.success) { totalCreated++; addSyncLog(`  ✅ Mapel: ${mapel.nama}`, 'success'); }
+      else { totalUpdated++; }
+    } catch (e) { totalFailed++; addSyncLog(`  ❌ Mapel: ${mapel.nama} — ${e.message}`, 'error'); }
+  }
+
+  // 3. Sync Siswa
+  addSyncLog('👩‍🎓 Syncing Siswa...');
+  for (const siswa of sdmsData.siswa) {
+    try {
+      const res = await api.post('/api/siswa', {
+        nisn: siswa.nisn, nis: siswa.nis, nama: siswa.nama,
+        namaLengkap: siswa.namaLengkap, jenisKelamin: siswa.jenisKelamin,
+        tempatLahir: siswa.tempatLahir, tanggalLahir: siswa.tanggalLahir,
+        alamat: siswa.alamat, noTelp: siswa.noTelp,
+        namaOrangTua: siswa.namaOrangTua, status: siswa.status,
+        kelasNama: siswa.kelasNama
+      });
+      if (res.success) { totalCreated++; }
+      else { totalUpdated++; }
+    } catch (e) { totalFailed++; }
+    // Log setiap 50 siswa
+    if (totalCreated % 50 === 0 && totalCreated > 0) {
+      addSyncLog(`  ... ${totalCreated} siswa sudah diproses`, 'info');
+    }
+  }
+  addSyncLog(`  ✅ Siswa selesai: ${sdmsData.siswa.length} diproses`, 'success');
+
+  // 4. Sync Guru
+  addSyncLog('👨‍🏫 Syncing Guru...');
+  for (const guru of sdmsData.guru) {
+    try {
+      const res = await api.post('/api/guru', {
+        nip: guru.nip, nama: guru.nama, namaLengkap: guru.namaLengkap,
+        email: guru.email, noTelepon: guru.noTelepon,
+        mataPelajaran: guru.mataPelajaran, jenisKelamin: guru.jenisKelamin
+      });
+      if (res.success) { totalCreated++; addSyncLog(`  ✅ Guru: ${guru.nama}`, 'success'); }
+      else { totalUpdated++; }
+    } catch (e) { totalFailed++; addSyncLog(`  ❌ Guru: ${guru.nama} — ${e.message}`, 'error'); }
+  }
+
+  addSyncLog('═══ Selesai ═══');
+  addSyncLog(`📊 Total: ${totalCreated} baru, ${totalUpdated} update/skip, ${totalFailed} gagal`, 'success');
+
+  showSyncStatus(`Sinkronisasi selesai! ${totalCreated} baru, ${totalUpdated} update, ${totalFailed} gagal`, 'success');
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-download"></i> Tarik & Sinkron ke Jurnal Guru';
+
+  // Reload data di halaman lain
+  if (typeof loadSiswa === 'function') await loadSiswa();
+  if (typeof loadGuruKelas === 'function') await loadGuruKelas();
+}
+</script>

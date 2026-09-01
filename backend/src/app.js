@@ -17,6 +17,7 @@ const masterRoutes     = require('./routes/master.routes');
 const gatewayRoutes    = require('./gateway/gateway.routes');
 const settingsRoutes   = require('./routes/settings.routes');
 const apiHubRoutes     = require('./routes/apiHub.routes');
+const publicSyncRoutes = require('./routes/publicSync.routes');
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.use(`${API_PREFIX}/master`,    masterRoutes);
 app.use(`${API_PREFIX}/gateway`,   gatewayRoutes);
 app.use(`${API_PREFIX}/settings`,  settingsRoutes);
 app.use(`${API_PREFIX}/apihub`,    apiHubRoutes);
+app.use(`${API_PREFIX}/public/sync`, publicSyncRoutes);
 
 // 404 handler
 app.use((req, res) => {
