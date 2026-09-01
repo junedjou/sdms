@@ -8,8 +8,7 @@
 
 const router = require('express').Router();
 const { asyncHandler } = require('../middleware/errorHandler');
-const { Guru, Siswa, Kelas, MataPelajaran, Jurusan, TahunPelajaran } = require('../models');
-const config = require('../config');
+const { Guru, Siswa, Kelas, MataPelajaran, Jurusan } = require('../models');
 
 const SYNC_SECRET = process.env.SYNC_SECRET || 'SDMS_SYNC_SECRET_2026';
 
@@ -20,27 +19,27 @@ router.get('/data', asyncHandler(async (req, res) => {
     return res.status(401).json({ status: 'error', message: 'Secret tidak valid' });
   }
 
-  // Load semua data
+  // Load semua data — pakai nama kolom ASLI dari database
   const [guruList, siswaList, kelasList, mapelList] = await Promise.all([
     Guru.findAll({
       where: { is_active: true },
-      attributes: ['id', 'nip', 'nama_lengkap', 'email', 'no_telepon', 'mata_pelajaran', 'jenis_kelamin'],
+      attributes: ['id', 'nip', 'nama', 'email', 'no_hp', 'mata_pelajaran', 'jenis_kelamin'],
     }),
     Siswa.findAll({
       where: { status: 'Aktif' },
-      attributes: ['id', 'nisn', 'nis', 'nama_lengkap', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'alamat', 'no_telepon', 'nama_ortu', 'status', 'kelas_id'],
-      include: [{ model: Kelas, as: 'kelas', attributes: ['nama_kelas'], required: false }],
+      attributes: ['id', 'nisn', 'nis', 'nama', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'alamat', 'no_hp', 'nama_ayah', 'nama_ibu', 'status', 'kelas_id'],
+      include: [{ model: Kelas, as: 'kelas', attributes: ['nama'], required: false }],
     }),
     Kelas.findAll({
       where: { is_active: true },
-      attributes: ['id', 'nama_kelas', 'tingkat'],
+      attributes: ['id', 'nama', 'tingkat'],
       include: [
         { model: Jurusan, as: 'jurusan', attributes: ['nama'], required: false },
       ],
     }),
     MataPelajaran.findAll({
       where: { is_active: true },
-      attributes: ['id', 'nama_mapel', 'kode'],
+      attributes: ['id', 'nama', 'kode'],
     }),
   ]);
 
@@ -48,10 +47,10 @@ router.get('/data', asyncHandler(async (req, res) => {
   const guru = guruList.map(g => ({
     _id: g.id,
     nip: g.nip,
-    nama: g.nama_lengkap,
-    namaLengkap: g.nama_lengkap,
+    nama: g.nama,
+    namaLengkap: g.nama,
     email: g.email,
-    noTelepon: g.no_telepon,
+    noTelepon: g.no_hp,
     mataPelajaran: g.mata_pelajaran,
     jenisKelamin: g.jenis_kelamin,
   }));
@@ -60,29 +59,29 @@ router.get('/data', asyncHandler(async (req, res) => {
     _id: s.id,
     nisn: s.nisn,
     nis: s.nis,
-    nama: s.nama_lengkap,
-    namaLengkap: s.nama_lengkap,
+    nama: s.nama,
+    namaLengkap: s.nama,
     jenisKelamin: s.jenis_kelamin,
     tempatLahir: s.tempat_lahir,
     tanggalLahir: s.tanggal_lahir,
     alamat: s.alamat,
-    noTelp: s.no_telepon,
-    namaOrangTua: s.nama_ortu,
+    noTelp: s.no_hp,
+    namaOrangTua: s.nama_ayah || s.nama_ibu || '',
     status: s.status,
-    kelasNama: s.kelas?.nama_kelas || '',
+    kelasNama: s.kelas?.nama || '',
     kelasId: s.kelas_id,
   }));
 
   const kelas = kelasList.map(k => ({
     _id: k.id,
-    nama: k.nama_kelas,
+    nama: k.nama,
     tingkat: k.tingkat,
     jurusan: k.jurusan?.nama || '',
   }));
 
   const mapel = mapelList.map(m => ({
     _id: m.id,
-    nama: m.nama_mapel,
+    nama: m.nama,
     kode: m.kode,
   }));
 
