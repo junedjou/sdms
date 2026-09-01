@@ -363,6 +363,15 @@ const builtinApps = [
     status: 'unknown', latency: null,
   },
   {
+    id: 'jurnal', name: 'Jurnal Guru', slug: 'jurnal',
+    description: 'E-Journal Guru — jurnal harian, absensi kelas, nilai, rekap',
+    gradient: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+    icon: ClipboardDocumentListIcon,
+    category: 'Akademik',
+    sso_enabled: true, sync_enabled: true,
+    status: 'unknown', latency: null,
+  },
+  {
     id: 'sholat', name: 'Sholat & Ibadah', slug: 'sholat',
     description: 'Monitoring sholat berjamaah, absensi keagamaan',
     gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
