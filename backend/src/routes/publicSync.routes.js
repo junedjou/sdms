@@ -13,6 +13,10 @@ const { Guru, Siswa, Kelas, MataPelajaran, Jurusan } = require('../models');
 const SYNC_SECRET = process.env.SYNC_SECRET || 'SDMS_SYNC_SECRET_2026';
 
 router.get('/data', asyncHandler(async (req, res) => {
+  // Allow CORS for public sync API
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+
   // Verify secret
   const { secret } = req.query;
   if (secret !== SYNC_SECRET) {
