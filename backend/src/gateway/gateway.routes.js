@@ -24,7 +24,33 @@ router.get('/sso/token',
     const { app } = req.query;
     if (!app) return badRequest(res, 'Parameter app wajib diisi. Contoh: ?app=lms');
     try {
-      const result = createSSOToken(req.user, app.toLowerCase());
+      // Untuk siswa, ambil NISN dari DB dan tambahkan ke user object
+      let userWithExtra = { ...req.user };
+      if (req.user.role === 'siswa' && !req.user.nisn) {
+        try {
+          const { Siswa } = require('../models');
+          const siswa = await Siswa.findOne({
+            where: { id: req.user.siswa_id || req.user.id },
+            attributes: ['nisn', 'nis', 'nama'],
+          }).catch(() => null);
+          // Cari via user link jika tidak langsung
+          if (!siswa) {
+            const { User } = require('../models');
+            const userRow = await User.findByPk(req.user.id, {
+              include: [{ association: 'siswa', attributes: ['nisn', 'nis', 'id'] }],
+            }).catch(() => null);
+            if (userRow?.siswa) {
+              userWithExtra.nisn = userRow.siswa.nisn;
+              userWithExtra.nis  = userRow.siswa.nis;
+              userWithExtra.siswa_db_id = userRow.siswa.id;
+            }
+          } else {
+            userWithExtra.nisn = siswa.nisn;
+            userWithExtra.nis  = siswa.nis;
+          }
+        } catch { /* skip */ }
+      }
+      const result = createSSOToken(userWithExtra, app.toLowerCase());
       return success(res, result, `SSO token untuk ${app} berhasil dibuat`);
     } catch (err) {
       return badRequest(res, err.message);

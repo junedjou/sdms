@@ -67,6 +67,9 @@ const createSSOToken = (user, appName) => {
     app: appName,
     iss: 'sdms-core',
     aud: appName,
+    // Data tambahan untuk role siswa
+    ...(user.nisn && { nisn: user.nisn }),
+    ...(user.nis  && { nis:  user.nis  }),
   };
 
   // Token sangat singkat — 5 menit cukup untuk redirect
