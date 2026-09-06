@@ -302,7 +302,119 @@
     </div>
 
     <!-- ── Tab: Login Panel ───────────────────────────────── -->
-    <div v-show="activeTab === 'login'" class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+    <div v-show="activeTab === 'login'" class="space-y-5 sm:space-y-6">
+
+      <!-- Pilih Template -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="text-sm font-bold text-slate-800">Template Halaman Login</h2>
+          <span class="text-xs text-slate-400">Pilih tampilan login yang diinginkan</span>
+        </div>
+        <div class="card-body">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <button
+              v-for="tpl in loginTemplates" :key="tpl.id"
+              @click="form.login_template = tpl.id"
+              :class="[
+                'relative flex flex-col rounded-2xl border-2 overflow-hidden transition-all duration-200 group text-left',
+                form.login_template === tpl.id
+                  ? 'border-indigo-400 shadow-md shadow-indigo-100 ring-2 ring-indigo-100'
+                  : 'border-slate-200 hover:border-slate-300 hover:shadow-sm',
+              ]"
+            >
+              <!-- Check badge -->
+              <div v-if="form.login_template === tpl.id"
+                class="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shadow-sm">
+                <CheckIcon class="w-3.5 h-3.5 text-white" />
+              </div>
+              <!-- Preview thumbnail -->
+              <div class="w-full h-28 overflow-hidden flex-shrink-0" :style="tpl.previewBg">
+                <!-- Mini ilustrasi per template -->
+                <div class="w-full h-full flex items-center justify-center relative p-2">
+                  <!-- T1: split blue -->
+                  <template v-if="tpl.id === '1'">
+                    <div class="flex w-full h-full gap-1">
+                      <div class="flex-1 rounded-lg" style="background: linear-gradient(145deg, #1e40af, #3b82f6);" />
+                      <div class="flex-1 bg-white rounded-lg flex flex-col justify-center px-2 gap-1">
+                        <div class="h-2 w-12 bg-slate-200 rounded" />
+                        <div class="h-1.5 w-16 bg-slate-100 rounded" />
+                        <div class="h-5 w-full bg-slate-100 rounded mt-1" />
+                        <div class="h-5 w-full bg-slate-100 rounded" />
+                        <div class="h-5 w-full rounded mt-1" style="background: linear-gradient(90deg,#1d4ed8,#3b82f6)" />
+                      </div>
+                    </div>
+                  </template>
+                  <!-- T2: dark card -->
+                  <template v-else-if="tpl.id === '2'">
+                    <div class="w-full h-full rounded-xl p-2 flex flex-col justify-between"
+                      style="background: rgba(15,23,42,0.95); border: 1px solid rgba(255,255,255,0.08);">
+                      <div class="flex items-center gap-1">
+                        <div class="w-4 h-4 rounded" style="background: linear-gradient(135deg,#6366f1,#8b5cf6)" />
+                        <div class="h-1.5 w-10 bg-white/20 rounded" />
+                      </div>
+                      <div class="space-y-1">
+                        <div class="h-4 w-16 bg-white/10 rounded" />
+                        <div class="h-3 w-full bg-white/5 rounded" />
+                        <div class="h-3 w-full bg-white/5 rounded" />
+                        <div class="h-4 w-full rounded mt-1" style="background: linear-gradient(90deg,#6366f1,#8b5cf6)" />
+                      </div>
+                    </div>
+                  </template>
+                  <!-- T3: green nature -->
+                  <template v-else-if="tpl.id === '3'">
+                    <div class="flex w-full h-full gap-1">
+                      <div class="flex-1 rounded-lg" style="background: linear-gradient(160deg, #052e16, #15803d);" />
+                      <div class="flex-1 bg-white rounded-lg flex flex-col justify-center px-2 gap-1 shadow">
+                        <div class="h-2 w-10 bg-green-200 rounded" />
+                        <div class="h-1.5 w-14 bg-slate-100 rounded" />
+                        <div class="h-5 w-full bg-slate-100 rounded mt-1" />
+                        <div class="h-5 w-full bg-slate-100 rounded" />
+                        <div class="h-5 w-full rounded mt-1" style="background: linear-gradient(90deg,#16a34a,#15803d)" />
+                      </div>
+                    </div>
+                  </template>
+                  <!-- T4: minimal white -->
+                  <template v-else-if="tpl.id === '4'">
+                    <div class="flex w-full h-full gap-1">
+                      <div class="w-2/5 rounded-lg bg-slate-50 flex flex-col p-1.5 gap-1">
+                        <div class="w-full h-1.5 rounded" style="background: linear-gradient(90deg,#6366f1,#ec4899)" />
+                        <div class="h-2 w-8 bg-slate-200 rounded mt-1" />
+                        <div class="h-1.5 w-10 bg-slate-100 rounded" />
+                        <div class="h-1.5 w-8 bg-slate-100 rounded" />
+                      </div>
+                      <div class="flex-1 bg-white rounded-lg flex flex-col justify-center px-2 gap-1">
+                        <div class="h-3 w-8 bg-indigo-200 rounded" />
+                        <div class="h-2 w-12 bg-slate-800 rounded" />
+                        <div class="h-5 w-full border-2 border-slate-100 bg-slate-50 rounded mt-1" />
+                        <div class="h-5 w-full border-2 border-slate-100 bg-slate-50 rounded" />
+                        <div class="h-5 w-full rounded mt-1" style="background: linear-gradient(135deg,#6366f1,#8b5cf6)" />
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+              <!-- Label -->
+              <div class="p-2.5">
+                <p class="text-xs font-bold text-slate-800">{{ tpl.name }}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">{{ tpl.desc }}</p>
+              </div>
+            </button>
+          </div>
+
+          <!-- Link preview -->
+          <div class="mt-4 flex items-center gap-2 p-3 rounded-xl bg-indigo-50 border border-indigo-100">
+            <span class="text-indigo-500 text-sm">💡</span>
+            <p class="text-xs text-indigo-700">
+              Template aktif: <strong>{{ loginTemplates.find(t => t.id === form.login_template)?.name }}</strong>.
+              Simpan dulu lalu buka
+              <a href="/login" target="_blank" class="underline hover:text-indigo-900 font-medium">halaman login</a>
+              untuk melihat hasilnya.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
 
       <!-- Form teks login -->
       <div class="card">
@@ -395,7 +507,8 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> <!-- end grid -->
+    </div> <!-- end tab login -->
 
   </div>
 </template>
@@ -436,6 +549,7 @@ const form = reactive({
   sidebar_bg:        '',
   sidebar_accent:    '',
   sidebar_text:      '',
+  login_template:    '1',
   login_bg_from:     '',
   login_bg_mid:      '',
   login_bg_to:       '',
@@ -490,6 +604,13 @@ const accentPresets = [
   { name: 'Cyan',    accent: '#06b6d4' },
   { name: 'Pink',    accent: '#ec4899' },
   { name: 'Teal',    accent: '#14b8a6' },
+];
+
+const loginTemplates = [
+  { id: '1', name: 'Modern Blue',    desc: 'Split layout, ilustrasi SVG', previewBg: { background: '#f0f4ff' } },
+  { id: '2', name: 'Dark Elegant',   desc: 'Gelap dengan efek glow',      previewBg: { background: '#0a0f1e' } },
+  { id: '3', name: 'Nature Green',   desc: 'Hijau segar, gedung sekolah', previewBg: { background: '#052e16' } },
+  { id: '4', name: 'Minimal Clean',  desc: 'Putih bersih, tipografi',     previewBg: { background: '#f8fafc' } },
 ];
 
 // ── Preview ──────────────────────────────────────────────────

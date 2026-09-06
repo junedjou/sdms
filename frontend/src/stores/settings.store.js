@@ -12,6 +12,7 @@ const DEFAULTS = {
   sidebar_bg:        '#0f172a',
   sidebar_accent:    '#6366f1',
   sidebar_text:      'rgba(255,255,255,0.7)',
+  login_template:    '1',
   login_bg_from:     '#0f172a',
   login_bg_mid:      '#1e1b4b',
   login_bg_to:       '#0c0a1e',
