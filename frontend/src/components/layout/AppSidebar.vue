@@ -222,13 +222,31 @@
           </div>
         </Transition>
       </div>
+
+      <!-- Tombol Logout -->
+      <button
+        @click="handleLogout"
+        :class="[
+          'mt-1 w-full flex items-center rounded-xl transition-all duration-200 group',
+          uiStore.sidebarOpen ? 'gap-2.5 px-2 py-2' : 'justify-center p-2',
+          isLight
+            ? 'text-red-500 hover:bg-red-50 hover:text-red-600'
+            : 'text-red-400/70 hover:bg-red-500/10 hover:text-red-400',
+        ]"
+        title="Keluar"
+      >
+        <ArrowRightOnRectangleIcon class="w-4 h-4 flex-shrink-0" />
+        <Transition name="label">
+          <span v-if="uiStore.sidebarOpen" class="text-xs font-medium">Keluar</span>
+        </Transition>
+      </button>
     </div>
   </aside>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { useUIStore } from '@/stores/ui.store';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSettingsStore } from '@/stores/settings.store';
@@ -238,6 +256,7 @@ import {
   Squares2X2Icon, UsersIcon,
   ChevronDownIcon, CircleStackIcon,
   RectangleStackIcon, Cog6ToothIcon,
+  ArrowRightOnRectangleIcon,
 } from '@heroicons/vue/24/outline';
 
 const uiStore       = useUIStore();
@@ -252,6 +271,12 @@ const avatarColor = computed(() => getAvatarColor(authStore.user?.full_name));
 
 const isActive       = (path) => route.path === path;
 const isActiveParent = (item) => item.children?.some((c) => route.path.startsWith(c.to));
+
+const router = useRouter();
+const handleLogout = async () => {
+  await authStore.logout();
+  router.push('/login');
+};
 
 // ── Theme logic ─────────────────────────────────────────────
 const sidebarTheme = computed(() => settingsStore.get('sidebar_theme') || 'light');
