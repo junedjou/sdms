@@ -20,3 +20,15 @@ router.post('/logo', authenticate, isSuperAdmin, upload.single('logo'), asyncHan
 router.delete('/logo', authenticate, isSuperAdmin, asyncHandler(ctrl.deleteLogo));
 
 module.exports = router;
+
+// GET /api/v1/settings/app-hub — konfigurasi visibility App Hub (auth opsional)
+router.get('/app-hub', (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return require('../middleware/auth').authenticate(req, res, next);
+  }
+  next();
+}, asyncHandler(ctrl.getAppHubConfig));
+
+// PUT /api/v1/settings/app-hub — update, hanya super_admin
+router.put('/app-hub', authenticate, isSuperAdmin, asyncHandler(ctrl.updateAppHubConfig));

@@ -11,7 +11,11 @@
           <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': checkingHealth }" />
           <span class="hidden sm:inline ml-1">Cek Koneksi</span>
         </button>
-        <button v-if="authStore.isSuperAdmin" @click="showRegisterModal = true" class="btn-primary btn-sm">
+        <button v-if="authStore.isAdmin" @click="openSettings" class="btn-secondary btn-sm">
+          <Cog6ToothIcon class="w-4 h-4" />
+          <span class="hidden sm:inline ml-1">Pengaturan Hub</span>
+        </button>
+        <button v-if="authStore.isAdmin" @click="showRegisterModal = true" class="btn-primary btn-sm">
           <PlusIcon class="w-4 h-4" />
           <span class="hidden sm:inline">Kelola Aplikasi</span>
         </button>
@@ -68,8 +72,8 @@
 
           <!-- Status badge -->
           <div class="absolute top-3 right-3 flex items-center gap-1.5 backdrop-blur-sm rounded-full px-2.5 py-1"
-               :class="statusBgClass(app.status)">
-            <span class="w-2 h-2 rounded-full" :class="statusDotClass(app.status)" />
+               :class="statusBgClass(app.status, app.is_maintenance)">
+            <span class="w-2 h-2 rounded-full" :class="statusDotClass(app.status, app.is_maintenance)" />
             <span class="text-[10px] font-medium text-white">
               {{ statusLabel(app) }}
             </span>
@@ -99,17 +103,21 @@
 
           <!-- Launch Button -->
           <button
-            class="w-full py-2.5 rounded-xl font-semibold text-sm text-white transition-all duration-200 group-hover:shadow-lg group-hover:scale-[1.02] active:scale-[0.98]"
-            :style="{ background: app.gradient || 'linear-gradient(135deg, #667eea, #764ba2)' }"
-            :disabled="launching === app.id"
+            class="w-full py-2.5 rounded-xl font-semibold text-sm text-white transition-all duration-200 group-hover:shadow-lg group-hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+            :style="{ background: app.is_maintenance ? 'linear-gradient(135deg,#f59e0b,#d97706)' : (app.gradient || 'linear-gradient(135deg, #667eea, #764ba2)') }"
+            :disabled="launching === app.id || (app.is_maintenance && !authStore.isAdmin)"
           >
-            <span v-if="launching === app.id" class="flex items-center justify-center gap-2">
+            <span v-if="app.is_maintenance && !authStore.isAdmin" class="flex items-center justify-center gap-2">
+              <WrenchScrewdriverIcon class="w-4 h-4" /> Maintenance
+            </span>
+            <span v-else-if="launching === app.id" class="flex items-center justify-center gap-2">
               <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               Membuka...
             </span>
             <span v-else class="flex items-center justify-center gap-2">
               <ArrowTopRightOnSquareIcon class="w-4 h-4" />
-              Buka {{ app.name }}
+              <span v-if="app.is_maintenance">Buka {{ app.name }} (Maintenance)</span>
+              <span v-else>Buka {{ app.name }}</span>
             </span>
           </button>
         </div>
@@ -183,7 +191,7 @@
     <!-- ═══════════════════════════════════════════════════════ -->
     <!-- Admin: Sinkronisasi Panel -->
     <!-- ═══════════════════════════════════════════════════════ -->
-    <div v-if="authStore.isSuperAdmin" class="mt-8">
+    <div v-if="authStore.isAdmin" class="mt-8">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-bold text-gray-900">🔄 Sinkronisasi Data</h2>
       </div>
@@ -283,7 +291,7 @@
     </div>
 
     <!-- Admin: Manage Apps Table -->
-    <div v-if="authStore.isSuperAdmin && clients.length > 0" class="mt-8">
+    <div v-if="authStore.isAdmin && clients.length > 0" class="mt-8">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-bold text-gray-900">⚙️ Kelola Aplikasi (Admin)</h2>
       </div>
@@ -323,33 +331,122 @@
         </table>
       </div>
     </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- Admin: Modal Pengaturan App Hub -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <BaseModal
+      v-model="showSettingModal"
+      title="⚙️ Pengaturan App Hub"
+      size="xl"
+      @close="showSettingModal = false"
+    >
+      <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+        <p class="text-sm text-gray-500">Atur visibilitas setiap aplikasi per role pengguna dan status maintenance.</p>
+
+        <div v-for="item in settingDraft" :key="item.id" class="border border-gray-200 rounded-xl p-4">
+          <!-- Header app -->
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-gray-900">{{ item.name }}</span>
+              <code class="text-xs bg-gray-100 px-2 py-0.5 rounded font-mono text-gray-500">{{ item.id }}</code>
+            </div>
+            <!-- Toggle maintenance -->
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <span class="text-xs font-medium" :class="item.is_maintenance ? 'text-amber-600' : 'text-gray-400'">
+                <WrenchScrewdriverIcon class="w-4 h-4 inline -mt-0.5" />
+                Maintenance
+              </span>
+              <button
+                type="button"
+                @click="item.is_maintenance = !item.is_maintenance"
+                :class="[
+                  'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
+                  item.is_maintenance ? 'bg-amber-500' : 'bg-gray-200',
+                ]"
+              >
+                <span :class="['inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform', item.is_maintenance ? 'translate-x-5' : 'translate-x-0.5']" />
+              </button>
+            </label>
+          </div>
+
+          <!-- Role checkboxes -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-medium text-gray-500">Tampilkan untuk role:</span>
+              <button type="button" @click="toggleAllRoles(item)" class="text-xs text-indigo-600 hover:underline">
+                {{ item.visible_roles.length === ALL_ROLES.length ? 'Hapus Semua' : 'Pilih Semua' }}
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <label
+                v-for="role in ALL_ROLES" :key="role.value"
+                class="flex items-center gap-1.5 cursor-pointer select-none"
+              >
+                <input
+                  type="checkbox"
+                  :checked="item.visible_roles.includes(role.value)"
+                  @change="toggleRole(item, role.value)"
+                  class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span class="text-xs px-2 py-0.5 rounded-full"
+                  :class="item.visible_roles.includes(role.value)
+                    ? 'bg-indigo-50 text-indigo-700 font-medium'
+                    : 'bg-gray-50 text-gray-400'">
+                  {{ role.label }}
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <button @click="showSettingModal = false" class="btn-secondary btn-sm">Batal</button>
+        <button @click="saveSettings" class="btn-primary btn-sm" :disabled="savingSettings">
+          {{ savingSettings ? 'Menyimpan...' : 'Simpan Pengaturan' }}
+        </button>
+      </template>
+    </BaseModal>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth.store';
-import { apiHubService, gatewayService } from '@/services/api';
+import { apiHubService, gatewayService, settingsService } from '@/services/api';
 import { notify } from '@/utils/toast';
 import BaseModal from '@/components/common/BaseModal.vue';
 import {
   ArrowPathIcon, PlusIcon, ArrowTopRightOnSquareIcon, Squares2X2Icon,
-  ExclamationTriangleIcon,
+  ExclamationTriangleIcon, Cog6ToothIcon,
   BookOpenIcon, ClipboardDocumentListIcon, MoonIcon,
   CalendarDaysIcon, AcademicCapIcon, GlobeAltIcon, LinkIcon,
-  PencilIcon, TrashIcon,
+  PencilIcon, TrashIcon, WrenchScrewdriverIcon, EyeIcon, EyeSlashIcon,
 } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
 
-// ── App definitions (built-in) — status awal: 'unknown' ─────
+// ── Semua role yang ada di SDMS ─────────────────────────────
+const ALL_ROLES = [
+  { value: 'super_admin',    label: 'Super Admin' },
+  { value: 'admin',          label: 'Admin' },
+  { value: 'guru',           label: 'Guru' },
+  { value: 'wali_kelas',     label: 'Wali Kelas' },
+  { value: 'kepala_sekolah', label: 'Kepala Sekolah' },
+  { value: 'pegawai',        label: 'Pegawai' },
+  { value: 'petugas_piket',  label: 'Petugas Piket' },
+  { value: 'siswa',          label: 'Siswa' },
+];
+
+// ── App definitions (built-in) ──────────────────────────────
 const builtinApps = [
   {
     id: 'lms', name: 'LMS Sekolah', slug: 'lms',
     description: 'Learning Management System — belajar online, tugas, ujian',
     gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    icon: BookOpenIcon,
-    category: 'Akademik',
+    icon: BookOpenIcon, category: 'Akademik',
     sso_enabled: true, sync_enabled: true,
     status: 'unknown', latency: null,
   },
@@ -357,8 +454,7 @@ const builtinApps = [
     id: 'piket', name: 'Jurnal Piket', slug: 'piket',
     description: 'Catatan piket harian — guru piket, siswa melanggar, laporan',
     gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    icon: ClipboardDocumentListIcon,
-    category: 'Kesiswaan',
+    icon: ClipboardDocumentListIcon, category: 'Kesiswaan',
     sso_enabled: true, sync_enabled: true,
     status: 'unknown', latency: null,
   },
@@ -366,17 +462,25 @@ const builtinApps = [
     id: 'jurnal', name: 'Jurnal Guru', slug: 'jurnal',
     description: 'E-Journal Guru — jurnal harian, absensi kelas, nilai, rekap',
     gradient: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-    icon: ClipboardDocumentListIcon,
-    category: 'Akademik',
+    icon: ClipboardDocumentListIcon, category: 'Akademik',
     sso_enabled: true, sync_enabled: true,
+    app_url: 'https://jurnal.smkn1kras.sch.id',
+    status: 'unknown', latency: null,
+  },
+  {
+    id: 'absen', name: 'Absen', slug: 'absen',
+    description: 'Sistem absensi digital — wajah, QR, kartu, laporan',
+    gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+    icon: CalendarDaysIcon, category: 'Kehadiran',
+    sso_enabled: true, sync_enabled: true,
+    app_url: 'https://absen.smkn1kras.sch.id',
     status: 'unknown', latency: null,
   },
   {
     id: 'sholat', name: 'Sholat & Ibadah', slug: 'sholat',
     description: 'Monitoring sholat berjamaah, absensi keagamaan',
     gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    icon: MoonIcon,
-    category: 'Keagamaan',
+    icon: MoonIcon, category: 'Keagamaan',
     sso_enabled: true, sync_enabled: true,
     status: 'unknown', latency: null,
   },
@@ -384,8 +488,7 @@ const builtinApps = [
     id: 'kegiatan', name: 'Kegiatan Sekolah', slug: 'kegiatan',
     description: 'Event, ekstrakurikuler, jadwal kegiatan',
     gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    icon: CalendarDaysIcon,
-    category: 'Kegiatan',
+    icon: CalendarDaysIcon, category: 'Kegiatan',
     sso_enabled: true, sync_enabled: false,
     status: 'unknown', latency: null,
   },
@@ -393,8 +496,7 @@ const builtinApps = [
     id: 'kelulusan', name: 'Kelulusan', slug: 'kelulusan',
     description: 'Manajemen kelulusan, rapor, transkrip',
     gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    icon: AcademicCapIcon,
-    category: 'Akademik',
+    icon: AcademicCapIcon, category: 'Akademik',
     sso_enabled: true, sync_enabled: false,
     status: 'unknown', latency: null,
   },
@@ -402,104 +504,121 @@ const builtinApps = [
     id: 'website', name: 'Website Sekolah', slug: 'website',
     description: 'Portal website resmi sekolah',
     gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-    icon: GlobeAltIcon,
-    category: 'Publik',
+    icon: GlobeAltIcon, category: 'Publik',
     sso_enabled: false, sync_enabled: true,
     status: 'unknown', latency: null,
   },
 ];
 
-// State
-const apps = ref(JSON.parse(JSON.stringify(builtinApps)));
-const clients = ref([]);
-const loading = ref(false);
-const saving = ref(false);
-const deleting = ref(false);
-const launching = ref(null);
-const checkingHealth = ref(false);
-const healthChecked = ref(false);
-const jurnalSyncing = ref(false);
-const jurnalConnection = ref('checking'); // checking | online | offline | no-credentials
-const jurnalLatency = ref(null);
+// ── State ───────────────────────────────────────────────────
+const allApps     = ref(JSON.parse(JSON.stringify(builtinApps))); // semua app (admin)
+const apps        = ref([]);   // app yang ditampilkan (sudah difilter per role)
+const appHubConfig = ref([]);  // config dari backend {id, visible_roles, is_maintenance}
+const clients     = ref([]);
+const loading     = ref(false);
+const saving      = ref(false);
+const deleting    = ref(false);
+const launching   = ref(null);
+const checkingHealth  = ref(false);
+const healthChecked   = ref(false);
+const jurnalSyncing   = ref(false);
+const jurnalConnection = ref('checking');
+const jurnalLatency   = ref(null);
 
-// Modals
+// App Hub Setting modal
+const showSettingModal = ref(false);
+const settingDraft     = ref([]); // copy untuk di-edit
+const savingSettings   = ref(false);
+
+// Register / Edit / Delete modals
 const showRegisterModal = ref(false);
-const showEditModal = ref(false);
+const showEditModal     = ref(false);
 const showDeleteConfirm = ref(false);
-const deleteTarget = ref(null);
-const editTarget = ref(null);
-
-// Form
+const deleteTarget      = ref(null);
+const editTarget        = ref(null);
 const form = ref({ name: '', webhook_url: '', slug: '', description: '', events: ['*'] });
 
 // ── Computed ────────────────────────────────────────────────
-const onlineCount = computed(() => apps.value.filter(a => a.status === 'online').length);
-const offlineCount = computed(() => apps.value.filter(a => a.status === 'offline').length);
+const onlineCount    = computed(() => apps.value.filter(a => a.status === 'online').length);
+const offlineCount   = computed(() => apps.value.filter(a => a.status === 'offline').length);
 const ssoEnabledCount = computed(() => apps.value.filter(a => a.sso_enabled).length);
+
+// ── Helpers: gabungkan config backend ke app list ───────────
+const applyConfig = (appList, config) => {
+  return appList.map(app => {
+    const cfg = config.find(c => c.id === app.id);
+    return {
+      ...app,
+      is_maintenance: cfg?.is_maintenance ?? false,
+      visible_roles:  cfg?.visible_roles ?? ALL_ROLES.map(r => r.value),
+    };
+  });
+};
+
+// ── Filter apps berdasarkan role user ───────────────────────
+const filterForUser = (appList) => {
+  if (authStore.isAdmin) return appList; // admin lihat semua
+  const userRoles = [authStore.userRole, ...(authStore.user?.extra_roles || [])];
+  return appList.filter(app => {
+    if (!app.visible_roles) return true;
+    return app.visible_roles.some(r => userRoles.includes(r));
+  });
+};
+
+// ── Load App Hub config dari backend ───────────────────────
+const loadAppHubConfig = async () => {
+  try {
+    const res = await settingsService.getAppHubConfig();
+    const config = res.data.data?.config || [];
+    appHubConfig.value = config;
+
+    // Apply config ke semua app
+    const configured = applyConfig(allApps.value, config);
+    allApps.value = configured;
+
+    // Filter untuk user yang login
+    apps.value = filterForUser(configured);
+  } catch {
+    // Fallback: tampilkan semua
+    apps.value = filterForUser(allApps.value);
+  }
+};
 
 // ── Status helpers ──────────────────────────────────────────
 const statusLabel = (app) => {
-  if (app.status === 'online') return 'Online';
+  if (app.is_maintenance) return 'Maintenance';
+  if (app.status === 'online')  return 'Online';
   if (app.status === 'offline') return 'Offline';
   return 'Cek Koneksi';
 };
-
-const statusBgClass = (status) => {
-  if (status === 'online') return 'bg-black/30';
-  if (status === 'offline') return 'bg-black/30';
-  return 'bg-black/20';
+const statusBgClass = (status, maintenance) => {
+  if (maintenance) return 'bg-amber-500/70';
+  return 'bg-black/30';
 };
-
-const statusDotClass = (status) => {
-  if (status === 'online') return 'bg-emerald-400';
-  if (status === 'offline') return 'bg-red-400';
+const statusDotClass = (status, maintenance) => {
+  if (maintenance)             return 'bg-amber-300';
+  if (status === 'online')     return 'bg-emerald-400';
+  if (status === 'offline')    return 'bg-red-400';
   return 'bg-amber-400';
 };
 
-// ── Health Check (REAL!) ────────────────────────────────────
-// Backend /gateway/health does actual HTTP requests to each app's URL
-// and returns which ones respond vs which are unreachable.
+// ── Health Check ────────────────────────────────────────────
 const runHealthCheck = async () => {
   checkingHealth.value = true;
-
-  // Reset all to 'checking' state
-  apps.value.forEach(app => {
-    app.status = 'checking';
-    app.latency = null;
-  });
-
+  apps.value.forEach(a => { a.status = 'checking'; a.latency = null; });
   try {
     const res = await gatewayService.health();
     const integrations = res.data.data?.integrations || res.data.integrations || [];
-
-    // Map health results to our app list
     integrations.forEach(item => {
-      const found = apps.value.find(a =>
-        a.slug === item.app || a.id === item.app || a.name === item.app
-      );
-      if (found) {
-        found.status = item.status;   // 'online' or 'offline'
-        found.latency = item.latency_ms || null;
-      }
+      const found = apps.value.find(a => a.slug === item.app || a.id === item.app);
+      if (found) { found.status = item.status; found.latency = item.latency_ms || null; }
     });
-
-    // Any app that wasn't in health results stays 'unknown'
-    apps.value.forEach(app => {
-      if (app.status === 'checking') {
-        app.status = 'unknown';
-      }
-    });
-
+    apps.value.forEach(a => { if (a.status === 'checking') a.status = 'unknown'; });
     healthChecked.value = true;
     const online = integrations.filter(i => i.status === 'online').length;
-    const total = integrations.length;
-    notify.success(`Health check selesai: ${online}/${total} aplikasi online`);
-  } catch (err) {
-    console.error('Health check failed:', err);
-    // Reset to unknown on error
-    apps.value.forEach(app => {
-      if (app.status === 'checking') app.status = 'unknown';
-    });
+    notify.success(`Health check selesai: ${online}/${integrations.length} aplikasi online`);
+  } catch {
+    apps.value.forEach(a => { if (a.status === 'checking') a.status = 'unknown'; });
     notify.error('Gagal menjalankan health check');
   } finally {
     checkingHealth.value = false;
@@ -508,9 +627,12 @@ const runHealthCheck = async () => {
 
 // ── SSO Launch ──────────────────────────────────────────────
 const launchApp = async (app) => {
+  if (app.is_maintenance && !authStore.isAdmin) {
+    notify.warning(`${app.name} sedang dalam maintenance. Coba lagi nanti.`);
+    return;
+  }
   launching.value = app.id;
   try {
-    // Try SSO first
     if (app.sso_enabled) {
       try {
         const res = await gatewayService.ssoToken(app.slug);
@@ -521,12 +643,15 @@ const launchApp = async (app) => {
           return;
         }
       } catch (ssoErr) {
-        console.warn('SSO failed, trying direct URL:', ssoErr.message);
+        console.warn('SSO failed:', ssoErr.message);
       }
     }
-
-    // Fallback: open app URL directly
-    notify.info(`Membuka ${app.name} — silakan login secara manual.`);
+    if (app.app_url) {
+      window.open(app.app_url, '_blank', 'noopener,noreferrer');
+      notify.info(`Membuka ${app.name} — silakan login manual.`);
+    } else {
+      notify.warning(`Tidak dapat membuka ${app.name}`);
+    }
   } finally {
     launching.value = null;
   }
@@ -534,40 +659,77 @@ const launchApp = async (app) => {
 
 // ── Admin: Load DB clients ──────────────────────────────────
 const loadClients = async () => {
-  if (!authStore.isSuperAdmin) return;
+  if (!authStore.isAdmin) return;
   loading.value = true;
   try {
     const res = await apiHubService.listClients();
     clients.value = res.data.data || [];
-
-    // Add DB-registered apps to the grid (if not already in builtin list)
     clients.value.forEach(client => {
       if (!client.slug) return;
-      const existing = apps.value.find(a => a.id === client.slug || a.slug === client.slug);
+      const existing = allApps.value.find(a => a.id === client.slug || a.slug === client.slug);
       if (!existing) {
-        apps.value.push({
-          id: client.slug || client.id,
-          name: client.name,
-          slug: client.slug,
+        allApps.value.push({
+          id: client.slug || client.id, name: client.name, slug: client.slug,
           description: client.description || '',
           gradient: 'linear-gradient(135deg, #89f7fe, #66a6ff)',
-          icon: LinkIcon,
-          category: 'Terdaftar',
-          sso_enabled: true,
-          sync_enabled: !!client.webhook_url,
-          status: 'unknown', latency: null,
-          client_id: client.id,
+          icon: LinkIcon, category: 'Terdaftar',
+          sso_enabled: true, sync_enabled: !!client.webhook_url,
+          status: 'unknown', latency: null, client_id: client.id,
         });
       }
     });
-  } catch {
-    // silent
-  } finally {
-    loading.value = false;
+  } catch { /* silent */ } finally { loading.value = false; }
+};
+
+// ── Admin: App Hub Settings ─────────────────────────────────
+const openSettings = () => {
+  // Buat draft copy untuk diedit
+  settingDraft.value = allApps.value.map(app => ({
+    id: app.id,
+    name: app.name,
+    is_maintenance: app.is_maintenance ?? false,
+    visible_roles: app.visible_roles ? [...app.visible_roles] : ALL_ROLES.map(r => r.value),
+  }));
+  showSettingModal.value = true;
+};
+
+const toggleRole = (appDraft, role) => {
+  const idx = appDraft.visible_roles.indexOf(role);
+  if (idx >= 0) appDraft.visible_roles.splice(idx, 1);
+  else appDraft.visible_roles.push(role);
+};
+
+const toggleAllRoles = (appDraft) => {
+  if (appDraft.visible_roles.length === ALL_ROLES.length) {
+    appDraft.visible_roles = [];
+  } else {
+    appDraft.visible_roles = ALL_ROLES.map(r => r.value);
   }
 };
 
-// ── Admin: CRUD ─────────────────────────────────────────────
+const saveSettings = async () => {
+  savingSettings.value = true;
+  try {
+    const config = settingDraft.value.map(d => ({
+      id: d.id,
+      visible_roles: d.visible_roles,
+      is_maintenance: d.is_maintenance,
+    }));
+    await settingsService.saveAppHubConfig(config);
+    appHubConfig.value = config;
+    // Apply ke allApps & filter ulang
+    allApps.value = applyConfig(allApps.value, config);
+    apps.value = filterForUser(allApps.value);
+    showSettingModal.value = false;
+    notify.success('Konfigurasi App Hub berhasil disimpan');
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal menyimpan konfigurasi');
+  } finally {
+    savingSettings.value = false;
+  }
+};
+
+// ── Admin: Register / Edit / Delete App ─────────────────────
 const closeModals = () => {
   showRegisterModal.value = false;
   showEditModal.value = false;
@@ -575,15 +737,8 @@ const closeModals = () => {
   editTarget.value = null;
 };
 
-const toggleAllEvents = () => {
-  form.value.events = form.value.events.includes('*') ? [] : ['*'];
-};
-
 const saveClient = async () => {
-  if (!form.value.name) {
-    notify.warning('Nama aplikasi wajib diisi');
-    return;
-  }
+  if (!form.value.name) { notify.warning('Nama wajib diisi'); return; }
   saving.value = true;
   try {
     if (showEditModal.value && editTarget.value) {
@@ -597,81 +752,53 @@ const saveClient = async () => {
     loadClients();
   } catch (err) {
     notify.error(err.response?.data?.message || 'Gagal menyimpan');
-  } finally {
-    saving.value = false;
-  }
+  } finally { saving.value = false; }
 };
 
 const editClient = (client) => {
   editTarget.value = client;
-  form.value = {
-    name: client.name,
-    webhook_url: client.webhook_url || '',
-    slug: client.slug || '',
-    description: client.description || '',
-    events: client.events || ['*'],
-  };
+  form.value = { name: client.name, webhook_url: client.webhook_url || '', slug: client.slug || '', description: client.description || '', events: client.events || ['*'] };
   showEditModal.value = true;
   showRegisterModal.value = true;
 };
 
-const confirmDelete = (client) => {
-  deleteTarget.value = client;
-  showDeleteConfirm.value = true;
-};
-
+const confirmDelete = (client) => { deleteTarget.value = client; showDeleteConfirm.value = true; };
 const doDelete = async () => {
   deleting.value = true;
   try {
     await apiHubService.deleteClient(deleteTarget.value.id);
-    notify.success(`${deleteTarget.value.name} berhasil dihapus`);
+    notify.success(`${deleteTarget.value.name} dihapus`);
     showDeleteConfirm.value = false;
     loadClients();
-  } catch {
-    notify.error('Gagal menghapus');
-  } finally {
-    deleting.value = false;
-  }
+  } catch { notify.error('Gagal menghapus'); } finally { deleting.value = false; }
 };
 
-// ── Jurnal Guru Sync ─────────────────────────────────────────
+// ── Jurnal Sync ─────────────────────────────────────────────
 const checkJurnalConnection = async () => {
   jurnalConnection.value = 'checking';
   try {
     const res = await gatewayService.jurnalTest();
     const data = res.data.data;
-    if (data.success) {
-      jurnalConnection.value = 'online';
-      jurnalLatency.value = data.latency_ms;
-    } else if (data.error?.includes('belum di-set')) {
-      jurnalConnection.value = 'no-credentials';
-    } else {
-      jurnalConnection.value = 'offline';
-    }
-  } catch {
-    jurnalConnection.value = 'offline';
-  }
+    if (data.success) { jurnalConnection.value = 'online'; jurnalLatency.value = data.latency_ms; }
+    else if (data.error?.includes('belum di-set')) jurnalConnection.value = 'no-credentials';
+    else jurnalConnection.value = 'offline';
+  } catch { jurnalConnection.value = 'offline'; }
 };
 
 const syncJurnal = async (type = 'full') => {
   jurnalSyncing.value = true;
   try {
     const res = await gatewayService.jurnalSync({ type });
-    const msg = res.data?.message || 'Sinkronisasi dimulai';
-    notify.success(`✅ ${msg} — data sedang dikirim ke Jurnal Guru...`);
+    notify.success(`✅ ${res.data?.message || 'Sinkronisasi dimulai'}...`);
   } catch (err) {
-    notify.error(err.response?.data?.message || 'Gagal sinkronisasi ke Jurnal Guru');
-  } finally {
-    jurnalSyncing.value = false;
-  }
+    notify.error(err.response?.data?.message || 'Gagal sinkronisasi');
+  } finally { jurnalSyncing.value = false; }
 };
 
-// ── On mount: load clients + health check + jurnal check ─────
+// ── On mount ─────────────────────────────────────────────────
 onMounted(async () => {
   await loadClients();
-  await Promise.all([
-    runHealthCheck(),
-    checkJurnalConnection(),
-  ]);
+  await loadAppHubConfig();
+  await Promise.all([runHealthCheck(), checkJurnalConnection()]);
 });
 </script>

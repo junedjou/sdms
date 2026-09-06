@@ -118,3 +118,85 @@ const deleteLogo = async (req, res) => {
 };
 
 module.exports = { getSettings, updateSettings, uploadLogo, deleteLogo, seedDefaults };
+
+// ── App Hub Config ────────────────────────────────────────────
+// Konfigurasi visibility dan maintenance per aplikasi di App Hub.
+// Disimpan sebagai JSON di AppSetting key='app_hub_config'.
+
+const APP_HUB_KEY = 'app_hub_config';
+
+// Default config — semua app visible untuk semua role
+const DEFAULT_APP_HUB = [
+  { id: 'lms',       visible_roles: ['super_admin','admin','guru','wali_kelas','kepala_sekolah','pegawai','siswa'], is_maintenance: false },
+  { id: 'jurnal',    visible_roles: ['super_admin','admin','guru','wali_kelas','kepala_sekolah'], is_maintenance: false },
+  { id: 'piket',     visible_roles: ['super_admin','admin','guru','wali_kelas','kepala_sekolah','petugas_piket'], is_maintenance: false },
+  { id: 'absen',     visible_roles: ['super_admin','admin','guru','wali_kelas','kepala_sekolah','petugas_piket','siswa'], is_maintenance: false },
+  { id: 'sholat',    visible_roles: ['super_admin','admin','guru','wali_kelas','kepala_sekolah','siswa'], is_maintenance: false },
+  { id: 'kegiatan',  visible_roles: ['super_admin','admin','guru','wali_kelas','kepala_sekolah','pegawai','siswa'], is_maintenance: false },
+  { id: 'kelulusan', visible_roles: ['super_admin','admin','guru','wali_kelas','kepala_sekolah'], is_maintenance: false },
+  { id: 'website',   visible_roles: ['super_admin','admin','guru','pegawai','siswa'], is_maintenance: false },
+];
+
+// GET /api/v1/settings/app-hub — publik, semua role bisa akses
+const getAppHubConfig = async (req, res) => {
+  let row = await AppSetting.findOne({ where: { key: APP_HUB_KEY } });
+  if (!row) {
+    // Seed default
+    row = await AppSetting.create({
+      key: APP_HUB_KEY,
+      value: JSON.stringify(DEFAULT_APP_HUB),
+      label: 'Konfigurasi App Hub',
+      group: 'app_hub',
+      type: 'text',
+    });
+  }
+  let config;
+  try { config = JSON.parse(row.value); } catch { config = DEFAULT_APP_HUB; }
+
+  // Jika user login, filter hanya app yang visible untuk role-nya
+  if (req.user) {
+    const userRoles = [req.user.role, ...(req.user.extra_roles || [])];
+    const isSuperOrAdmin = ['super_admin', 'admin'].includes(req.user.role);
+    // Admin/super_admin lihat semua app + info lengkap
+    if (isSuperOrAdmin) {
+      return success(res, { config, is_admin: true });
+    }
+    // Role lain: filter hanya yang boleh dilihat
+    const filtered = config.filter(app =>
+      app.visible_roles.some(r => userRoles.includes(r))
+    );
+    return success(res, { config: filtered, is_admin: false });
+  }
+
+  return success(res, { config, is_admin: false });
+};
+
+// PUT /api/v1/settings/app-hub — hanya super_admin/admin
+const updateAppHubConfig = async (req, res) => {
+  const { config } = req.body;
+  if (!Array.isArray(config)) return badRequest(res, 'config harus berupa array');
+
+  // Validasi struktur
+  for (const item of config) {
+    if (!item.id || !Array.isArray(item.visible_roles)) {
+      return badRequest(res, 'Setiap item harus punya id dan visible_roles[]');
+    }
+  }
+
+  const [row] = await AppSetting.findOrCreate({
+    where: { key: APP_HUB_KEY },
+    defaults: { key: APP_HUB_KEY, value: '[]', label: 'Konfigurasi App Hub', group: 'app_hub', type: 'text' },
+  });
+  await row.update({ value: JSON.stringify(config) });
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'UPDATE', resource: 'settings',
+    description: 'Konfigurasi App Hub diperbarui',
+  });
+
+  logger.info(`[Settings] App Hub config diperbarui oleh ${req.user.username}`);
+  return success(res, { config }, 'Konfigurasi App Hub berhasil disimpan');
+};
+
+module.exports = { getSettings, updateSettings, uploadLogo, deleteLogo, seedDefaults, getAppHubConfig, updateAppHubConfig };

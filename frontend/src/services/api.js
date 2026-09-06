@@ -215,8 +215,10 @@ export const apiHubService = {
 };
 
 export const settingsService = {
-  get:        ()       => api.get('/settings'),
-  save:       (data)   => api.put('/settings', { settings: data }),
-  uploadLogo: (fd)     => api.post('/settings/logo', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  deleteLogo: ()       => api.delete('/settings/logo'),
+  get:             ()       => api.get('/settings'),
+  save:            (data)   => api.put('/settings', { settings: data }),
+  uploadLogo:      (fd)     => api.post('/settings/logo', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteLogo:      ()       => api.delete('/settings/logo'),
+  getAppHubConfig: ()       => api.get('/settings/app-hub'),
+  saveAppHubConfig:(config) => api.put('/settings/app-hub', { config }),
 };
