@@ -128,18 +128,26 @@ const syncSiswa = async (siswaList) => {
   for (const siswa of siswaList) {
     try {
       const payload = {
-        nisn: siswa.nisn,
-        nis: siswa.nis,
-        nama: siswa.nama_lengkap || siswa.nama,
-        namaLengkap: siswa.nama_lengkap || siswa.nama,
-        tempatLahir: siswa.tempat_lahir,
+        nisn:         siswa.nisn,
+        nis:          siswa.nis,
+        nama:         siswa.nama_lengkap || siswa.nama,
+        namaLengkap:  siswa.nama_lengkap || siswa.nama,
+        tempatLahir:  siswa.tempat_lahir,
         tanggalLahir: siswa.tanggal_lahir,
         jenisKelamin: siswa.jenis_kelamin,
-        alamat: siswa.alamat,
-        namaOrangTua: siswa.nama_ortu,
-        noTelp: siswa.no_telepon,
-        status: siswa.status || 'Aktif',
-        kelasNama: siswa.kelas?.nama_kelas || siswa.kelasNama || '',
+        alamat:       siswa.alamat,
+        // Nama orang tua dari field yang benar
+        namaOrangTua: siswa.nama_ayah || siswa.orangTua?.nama_ayah || '',
+        namaAyah:     siswa.nama_ayah || siswa.orangTua?.nama_ayah || '',
+        namaIbu:      siswa.nama_ibu  || siswa.orangTua?.nama_ibu  || '',
+        noTelp:       siswa.no_hp || siswa.hp_ortu || siswa.orangTua?.no_hp || '',
+        agama:        siswa.agama,
+        tahunMasuk:   siswa.tahun_masuk,
+        status:       siswa.status || 'Aktif',
+        // Kelas dari relasi
+        kelasNama:    siswa.kelas?.nama_kelas || siswa.kelasNama || '',
+        jurusan:      siswa.jurusan?.nama     || siswa.jurusan   || '',
+        pernah_dapat_bantuan: siswa.pernah_dapat_bantuan,
       };
 
       // Use upsert-like approach: check if exists by NISN
@@ -148,7 +156,7 @@ const syncSiswa = async (siswaList) => {
       const existing = siswaData.find(s => s.nisn === siswa.nisn);
 
       if (existing) {
-        await api.put(`/api/siswa/${existing._id}`, payload).catch(() => null);
+        await api.put(`/api/siswa/${existing._id || existing.id}`, payload).catch(() => null);
         updated++;
       } else {
         await api.post('/api/siswa', payload).catch(() => null);
@@ -251,7 +259,14 @@ const fullSync = async () => {
   // Load semua data dari SDMS
   const [guruList, siswaList, kelasList, mapelList] = await Promise.all([
     Guru.findAll({ where: { is_active: true } }),
-    Siswa.findAll({ where: { status: 'Aktif' } }),
+    Siswa.findAll({
+      where: { status: 'Aktif' },
+      include: [
+        { association: 'kelas',    attributes: ['id', 'nama_kelas', 'tingkat'] },
+        { association: 'jurusan',  attributes: ['id', 'nama', 'kode'] },
+        { association: 'orangTua', attributes: ['nama_ayah', 'nama_ibu', 'no_hp'] },
+      ],
+    }),
     Kelas.findAll({ where: { is_active: true }, include: ['jurusan', 'waliKelas', 'tahunPelajaran'] }),
     MataPelajaran.findAll({ where: { is_active: true } }),
   ]);
