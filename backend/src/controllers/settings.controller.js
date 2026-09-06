@@ -16,11 +16,13 @@ const DEFAULTS = [
   { key: 'logo_url',         value: '',                                       label: 'URL Logo (kosong=icon)',  group: 'branding', type: 'image' },
 
   // Sidebar
+  { key: 'sidebar_theme',    value: 'light',                                 label: 'Tema Sidebar',            group: 'sidebar',  type: 'text' },
   { key: 'sidebar_bg',       value: '#0f172a',                               label: 'Warna Background Sidebar', group: 'sidebar',  type: 'color' },
   { key: 'sidebar_accent',   value: '#6366f1',                               label: 'Warna Aksen/Active Sidebar', group: 'sidebar', type: 'color' },
   { key: 'sidebar_text',     value: 'rgba(255,255,255,0.7)',                  label: 'Warna Teks Sidebar',      group: 'sidebar',  type: 'color' },
 
   // Login panel
+  { key: 'login_template',   value: '1',                                     label: 'Template Halaman Login',  group: 'login',    type: 'text' },
   { key: 'login_bg_from',    value: '#0f172a',                               label: 'Warna Background Awal (gradient)', group: 'login', type: 'color' },
   { key: 'login_bg_mid',     value: '#1e1b4b',                               label: 'Warna Background Tengah', group: 'login',    type: 'color' },
   { key: 'login_bg_to',      value: '#0c0a1e',                               label: 'Warna Background Akhir',  group: 'login',    type: 'color' },
@@ -61,10 +63,17 @@ const updateSettings = async (req, res) => {
   }
 
   const updated = [];
+  const knownKeys = new Set(DEFAULTS.map(d => d.key));
+
   for (const [key, value] of Object.entries(settings)) {
-    const row = await AppSetting.findOne({ where: { key } });
-    if (!row) continue; // abaikan key tidak dikenal
-    await row.update({ value: value ?? '' });
+    if (!knownKeys.has(key)) continue; // abaikan key tidak dikenal
+    const defaultDef = DEFAULTS.find(d => d.key === key);
+    await AppSetting.findOrCreate({
+      where: { key },
+      defaults: { ...defaultDef, value: value ?? '' },
+    }).then(async ([row]) => {
+      await row.update({ value: value ?? '' });
+    });
     updated.push(key);
   }
 
