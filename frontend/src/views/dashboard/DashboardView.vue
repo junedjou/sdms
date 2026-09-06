@@ -18,7 +18,7 @@
     </div>
 
     <!-- ── Stat cards — warm gradient icons ────────────────────── -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
       <StatCard
         v-for="card in statCards"
         :key="card.label"
@@ -243,6 +243,11 @@ const statCards = computed(() => [
     label: 'Total Kelas',   value: stats.value?.kelas,
     icon: RectangleStackIcon, color: 'bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50', iconColor: 'text-violet-500',
     trend: stats.value?.tahun_pelajaran || '—',
+  },
+  {
+    label: 'Total Mapel',   value: stats.value?.mapel,
+    icon: BookOpenIcon,       color: 'bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50',      iconColor: 'text-rose-500',
+    trend: 'Mata pelajaran aktif',
   },
 ]);
 

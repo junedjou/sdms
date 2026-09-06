@@ -2,7 +2,7 @@ const { Op, fn, col, literal } = require('sequelize');
 const { masterDB } = require('../config/database');
 const {
   Guru, Siswa, Pegawai, Kelas, TahunPelajaran,
-  Semester, User, KalenderAkademik, AuditLog,
+  Semester, User, KalenderAkademik, AuditLog, MataPelajaran,
 } = require('../models');
 const { success, paginated, error } = require('../utils/response');
 const { getPagination } = require('../utils/helpers');
@@ -29,16 +29,17 @@ const withCache = async (key, fetchFn) => {
 // GET /api/v1/dashboard/stats
 const getStats = async (req, res) => {
   try {
-    const stats = await withCache('dashboard:stats', async () => {
+    const stats = await withCache('dashboard:stats:v2', async () => {
       const tahunAktif = await TahunPelajaran.findOne({ where: { is_aktif: true } });
-      const [totalGuru, totalSiswa, totalPegawai, totalKelas, totalUser] = await Promise.all([
+      const [totalGuru, totalSiswa, totalPegawai, totalKelas, totalUser, totalMapel] = await Promise.all([
         Guru.count({ where: { is_active: true } }),
         Siswa.count({ where: { status: 'Aktif' } }),
         Pegawai.count({ where: { is_active: true } }),
         tahunAktif ? Kelas.count({ where: { tahun_pelajaran_id: tahunAktif.id, is_active: true } }) : 0,
         User.count({ where: { is_active: true } }),
+        MataPelajaran.count({ where: { is_active: true } }),
       ]);
-      return { guru: totalGuru, siswa: totalSiswa, pegawai: totalPegawai, kelas: totalKelas, user_aktif: totalUser, tahun_pelajaran: tahunAktif?.nama || '-' };
+      return { guru: totalGuru, siswa: totalSiswa, pegawai: totalPegawai, kelas: totalKelas, user_aktif: totalUser, mapel: totalMapel, tahun_pelajaran: tahunAktif?.nama || '-' };
     });
     return success(res, stats);
   } catch (err) {
