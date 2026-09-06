@@ -42,11 +42,7 @@
       </div>
     </div>
 
-    <!-- Health check notice -->
-    <div v-if="!healthChecked" class="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-700 flex items-center gap-2">
-      <ExclamationTriangleIcon class="w-5 h-5 text-amber-500 shrink-0" />
-      <span>Klik <strong>"Cek Koneksi"</strong> untuk melihat status aktual setiap aplikasi.</span>
-    </div>
+
 
     <!-- App Cards Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
@@ -606,7 +602,7 @@ const statusDotClass = (status, maintenance) => {
 };
 
 // ── Health Check ────────────────────────────────────────────
-const runHealthCheck = async () => {
+const runHealthCheck = async (silent = false) => {
   checkingHealth.value = true;
   apps.value.forEach(a => { a.status = 'checking'; a.latency = null; });
   try {
@@ -618,11 +614,22 @@ const runHealthCheck = async () => {
     });
     apps.value.forEach(a => { if (a.status === 'checking') a.status = 'unknown'; });
     healthChecked.value = true;
-    const online = integrations.filter(i => i.status === 'online').length;
-    notify.success(`Health check selesai: ${online}/${integrations.length} aplikasi online`);
+
+    if (silent) {
+      // Auto-run: hanya notif jika ada yang offline
+      const offline = integrations.filter(i => i.status === 'offline');
+      if (offline.length > 0) {
+        const names = offline.map(i => i.app).join(', ');
+        notify.warning(`${offline.length} aplikasi tidak terhubung: ${names}`);
+      }
+    } else {
+      // Manual: tampilkan ringkasan lengkap
+      const online = integrations.filter(i => i.status === 'online').length;
+      notify.success(`Cek koneksi selesai: ${online}/${integrations.length} aplikasi online`);
+    }
   } catch {
     apps.value.forEach(a => { if (a.status === 'checking') a.status = 'unknown'; });
-    notify.error('Gagal menjalankan health check');
+    if (!silent) notify.error('Gagal menjalankan health check');
   } finally {
     checkingHealth.value = false;
   }
@@ -804,9 +811,10 @@ onMounted(async () => {
   await loadClients();         // sudah guard isAdmin di dalamnya
   await loadAppHubConfig();
 
-  // Health check & jurnal test hanya untuk admin — endpoint keduanya adminOnly
-  if (authStore.isAdmin) {
-    await Promise.all([runHealthCheck(), checkJurnalConnection()]);
-  }
+  // Health check otomatis (silent) untuk semua user — notif hanya jika ada yang offline
+  // Jurnal test tetap admin only (endpoint adminOnly di backend)
+  const tasks = [runHealthCheck(true)];
+  if (authStore.isAdmin) tasks.push(checkJurnalConnection());
+  await Promise.all(tasks);
 });
 </script>
