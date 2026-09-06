@@ -68,8 +68,26 @@ const createSSOToken = (user, appName) => {
     iss: 'sdms-core',
     aud: appName,
     // Data tambahan untuk role siswa
-    ...(user.nisn && { nisn: user.nisn }),
-    ...(user.nis  && { nis:  user.nis  }),
+    ...(user.nisn          && { nisn:          user.nisn }),
+    ...(user.nis           && { nis:           user.nis  }),
+    ...(user.nama_lengkap  && { nama_lengkap:  user.nama_lengkap }),
+    ...(user.jenis_kelamin && { jenis_kelamin: user.jenis_kelamin }),
+    ...(user.tempat_lahir  && { tempat_lahir:  user.tempat_lahir }),
+    ...(user.tanggal_lahir && { tanggal_lahir: user.tanggal_lahir }),
+    ...(user.agama         && { agama:         user.agama }),
+    ...(user.tahun_masuk   && { tahun_masuk:   user.tahun_masuk }),
+    ...(user.foto          && { foto:          user.foto }),
+    ...(user.kelas_id      && { kelas_id:      user.kelas_id }),
+    ...(user.kelas         && { kelas:         user.kelas }),
+    ...(user.tingkat       && { tingkat:       user.tingkat }),
+    ...(user.jurusan_id    && { jurusan_id:    user.jurusan_id }),
+    ...(user.jurusan       && { jurusan:       user.jurusan }),
+    ...(user.jurusan_kode  && { jurusan_kode:  user.jurusan_kode }),
+    ...(user.nama_ayah     && { nama_ayah:     user.nama_ayah }),
+    ...(user.nama_ibu      && { nama_ibu:      user.nama_ibu }),
+    ...(user.hp_ortu       && { hp_ortu:       user.hp_ortu }),
+    ...(user.pernah_dapat_bantuan !== undefined && { pernah_dapat_bantuan: user.pernah_dapat_bantuan }),
+    ...(user.siswa_db_id   && { siswa_db_id:   user.siswa_db_id }),
   };
 
   // Token sangat singkat — 5 menit cukup untuk redirect

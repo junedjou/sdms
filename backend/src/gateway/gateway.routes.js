@@ -24,31 +24,60 @@ router.get('/sso/token',
     const { app } = req.query;
     if (!app) return badRequest(res, 'Parameter app wajib diisi. Contoh: ?app=lms');
     try {
-      // Untuk siswa, ambil NISN dari DB dan tambahkan ke user object
+      // Untuk siswa, ambil data lengkap dari DB dan tambahkan ke user object
       let userWithExtra = { ...req.user };
-      if (req.user.role === 'siswa' && !req.user.nisn) {
+      if (req.user.role === 'siswa') {
         try {
-          const { Siswa } = require('../models');
-          const siswa = await Siswa.findOne({
-            where: { id: req.user.siswa_id || req.user.id },
-            attributes: ['nisn', 'nis', 'nama'],
+          const { User, Siswa, Kelas, Jurusan, OrangTua } = require('../models');
+
+          // Ambil user beserta relasi siswa lengkap
+          const userRow = await User.findByPk(req.user.id, {
+            include: [{
+              association: 'siswa',
+              attributes: ['id', 'nisn', 'nis', 'nama', 'jenis_kelamin', 'tempat_lahir',
+                           'tanggal_lahir', 'agama', 'tahun_masuk', 'foto', 'pernah_dapat_bantuan',
+                           'nama_ayah', 'nama_ibu', 'hp_ortu'],
+              include: [
+                { association: 'kelas',   attributes: ['id', 'nama_kelas', 'tingkat'] },
+                { association: 'jurusan', attributes: ['id', 'nama', 'kode'] },
+                { association: 'orangTua', attributes: ['nama_ayah', 'nama_ibu', 'pekerjaan_ayah', 'pekerjaan_ibu', 'no_hp'] },
+              ],
+            }],
           }).catch(() => null);
-          // Cari via user link jika tidak langsung
-          if (!siswa) {
-            const { User } = require('../models');
-            const userRow = await User.findByPk(req.user.id, {
-              include: [{ association: 'siswa', attributes: ['nisn', 'nis', 'id'] }],
-            }).catch(() => null);
-            if (userRow?.siswa) {
-              userWithExtra.nisn = userRow.siswa.nisn;
-              userWithExtra.nis  = userRow.siswa.nis;
-              userWithExtra.siswa_db_id = userRow.siswa.id;
-            }
-          } else {
-            userWithExtra.nisn = siswa.nisn;
-            userWithExtra.nis  = siswa.nis;
+
+          if (userRow?.siswa) {
+            const s = userRow.siswa;
+            userWithExtra = {
+              ...userWithExtra,
+              // identitas utama
+              nisn:          s.nisn,
+              nis:           s.nis,
+              nama_lengkap:  s.nama,
+              jenis_kelamin: s.jenis_kelamin,
+              tempat_lahir:  s.tempat_lahir,
+              tanggal_lahir: s.tanggal_lahir,
+              agama:         s.agama,
+              tahun_masuk:   s.tahun_masuk,
+              foto:          s.foto,
+              pernah_dapat_bantuan: s.pernah_dapat_bantuan,
+              // kelas & jurusan
+              kelas_id:      s.kelas?.id,
+              kelas:         s.kelas?.nama_kelas,
+              tingkat:       s.kelas?.tingkat,
+              jurusan_id:    s.jurusan?.id,
+              jurusan:       s.jurusan?.nama,
+              jurusan_kode:  s.jurusan?.kode,
+              // orang tua
+              nama_ayah:     s.orangTua?.nama_ayah  || s.nama_ayah,
+              nama_ibu:      s.orangTua?.nama_ibu   || s.nama_ibu,
+              hp_ortu:       s.orangTua?.no_hp      || s.hp_ortu,
+              // siswa db id
+              siswa_db_id:   s.id,
+            };
           }
-        } catch { /* skip */ }
+        } catch (e) {
+          logger.warn(`[SSO] Gagal ambil data siswa: ${e.message}`);
+        }
       }
       const result = createSSOToken(userWithExtra, app.toLowerCase());
       return success(res, result, `SSO token untuk ${app} berhasil dibuat`);
@@ -67,8 +96,34 @@ router.post('/sso/verify',
       return success(res, {
         valid: true,
         user: {
-          id: decoded.sub, username: decoded.username, email: decoded.email,
-          full_name: decoded.full_name, role: decoded.role, permissions: decoded.permissions,
+          id:            decoded.sub,
+          username:      decoded.username,
+          email:         decoded.email,
+          full_name:     decoded.full_name,
+          role:          decoded.role,
+          extra_roles:   decoded.extra_roles || [],
+          permissions:   decoded.permissions,
+          // Data siswa (ada jika role === 'siswa')
+          nisn:          decoded.nisn,
+          nis:           decoded.nis,
+          nama_lengkap:  decoded.nama_lengkap,
+          jenis_kelamin: decoded.jenis_kelamin,
+          tempat_lahir:  decoded.tempat_lahir,
+          tanggal_lahir: decoded.tanggal_lahir,
+          agama:         decoded.agama,
+          tahun_masuk:   decoded.tahun_masuk,
+          foto:          decoded.foto,
+          kelas_id:      decoded.kelas_id,
+          kelas:         decoded.kelas,
+          tingkat:       decoded.tingkat,
+          jurusan_id:    decoded.jurusan_id,
+          jurusan:       decoded.jurusan,
+          jurusan_kode:  decoded.jurusan_kode,
+          nama_ayah:     decoded.nama_ayah,
+          nama_ibu:      decoded.nama_ibu,
+          hp_ortu:       decoded.hp_ortu,
+          pernah_dapat_bantuan: decoded.pernah_dapat_bantuan,
+          siswa_db_id:   decoded.siswa_db_id,
         },
       }, 'Token valid');
     } catch {
