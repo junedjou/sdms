@@ -560,7 +560,8 @@ const filterForUser = (appList) => {
   if (authStore.isAdmin) return appList; // admin lihat semua
   const userRoles = [authStore.userRole, ...(authStore.user?.extra_roles || [])];
   return appList.filter(app => {
-    if (!app.visible_roles) return true;
+    // Jika visible_roles kosong = tidak tampil untuk siapapun (kecuali admin)
+    if (!app.visible_roles || app.visible_roles.length === 0) return false;
     return app.visible_roles.some(r => userRoles.includes(r));
   });
 };
