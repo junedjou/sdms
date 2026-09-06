@@ -801,8 +801,12 @@ const syncJurnal = async (type = 'full') => {
 
 // ── On mount ─────────────────────────────────────────────────
 onMounted(async () => {
-  await loadClients();
+  await loadClients();         // sudah guard isAdmin di dalamnya
   await loadAppHubConfig();
-  await Promise.all([runHealthCheck(), checkJurnalConnection()]);
+
+  // Health check & jurnal test hanya untuk admin — endpoint keduanya adminOnly
+  if (authStore.isAdmin) {
+    await Promise.all([runHealthCheck(), checkJurnalConnection()]);
+  }
 });
 </script>

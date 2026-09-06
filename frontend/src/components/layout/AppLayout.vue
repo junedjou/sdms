@@ -36,13 +36,18 @@ import AppSidebar from './AppSidebar.vue';
 import AppNavbar from './AppNavbar.vue';
 import { useUIStore } from '@/stores/ui.store';
 import { useMasterStore } from '@/stores/master.store';
+import { useAuthStore } from '@/stores/auth.store';
 
 const uiStore     = useUIStore();
 const masterStore = useMasterStore();
+const authStore   = useAuthStore();
 
 onMounted(() => {
-  // Non-blocking: load lookup data di background, tidak menunda render halaman
-  masterStore.initLookups();
+  // Load lookup data (jurusan, tahun pelajaran, dll) hanya untuk user
+  // yang punya akses ke master data — Siswa & Guru tidak punya permission ini.
+  if (authStore.isAdmin || authStore.hasPermission('master:view') || authStore.hasPermission('jurusan:view')) {
+    masterStore.initLookups();
+  }
 });
 </script>
 
