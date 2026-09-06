@@ -550,7 +550,9 @@ const applyConfig = (appList, config) => {
     return {
       ...app,
       is_maintenance: cfg?.is_maintenance ?? false,
-      visible_roles:  cfg?.visible_roles ?? ALL_ROLES.map(r => r.value),
+      // Jika cfg tidak ditemukan (belum pernah dikonfigurasi), default ke semua role.
+      // Jika cfg ditemukan tapi visible_roles kosong ([]), artinya memang sengaja disembunyikan.
+      visible_roles: cfg !== undefined ? cfg.visible_roles : ALL_ROLES.map(r => r.value),
     };
   });
 };
@@ -689,7 +691,8 @@ const openSettings = () => {
     id: app.id,
     name: app.name,
     is_maintenance: app.is_maintenance ?? false,
-    visible_roles: app.visible_roles ? [...app.visible_roles] : ALL_ROLES.map(r => r.value),
+    // Gunakan Array.isArray agar array kosong [] (sengaja dikosongkan) tetap dihormati
+    visible_roles: Array.isArray(app.visible_roles) ? [...app.visible_roles] : ALL_ROLES.map(r => r.value),
   }));
   showSettingModal.value = true;
 };

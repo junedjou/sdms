@@ -153,19 +153,13 @@ const getAppHubConfig = async (req, res) => {
   let config;
   try { config = JSON.parse(row.value); } catch { config = DEFAULT_APP_HUB; }
 
-  // Jika user login, filter hanya app yang visible untuk role-nya
+  // Kembalikan full config ke semua user yang login.
+  // Filtering berdasarkan role dilakukan di frontend (filterForUser).
+  // Ini penting agar applyConfig di frontend bisa membaca visible_roles: []
+  // dengan benar (array kosong = sengaja disembunyikan, bukan "belum dikonfigurasi").
   if (req.user) {
-    const userRoles = [req.user.role, ...(req.user.extra_roles || [])];
     const isSuperOrAdmin = ['super_admin', 'admin'].includes(req.user.role);
-    // Admin/super_admin lihat semua app + info lengkap
-    if (isSuperOrAdmin) {
-      return success(res, { config, is_admin: true });
-    }
-    // Role lain: filter hanya yang boleh dilihat
-    const filtered = config.filter(app =>
-      app.visible_roles.some(r => userRoles.includes(r))
-    );
-    return success(res, { config: filtered, is_admin: false });
+    return success(res, { config, is_admin: isSuperOrAdmin });
   }
 
   return success(res, { config, is_admin: false });
