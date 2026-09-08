@@ -72,7 +72,7 @@
             </div>
             <div v-else class="flex-shrink-0">
               <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white/10 text-white/40">
-                <UserSlashIcon class="w-3.5 h-3.5" />Belum punya akun
+                <NoSymbolIcon class="w-3.5 h-3.5" />Belum punya akun
               </div>
             </div>
           </div>
@@ -237,7 +237,7 @@ import { notify } from '@/utils/toast';
 import {
   IdentificationIcon, HashtagIcon, AcademicCapIcon,
   BookOpenIcon, CalendarIcon, ClockIcon,
-  UserSlashIcon, ExclamationCircleIcon,
+  NoSymbolIcon, ExclamationCircleIcon,
 } from '@heroicons/vue/24/outline';
 
 // ── Props ─────────────────────────────────────────────────────
