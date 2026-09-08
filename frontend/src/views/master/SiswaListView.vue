@@ -607,29 +607,6 @@ const openForm = (item = null) => {
   showForm.value = true;
 };
 
-const submitForm = async () => {
-  formLoading.value = true;
-  try {
-    if (editItem.value) {
-      await masterService.siswaUpdate(editItem.value.id, form.value);
-      notify.success('Data siswa diperbarui');
-    } else {
-      await masterService.siswaCreate(form.value);
-      notify.success('Siswa ditambahkan');
-    }
-    showForm.value = false; fetchData();
-  } catch (err) {
-    // Tampilkan pesan error dari backend secara lengkap
-    const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Gagal menyimpan';
-    const details = err.response?.data?.errors;
-    if (details?.length) {
-      notify.error(`${msg}: ${details.map(e => e.message).join(', ')}`);
-    } else {
-      notify.error(msg);
-    }
-  }
-  finally { formLoading.value = false; }
-};
 // handleFormSubmit — dipanggil oleh SiswaFormModal saat submit
 const handleFormSubmit = async (payload) => {
   formLoading.value = true;
