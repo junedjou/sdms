@@ -616,12 +616,8 @@ const runHealthCheck = async (silent = false) => {
     healthChecked.value = true;
 
     if (silent) {
-      // Auto-run: hanya notif jika ada yang offline
-      const offline = integrations.filter(i => i.status === 'offline');
-      if (offline.length > 0) {
-        const names = offline.map(i => i.app).join(', ');
-        notify.warning(`${offline.length} aplikasi tidak terhubung: ${names}`);
-      }
+      // Auto-run: status kartu sudah menunjukkan online/offline,
+      // tidak perlu notif tambahan agar tidak mengganggu
     } else {
       // Manual: tampilkan ringkasan lengkap
       const online = integrations.filter(i => i.status === 'online').length;
