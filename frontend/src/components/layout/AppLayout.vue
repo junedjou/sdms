@@ -18,7 +18,8 @@
         <div class="h-full bg-gradient-to-r from-primary-400 via-primary-500 to-violet-500 animate-[loading_1.5s_ease-in-out_infinite] rounded-full" />
       </div>
 
-      <div class="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
+      <!-- pb-24 di mobile agar konten tidak tertutup BottomNav -->
+      <div class="p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 max-w-[1600px] mx-auto">
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
             <component :is="Component" />
@@ -26,6 +27,9 @@
         </RouterView>
       </div>
     </main>
+
+    <!-- Bottom Navigation — mobile only -->
+    <BottomNav />
   </div>
 </template>
 
@@ -34,6 +38,7 @@ import { onMounted } from 'vue';
 import { RouterView } from 'vue-router';
 import AppSidebar from './AppSidebar.vue';
 import AppNavbar from './AppNavbar.vue';
+import BottomNav from './BottomNav.vue';
 import { useUIStore } from '@/stores/ui.store';
 import { useMasterStore } from '@/stores/master.store';
 import { useAuthStore } from '@/stores/auth.store';
