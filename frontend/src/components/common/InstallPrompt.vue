@@ -86,8 +86,8 @@ const DISMISS_KEY = 'sdms_pwa_dismissed';
 const isDismissed = () => {
   const ts = localStorage.getItem(DISMISS_KEY);
   if (!ts) return false;
-  // Tanya lagi setelah 7 hari
-  return (Date.now() - parseInt(ts)) < 7 * 24 * 60 * 60 * 1000;
+  // Tanya lagi setelah 2 hari
+  return (Date.now() - parseInt(ts)) < 2 * 24 * 60 * 60 * 1000;
 };
 
 const handleBeforeInstallPrompt = (e) => {
