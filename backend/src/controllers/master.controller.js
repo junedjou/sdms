@@ -138,7 +138,10 @@ const getSiswa = async (req, res) => {
 };
 
 const getSiswaById = async (req, res) => {
-  const siswa = await findSiswaById(req.params.id, ['jurusan', 'kelas', 'orangTua', 'riwayatKelas']);
+  const siswa = await findSiswaById(req.params.id, [
+    'jurusan', 'kelas', 'orangTua', 'riwayatKelas',
+    { association: 'user', attributes: ['id', 'username', 'is_active', 'last_login_at'] },
+  ]);
   if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
   return success(res, siswa);
 };

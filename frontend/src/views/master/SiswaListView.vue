@@ -133,6 +133,10 @@
                 </td>
                 <td class="text-right">
                   <div class="flex items-center justify-end gap-1">
+                    <!-- Tombol Detail — semua yang punya siswa:view bisa lihat -->
+                    <button @click="openDetail(item)" class="btn-ghost btn-sm p-1.5 text-indigo-500 hover:bg-indigo-50" title="Lihat Detail">
+                      <EyeIcon class="w-4 h-4" />
+                    </button>
                     <button v-if="authStore.hasPermission('siswa:update')" @click="openCreateUser(item)"
                       :title="item.user ? `Akun sudah ada (${item.user.username})` : 'Buat Akun Login'"
                       :disabled="!!item.user"
@@ -557,6 +561,15 @@
         </button>
       </template>
     </BaseModal>
+
+    <!-- ── Modal Detail Siswa ── -->
+    <SiswaDetailModal
+      v-if="showDetail"
+      v-model="showDetail"
+      :siswa-id="detailId"
+      @close="showDetail = false"
+    />
+
   </div>
 </template>
 
@@ -575,16 +588,22 @@ import BaseConfirm from '@/components/common/BaseConfirm.vue';
 import BasePagination from '@/components/common/BasePagination.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
+import SiswaDetailModal from '@/components/master/SiswaDetailModal.vue';
 import {
   PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon,
   ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon,
-  UserPlusIcon, UserGroupIcon, KeyIcon, CheckCircleIcon,
+  UserPlusIcon, UserGroupIcon, KeyIcon, CheckCircleIcon, EyeIcon,
 } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
 const masterStore = useMasterStore();
 const uiStore = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Data Siswa' }]);
+
+// ── State Detail Modal ───────────────────────────────────────
+const showDetail = ref(false);
+const detailId   = ref(null);
+const openDetail = (item) => { detailId.value = item.id; showDetail.value = true; };
 
 // ── State ────────────────────────────────────────────────────
 const items = ref([]); const loading = ref(true);
