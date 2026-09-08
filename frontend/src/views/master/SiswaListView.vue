@@ -237,114 +237,17 @@
       confirm-label="Ya, Hapus Semua" :danger-mode="true" :loading="bulkDeleting"
       @confirm="executeBulkDelete" />
 
-    <!-- ── Form Modal ── -->
-    <BaseModal v-model="showForm" :title="editItem ? 'Edit Data Siswa' : 'Tambah Siswa'" size="lg">
-      <form class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="form-group sm:col-span-2">
-          <label class="form-label">Nama Lengkap <span class="text-red-500">*</span></label>
-          <input v-model="form.nama" type="text" class="form-input" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">NISN</label>
-          <input v-model="form.nisn" type="text" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">NIS</label>
-          <input v-model="form.nis" type="text" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Jenis Kelamin <span class="text-red-500">*</span></label>
-          <select v-model="form.jenis_kelamin" class="form-input" required>
-            <option value="">-- Pilih --</option>
-            <option value="L">Laki-laki</option>
-            <option value="P">Perempuan</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Kelas</label>
-          <select v-model="form.kelas_id" class="form-input">
-            <option value="">-- Pilih Kelas --</option>
-            <option v-for="k in kelasList" :key="k.id" :value="k.id">{{ k.nama }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Jurusan</label>
-          <select v-model="form.jurusan_id" class="form-input">
-            <option value="">-- Pilih --</option>
-            <option v-for="j in masterStore.jurusan" :key="j.id" :value="j.id">{{ j.nama }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tahun Masuk</label>
-          <input v-model="form.tahun_masuk" type="number" class="form-input" placeholder="2024" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Status</label>
-          <select v-model="form.status" class="form-input">
-            <option v-for="s in ['Aktif','Lulus','Pindah','Keluar']" :key="s" :value="s">{{ s }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tempat Lahir</label>
-          <input v-model="form.tempat_lahir" type="text" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tanggal Lahir</label>
-          <input v-model="form.tanggal_lahir" type="date" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Agama</label>
-          <select v-model="form.agama" class="form-input">
-            <option value="">-- Pilih --</option>
-            <option v-for="a in ['Islam','Kristen','Katolik','Hindu','Buddha','Konghucu']" :key="a" :value="a">{{ a }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">No. HP</label>
-          <input v-model="form.no_hp" type="tel" class="form-input" />
-        </div>
-        <div class="form-group sm:col-span-2">
-          <label class="form-label">Alamat</label>
-          <textarea v-model="form.alamat" class="form-input" rows="2" />
-        </div>
-        <!-- ── Data Orang Tua ── -->
-        <div class="sm:col-span-2">
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-3 border-t pt-3">Data Orang Tua / Wali</p>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nama Ayah</label>
-          <input v-model="form.nama_ayah" type="text" class="form-input" placeholder="Nama ayah kandung" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nama Ibu</label>
-          <input v-model="form.nama_ibu" type="text" class="form-input" placeholder="Nama ibu kandung" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">No. HP Orang Tua / Wali</label>
-          <input v-model="form.hp_ortu" type="tel" class="form-input" placeholder="Nomor HP yang bisa dihubungi" />
-        </div>
-        <div class="form-group sm:col-span-2">
-          <label class="form-label">Pernah Dapat Bantuan <span class="text-gray-400 text-xs font-normal">(kosongkan jika tidak ada)</span></label>
-          <input v-model="form.pernah_dapat_bantuan" type="text" list="bantuan-list" class="form-input"
-            placeholder="Contoh: KIP, PIP, PKH, BSM — kosong jika tidak" />
-          <datalist id="bantuan-list">
-            <option value="KIP">KIP (Kartu Indonesia Pintar)</option>
-            <option value="PIP">PIP (Program Indonesia Pintar)</option>
-            <option value="PKH">PKH (Program Keluarga Harapan)</option>
-            <option value="BSM">BSM (Bantuan Siswa Miskin)</option>
-            <option value="BPNT">BPNT (Bantuan Pangan Non Tunai)</option>
-            <option value="KIP + PKH">KIP + PKH</option>
-          </datalist>
-        </div>
-      </form>
-      <template #footer>
-        <button class="btn-secondary" @click="showForm = false">Batal</button>
-        <button class="btn-primary" :disabled="formLoading" @click="submitForm">
-          <span v-if="formLoading" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-          {{ editItem ? 'Simpan' : 'Tambah Siswa' }}
-        </button>
-      </template>
-    </BaseModal>
+    <!-- ── Form Modal (Tambah / Edit Siswa) ── -->
+    <SiswaFormModal
+      v-if="showForm"
+      v-model="showForm"
+      :edit-data="editItem"
+      :kelas-list="kelasList"
+      :jurusan-list="masterStore.jurusan"
+      :saving="formLoading"
+      @close="showForm = false"
+      @submit="handleFormSubmit"
+    />
 
     <!-- Konfirmasi hapus 1 siswa -->
     <BaseConfirm v-model="showConfirm" title="Nonaktifkan Siswa"
@@ -589,6 +492,7 @@ import BasePagination from '@/components/common/BasePagination.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
 import SiswaDetailModal from '@/components/master/SiswaDetailModal.vue';
+import SiswaFormModal from '@/components/master/SiswaFormModal.vue';
 import {
   PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon,
   ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon,
@@ -698,17 +602,8 @@ const clearAllFilters = () => { search.value = ''; filterJurusan.value = ''; fil
 const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
 
 const openForm = (item = null) => {
+const openForm = (item = null) => {
   editItem.value = item;
-  form.value = item ? {
-    nama: item.nama, nisn: item.nisn || '', nis: item.nis || '',
-    jenis_kelamin: item.jenis_kelamin || '', kelas_id: item.kelas_id || '',
-    jurusan_id: item.jurusan_id || '', tahun_masuk: item.tahun_masuk || '',
-    status: item.status || 'Aktif', tempat_lahir: item.tempat_lahir || '',
-    tanggal_lahir: item.tanggal_lahir || '', agama: item.agama || '',
-    no_hp: item.no_hp || '', alamat: item.alamat || '',
-    hp_ortu: item.hp_ortu || '', nama_ayah: item.nama_ayah || '',
-    nama_ibu: item.nama_ibu || '', pernah_dapat_bantuan: item.pernah_dapat_bantuan || '',
-  } : emptyForm();
   showForm.value = true;
 };
 
@@ -734,6 +629,31 @@ const submitForm = async () => {
     }
   }
   finally { formLoading.value = false; }
+};
+// handleFormSubmit — dipanggil oleh SiswaFormModal saat submit
+const handleFormSubmit = async (payload) => {
+  formLoading.value = true;
+  try {
+    if (editItem.value) {
+      await masterService.siswaUpdate(editItem.value.id, payload);
+      notify.success('Data siswa berhasil diperbarui');
+    } else {
+      await masterService.siswaCreate(payload);
+      notify.success('Siswa berhasil ditambahkan');
+    }
+    showForm.value = false;
+    fetchData();
+  } catch (err) {
+    const msg     = err.response?.data?.message || err.response?.data?.error || err.message || 'Gagal menyimpan';
+    const details = err.response?.data?.errors;
+    if (details?.length) {
+      notify.error(`${msg}: ${details.map(e => e.message).join(', ')}`);
+    } else {
+      notify.error(msg);
+    }
+  } finally {
+    formLoading.value = false;
+  }
 };
 
 const confirmDelete = (item) => { deleteTarget.value = item; showConfirm.value = true; };
