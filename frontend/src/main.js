@@ -7,6 +7,19 @@ import App from './App.vue';
 import router from './router';
 import '@/assets/main.css';
 
+// ── PWA Service Worker ────────────────────────────────────────
+// vite-plugin-pwa akan generate file ini saat build
+import { registerSW } from 'virtual:pwa-register';
+registerSW({
+  onNeedRefresh() {
+    // Ada versi baru — bisa tampilkan notif update jika mau
+    console.info('[PWA] Update tersedia, akan diterapkan otomatis.');
+  },
+  onOfflineReady() {
+    console.info('[PWA] Aplikasi siap digunakan offline.');
+  },
+});
+
 const app = createApp(App);
 const pinia = createPinia();
 
