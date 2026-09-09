@@ -602,7 +602,6 @@ const clearAllFilters = () => { search.value = ''; filterJurusan.value = ''; fil
 const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
 
 const openForm = (item = null) => {
-const openForm = (item = null) => {
   editItem.value = item;
   showForm.value = true;
 };
