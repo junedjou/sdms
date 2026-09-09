@@ -649,9 +649,8 @@ const launchApp = async (app) => {
           if (popup) {
             notify.success(`Membuka ${app.name} via SSO...`);
           } else {
-            // Popup diblokir browser — fallback ke same-tab redirect dengan konfirmasi
-            notify.warning(`Popup diblokir browser. Mengalihkan halaman ke ${app.name}...`);
-            setTimeout(() => { window.location.href = redirect_url; }, 1500);
+            // Popup diblokir browser (Android) — redirect same-tab tanpa notif kuning
+            setTimeout(() => { window.location.href = redirect_url; }, 300);
           }
           return;
         }
@@ -666,14 +665,12 @@ const launchApp = async (app) => {
           notify.error(`Sesi habis. Silakan login ulang ke SDMS.`);
           return; // jangan buka fallback jika sesi tidak valid
         } else if (status === 400) {
-          // Aplikasi belum dikonfigurasi SSO di backend
-          notify.warning(`SSO ${app.name} belum dikonfigurasi. ${msg}`);
+          // Aplikasi belum dikonfigurasi SSO di backend — buka langsung tanpa notif mengganggu
+          console.warn(`[SSO] ${app.name} belum dikonfigurasi: ${msg}`);
         } else if (ssoErr.code === 'ERR_NETWORK' || ssoErr.code === 'ECONNREFUSED') {
-          notify.warning(`Server SDMS tidak terjangkau. Membuka ${app.name} tanpa SSO...`);
+          console.warn(`[SSO] Server tidak terjangkau untuk ${app.name}`);
         } else {
-          // Error tak terduga — catat di console, tampilkan fallback notice
           console.warn(`[SSO] Gagal untuk ${app.name}:`, ssoErr.message);
-          notify.warning(`SSO gagal. Membuka ${app.name} — silakan login manual.`);
         }
       }
     }

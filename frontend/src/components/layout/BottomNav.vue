@@ -125,11 +125,11 @@ const allMenus = computed(() => {
 
   if (role === 'siswa') {
     return [
-      { to: '/app-hub',      icon: Squares2X2Icon,  label: 'App Hub' },
-      { to: '/profile',      icon: UserCircleIcon,  label: 'Profil' },
-      // Home ditengah
-      { to: '/app-hub',      icon: Squares2X2Icon,  label: 'App Hub' }, // placeholder simetri
-      { to: '/profile',      icon: UserCircleIcon,  label: 'Profil' },
+      { to: '/app-hub',   icon: Squares2X2Icon,  label: 'App Hub' },
+      { to: '/profile',   icon: UserCircleIcon,  label: 'Profil' },
+      // Home di tengah
+      { to: '/app-hub',   icon: ChartBarIcon,    label: 'Rekap' },
+      { to: '/profile',   icon: UserCircleIcon,  label: 'Profil' },
     ];
   }
 
