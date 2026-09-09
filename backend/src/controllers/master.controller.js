@@ -152,10 +152,11 @@ const createSiswa = async (req, res) => {
     const dup = await Siswa.findOne({ where: { nisn } });
     if (dup) return conflict(res, 'NISN sudah terdaftar');
   }
-  // Buat orang tua terlebih dahulu jika ada
+  // Buat atau update record orang_tua jika ada data lengkap
   let orangTuaId = null;
   if (req.body.orang_tua) {
-    const ot = await OrangTua.create(req.body.orang_tua);
+    const otData = sanitizeOrangTua(req.body.orang_tua);
+    const ot = await OrangTua.create(otData);
     orangTuaId = ot.id;
   }
   // Sanitasi ENUM — string kosong → null agar tidak error Sequelize
@@ -169,30 +170,80 @@ const createSiswa = async (req, res) => {
   // Unique fields: string kosong → null
   if (body.nisn === '') body.nisn = null;
   if (body.nis  === '') body.nis  = null;
+  // Sinkron shortcut fields dari orang_tua jika tidak dikirim langsung
+  if (orangTuaId) {
+    const ot = req.body.orang_tua;
+    if (!body.nama_ayah && ot.nama_ayah) body.nama_ayah = ot.nama_ayah;
+    if (!body.nama_ibu  && ot.nama_ibu)  body.nama_ibu  = ot.nama_ibu;
+    if (!body.hp_ortu   && ot.no_hp_ayah) body.hp_ortu  = ot.no_hp_ayah;
+  }
   const siswa = await Siswa.create({ ...body, orang_tua_id: orangTuaId });
   await writeAuditLog({ userId: req.user.id, username: req.user.username, action: 'CREATE', resource: 'siswa', resourceId: siswa.id, description: `Siswa ${siswa.nama} dibuat`, newData: req.body });
   await syncEvent('siswa.created', siswa.toJSON());
   return created(res, siswa, 'Data siswa berhasil ditambahkan');
 };
 
+/**
+ * Sanitasi data orang tua — string kosong → null, angka negatif → null
+ */
+const sanitizeOrangTua = (ot) => {
+  const OT_ALLOWED = [
+    'nama_ayah','no_hp_ayah','pekerjaan_ayah','penghasilan_ayah',
+    'nama_ibu','no_hp_ibu','pekerjaan_ibu','penghasilan_ibu',
+    'nama_wali','no_hp_wali','alamat',
+  ];
+  const clean = {};
+  for (const key of OT_ALLOWED) {
+    if (ot[key] === undefined) continue;
+    let val = ot[key];
+    if (val === '') val = null;
+    if ((key === 'penghasilan_ayah' || key === 'penghasilan_ibu') && val !== null) {
+      val = Number(val);
+      if (isNaN(val) || val < 0) val = null;
+    }
+    clean[key] = val;
+  }
+  return clean;
+};
+
 const updateSiswa = async (req, res) => {
   const siswa = await findSiswaById(req.params.id);
   if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
-  // Hanya ambil field yang valid
-  const allowed = ['nama', 'nisn', 'nis', 'jenis_kelamin', 'kelas_id', 'jurusan_id', 'tahun_masuk', 'status', 'tempat_lahir', 'tanggal_lahir', 'agama', 'no_hp', 'alamat', 'hp_ortu', 'nama_ayah', 'nama_ibu', 'pernah_dapat_bantuan'];
-  // Field ENUM — string kosong harus dikonversi ke null
-  const enumFields = ['jenis_kelamin', 'agama', 'status'];
-  // Field unique — string kosong harus null agar tidak conflict unique constraint
+
+  // Upsert tabel orang_tua jika ada data baru
+  if (req.body.orang_tua) {
+    const otData = sanitizeOrangTua(req.body.orang_tua);
+    if (siswa.orang_tua_id) {
+      // Update record yang sudah ada
+      await OrangTua.update(otData, { where: { id: siswa.orang_tua_id } });
+    } else {
+      // Buat record baru dan kaitkan
+      const ot = await OrangTua.create(otData);
+      req.body.orang_tua_id = ot.id;
+    }
+    // Sinkron shortcut fields di tabel siswa
+    const ot = req.body.orang_tua;
+    if (!req.body.nama_ayah && ot.nama_ayah) req.body.nama_ayah = ot.nama_ayah;
+    if (!req.body.nama_ibu  && ot.nama_ibu)  req.body.nama_ibu  = ot.nama_ibu;
+    if (!req.body.hp_ortu   && ot.no_hp_ayah) req.body.hp_ortu  = ot.no_hp_ayah;
+  }
+
+  // Hanya ambil field yang valid untuk tabel siswa
+  const allowed = [
+    'nama', 'nisn', 'nis', 'jenis_kelamin', 'kelas_id', 'jurusan_id',
+    'tahun_masuk', 'status', 'tempat_lahir', 'tanggal_lahir', 'agama',
+    'no_hp', 'alamat', 'hp_ortu', 'nama_ayah', 'nama_ibu',
+    'pernah_dapat_bantuan', 'email', 'orang_tua_id',
+  ];
+  const enumFields  = ['jenis_kelamin', 'agama', 'status'];
   const uniqueFields = ['nisn', 'nis'];
   const data = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) {
       let val = req.body[key];
-      // FK dan ENUM: string kosong → null
       if (['jurusan_id', 'kelas_id', ...enumFields].includes(key)) {
         val = val === '' || val === null ? null : val;
       }
-      // Unique fields: string kosong → null (hindari unique constraint error)
       if (uniqueFields.includes(key)) {
         val = val === '' || val === null ? null : val;
       }

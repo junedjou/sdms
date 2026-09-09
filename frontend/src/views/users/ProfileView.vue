@@ -118,6 +118,10 @@
                 <label class="form-label">No. HP Siswa</label>
                 <input v-model="siswaForm.no_hp" type="tel" class="form-input" placeholder="Nomor HP aktif" />
               </div>
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input v-model="siswaForm.email" type="email" class="form-input" placeholder="email@siswa.sch.id" />
+              </div>
               <div class="form-group sm:col-span-2">
                 <label class="form-label">Alamat</label>
                 <textarea v-model="siswaForm.alamat" class="form-input" rows="2" placeholder="Alamat lengkap tempat tinggal" />
@@ -128,30 +132,97 @@
           <!-- Data Orang Tua -->
           <div>
             <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 border-t pt-4">Data Orang Tua / Wali</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="form-group">
-                <label class="form-label">Nama Ayah</label>
-                <input v-model="siswaForm.nama_ayah" type="text" class="form-input" placeholder="Nama ayah kandung" />
+
+            <!-- Ayah -->
+            <div class="mb-4">
+              <div class="flex items-center gap-2 mb-3">
+                <div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center text-sm">👨</div>
+                <h4 class="text-sm font-semibold text-gray-700">Data Ayah</h4>
               </div>
-              <div class="form-group">
-                <label class="form-label">Nama Ibu</label>
-                <input v-model="siswaForm.nama_ibu" type="text" class="form-input" placeholder="Nama ibu kandung" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">No. HP Orang Tua / Wali</label>
-                <input v-model="siswaForm.hp_ortu" type="tel" class="form-input" placeholder="Nomor yang bisa dihubungi" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Bantuan yang Diterima</label>
-                <input v-model="siswaForm.pernah_dapat_bantuan" type="text" list="bantuan-opts" class="form-input"
-                  placeholder="Contoh: KIP — kosong jika tidak ada" />
-                <datalist id="bantuan-opts">
-                  <option value="KIP" /><option value="PIP" />
-                  <option value="PKH" /><option value="BSM" />
-                  <option value="BPNT" /><option value="KIP + PKH" />
-                </datalist>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="form-group">
+                  <label class="form-label">Nama Ayah</label>
+                  <input v-model="siswaForm.nama_ayah" type="text" class="form-input" placeholder="Nama ayah kandung" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">No. HP Ayah</label>
+                  <input v-model="siswaForm.no_hp_ayah" type="tel" class="form-input" placeholder="08xxxxxxxxxx" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Pekerjaan Ayah</label>
+                  <input v-model="siswaForm.pekerjaan_ayah" type="text" list="pekerjaan-opts-siswa" class="form-input"
+                    placeholder="Misal: PNS, Wiraswasta, Petani..." />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Penghasilan Ayah <span class="text-gray-400 text-xs">(per bulan)</span></label>
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
+                    <input v-model.number="siswaForm.penghasilan_ayah" type="number" min="0"
+                      class="form-input pl-9" placeholder="0" />
+                  </div>
+                </div>
               </div>
             </div>
+
+            <!-- Ibu -->
+            <div class="border-t pt-4 mb-4">
+              <div class="flex items-center gap-2 mb-3">
+                <div class="w-7 h-7 rounded-lg bg-pink-100 flex items-center justify-center text-sm">👩</div>
+                <h4 class="text-sm font-semibold text-gray-700">Data Ibu</h4>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="form-group">
+                  <label class="form-label">Nama Ibu</label>
+                  <input v-model="siswaForm.nama_ibu" type="text" class="form-input" placeholder="Nama ibu kandung" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">No. HP Ibu</label>
+                  <input v-model="siswaForm.no_hp_ibu" type="tel" class="form-input" placeholder="08xxxxxxxxxx" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Pekerjaan Ibu</label>
+                  <input v-model="siswaForm.pekerjaan_ibu" type="text" list="pekerjaan-opts-siswa" class="form-input"
+                    placeholder="Misal: Ibu Rumah Tangga, Pedagang..." />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Penghasilan Ibu <span class="text-gray-400 text-xs">(per bulan)</span></label>
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rp</span>
+                    <input v-model.number="siswaForm.penghasilan_ibu" type="number" min="0"
+                      class="form-input pl-9" placeholder="0" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Kontak darurat & bantuan -->
+            <div class="border-t pt-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="form-group">
+                  <label class="form-label">No. HP Darurat (Ortu/Wali)</label>
+                  <input v-model="siswaForm.hp_ortu" type="tel" class="form-input" placeholder="Nomor yang bisa dihubungi" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Bantuan yang Diterima</label>
+                  <input v-model="siswaForm.pernah_dapat_bantuan" type="text" list="bantuan-opts" class="form-input"
+                    placeholder="Contoh: KIP — kosong jika tidak ada" />
+                  <datalist id="bantuan-opts">
+                    <option value="KIP" /><option value="PIP" />
+                    <option value="PKH" /><option value="BSM" />
+                    <option value="BPNT" /><option value="KIP + PKH" />
+                  </datalist>
+                </div>
+              </div>
+            </div>
+
+            <!-- Datalist pekerjaan -->
+            <datalist id="pekerjaan-opts-siswa">
+              <option value="PNS" /><option value="TNI/Polri" /><option value="Wiraswasta" />
+              <option value="Petani" /><option value="Pedagang" /><option value="Nelayan" />
+              <option value="Buruh" /><option value="Karyawan Swasta" />
+              <option value="Ibu Rumah Tangga" /><option value="Tidak Bekerja" />
+              <option value="Pensiunan" /><option value="Dokter" /><option value="Guru/Dosen" />
+            </datalist>
           </div>
 
           <div class="flex justify-end pt-2">
@@ -265,8 +336,10 @@ const siswaData       = ref({});
 
 const siswaForm = ref({
   tempat_lahir: '', tanggal_lahir: '', agama: '',
-  no_hp: '', alamat: '',
-  nama_ayah: '', nama_ibu: '', hp_ortu: '', pernah_dapat_bantuan: '',
+  no_hp: '', alamat: '', email: '',
+  nama_ayah: '', no_hp_ayah: '', pekerjaan_ayah: '', penghasilan_ayah: null,
+  nama_ibu:  '', no_hp_ibu:  '', pekerjaan_ibu:  '', penghasilan_ibu:  null,
+  hp_ortu: '', pernah_dapat_bantuan: '',
 });
 
 const loadSiswaProfile = async () => {
@@ -276,17 +349,28 @@ const loadSiswaProfile = async () => {
   try {
     const res = await authService.getMySiswaProfile();
     siswaData.value = res.data.data || {};
-    const d = siswaData.value;
+    const d  = siswaData.value;
+    const ot = d.orangTua || {};
     siswaForm.value = {
-      tempat_lahir:         d.tempat_lahir         || '',
-      tanggal_lahir:        d.tanggal_lahir         ? String(d.tanggal_lahir).slice(0, 10) : '',
-      agama:                d.agama                 || '',
-      no_hp:                d.no_hp                 || '',
-      alamat:               d.alamat                || '',
-      nama_ayah:            d.nama_ayah             || '',
-      nama_ibu:             d.nama_ibu              || '',
-      hp_ortu:              d.hp_ortu               || '',
-      pernah_dapat_bantuan: d.pernah_dapat_bantuan  || '',
+      tempat_lahir:         d.tempat_lahir                           || '',
+      tanggal_lahir:        d.tanggal_lahir ? String(d.tanggal_lahir).slice(0, 10) : '',
+      agama:                d.agama                                  || '',
+      no_hp:                d.no_hp                                  || '',
+      alamat:               d.alamat                                 || '',
+      email:                d.email                                  || '',
+      // Ayah — pakai data dari tabel orang_tua, fallback ke shortcut di tabel siswa
+      nama_ayah:            ot.nama_ayah      || d.nama_ayah         || '',
+      no_hp_ayah:           ot.no_hp_ayah     || d.hp_ortu           || '',
+      pekerjaan_ayah:       ot.pekerjaan_ayah                        || '',
+      penghasilan_ayah:     ot.penghasilan_ayah != null ? Number(ot.penghasilan_ayah) : null,
+      // Ibu
+      nama_ibu:             ot.nama_ibu       || d.nama_ibu          || '',
+      no_hp_ibu:            ot.no_hp_ibu                             || '',
+      pekerjaan_ibu:        ot.pekerjaan_ibu                         || '',
+      penghasilan_ibu:      ot.penghasilan_ibu != null ? Number(ot.penghasilan_ibu) : null,
+      // Kontak darurat & bantuan
+      hp_ortu:              d.hp_ortu         || ot.no_hp_ayah       || '',
+      pernah_dapat_bantuan: d.pernah_dapat_bantuan                   || '',
     };
   } catch (err) {
     siswaError.value = err.response?.data?.message || 'Gagal memuat data pribadi';

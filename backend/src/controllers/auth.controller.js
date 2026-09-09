@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { User, Role, Permission, RolePermission, Siswa } = require('../models');
+const { User, Role, Permission, RolePermission, Siswa, OrangTua } = require('../models');
 const {
   generateAccessToken,
   generateRefreshToken,
@@ -229,7 +229,7 @@ const getMySiswaProfile = async (req, res) => {
 
   const SAFE = ['id','nisn','nis','nama','jenis_kelamin','kelas_id','jurusan_id',
     'tahun_masuk','status','tempat_lahir','tanggal_lahir','agama',
-    'no_hp','alamat','orang_tua_id','created_at','updated_at'];
+    'no_hp','alamat','email','orang_tua_id','created_at','updated_at'];
   const FULL = [...SAFE, 'hp_ortu','nama_ayah','nama_ibu','pernah_dapat_bantuan'];
 
   let siswa;
@@ -237,8 +237,14 @@ const getMySiswaProfile = async (req, res) => {
     siswa = await Siswa.findByPk(userRecord.siswa_id, {
       attributes: FULL,
       include: [
-        { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
-        { association: 'kelas',   attributes: ['id', 'nama'] },
+        { association: 'jurusan',   attributes: ['id', 'kode', 'nama'] },
+        { association: 'kelas',     attributes: ['id', 'nama'] },
+        // Sertakan data orang tua lengkap agar frontend bisa mengisi form
+        { association: 'orangTua',  attributes: [
+          'id','nama_ayah','no_hp_ayah','pekerjaan_ayah','penghasilan_ayah',
+          'nama_ibu','no_hp_ibu','pekerjaan_ibu','penghasilan_ibu',
+          'nama_wali','no_hp_wali','alamat',
+        ]},
       ],
     });
   } catch (e) {
@@ -266,17 +272,49 @@ const updateMySiswaProfile = async (req, res) => {
     return badRequest(res, 'Akun ini tidak terhubung ke data siswa');
   }
 
-  // FindByPk tanpa attributes restriction agar Sequelize instance bisa di-update
   const siswa = await Siswa.findByPk(userRecord.siswa_id);
   if (!siswa) return badRequest(res, 'Data siswa tidak ditemukan');
 
-  // Whitelist ketat — siswa TIDAK boleh ubah data akademik (nisn, nis, kelas, jurusan, status)
+  // ── Update tabel orang_tua jika ada field terkait ──────────
+  const OT_FIELDS = [
+    'no_hp_ayah','pekerjaan_ayah','penghasilan_ayah',
+    'no_hp_ibu','pekerjaan_ibu','penghasilan_ibu',
+  ];
+  const otData = {};
+  // Ambil nama dari field shortcut di siswa jika dikirim
+  if (req.body.nama_ayah !== undefined) otData.nama_ayah = req.body.nama_ayah || null;
+  if (req.body.nama_ibu  !== undefined) otData.nama_ibu  = req.body.nama_ibu  || null;
+  for (const key of OT_FIELDS) {
+    if (req.body[key] !== undefined) {
+      let val = req.body[key] === '' ? null : req.body[key];
+      if ((key === 'penghasilan_ayah' || key === 'penghasilan_ibu') && val !== null) {
+        val = Number(val);
+        if (isNaN(val) || val < 0) val = null;
+      }
+      otData[key] = val;
+    }
+  }
+
+  if (Object.keys(otData).length > 0) {
+    if (siswa.orang_tua_id) {
+      await OrangTua.update(otData, { where: { id: siswa.orang_tua_id } });
+    } else {
+      // Buat record baru & kaitkan
+      const ot = await OrangTua.create({
+        nama_ayah: req.body.nama_ayah || null,
+        nama_ibu:  req.body.nama_ibu  || null,
+        ...otData,
+      });
+      await siswa.update({ orang_tua_id: ot.id });
+    }
+  }
+
+  // ── Update tabel siswa (whitelist ketat) ────────────────────
   const allowed = [
     'tempat_lahir','tanggal_lahir','agama',
-    'no_hp','alamat',
+    'no_hp','alamat','email',
     'nama_ayah','nama_ibu','hp_ortu','pernah_dapat_bantuan',
   ];
-  // Kolom yang selalu aman (ada sebelum migration baru)
   const safeAllowed = ['tempat_lahir','tanggal_lahir','agama','no_hp','alamat'];
 
   const buildData = (keys) => {
@@ -289,10 +327,14 @@ const updateMySiswaProfile = async (req, res) => {
 
   let data = buildData(allowed);
 
+  // Sinkron hp_ortu dari no_hp_ayah jika belum diisi
+  if (!data.hp_ortu && req.body.no_hp_ayah) {
+    data.hp_ortu = req.body.no_hp_ayah;
+  }
+
   try {
     await siswa.update(data);
   } catch (e) {
-    // Fallback: migration belum jalan, update hanya kolom lama
     if (e.original?.code === 'ER_BAD_FIELD_ERROR') {
       data = buildData(safeAllowed);
       await siswa.update(data);
@@ -303,7 +345,7 @@ const updateMySiswaProfile = async (req, res) => {
     userId: req.user.id, username: req.user.username,
     action: 'UPDATE', resource: 'siswa', resourceId: siswa.id,
     description: `Siswa update data pribadi sendiri: ${siswa.nama}`,
-    newData: data,
+    newData: { ...data, ...otData },
   });
 
   return success(res, siswa, 'Data pribadi berhasil diperbarui');

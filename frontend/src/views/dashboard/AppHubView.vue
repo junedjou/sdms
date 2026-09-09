@@ -644,19 +644,44 @@ const launchApp = async (app) => {
         const res = await gatewayService.ssoToken(app.slug);
         const { redirect_url } = res.data.data;
         if (redirect_url) {
-          window.open(redirect_url, '_blank', 'noopener,noreferrer');
-          notify.success(`Membuka ${app.name} via SSO...`);
+          // Buka popup dulu, baru notify — supaya browser tidak blok popup
+          const popup = window.open(redirect_url, '_blank', 'noopener,noreferrer');
+          if (popup) {
+            notify.success(`Membuka ${app.name} via SSO...`);
+          } else {
+            // Popup diblokir browser — fallback ke same-tab redirect dengan konfirmasi
+            notify.warning(`Popup diblokir browser. Mengalihkan halaman ke ${app.name}...`);
+            setTimeout(() => { window.location.href = redirect_url; }, 1500);
+          }
           return;
         }
+        // redirect_url kosong tapi tidak error — buka URL langsung
+        throw new Error('redirect_url kosong dari server');
       } catch (ssoErr) {
-        console.warn('SSO failed:', ssoErr.message);
+        // Bedakan jenis error agar pesan lebih informatif
+        const status = ssoErr.response?.status;
+        const msg    = ssoErr.response?.data?.message || ssoErr.message || '';
+
+        if (status === 401 || status === 403) {
+          notify.error(`Sesi habis. Silakan login ulang ke SDMS.`);
+          return; // jangan buka fallback jika sesi tidak valid
+        } else if (status === 400) {
+          // Aplikasi belum dikonfigurasi SSO di backend
+          notify.warning(`SSO ${app.name} belum dikonfigurasi. ${msg}`);
+        } else if (ssoErr.code === 'ERR_NETWORK' || ssoErr.code === 'ECONNREFUSED') {
+          notify.warning(`Server SDMS tidak terjangkau. Membuka ${app.name} tanpa SSO...`);
+        } else {
+          // Error tak terduga — catat di console, tampilkan fallback notice
+          console.warn(`[SSO] Gagal untuk ${app.name}:`, ssoErr.message);
+          notify.warning(`SSO gagal. Membuka ${app.name} — silakan login manual.`);
+        }
       }
     }
+    // Fallback: buka URL langsung tanpa SSO
     if (app.app_url) {
       window.open(app.app_url, '_blank', 'noopener,noreferrer');
-      notify.info(`Membuka ${app.name} — silakan login manual.`);
     } else {
-      notify.warning(`Tidak dapat membuka ${app.name}`);
+      notify.error(`Tidak dapat membuka ${app.name} — URL aplikasi belum dikonfigurasi.`);
     }
   } finally {
     launching.value = null;
