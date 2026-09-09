@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-5 animate-fade-in">
     <div class="page-header">
       <div>
