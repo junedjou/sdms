@@ -386,7 +386,7 @@ const isEdit = computed(() => !!props.editData);
 const activeTab = ref('diri');
 const tabs = [
   { id: 'diri',     label: 'Data Diri',  icon: '👤' },
-  { id: 'ortu',     label: 'Orang Tua',  icon: '👨‍👩‍👧' },
+  { id: 'ortu',     label: 'Orang Tua',  icon: '🧑' },
   { id: 'akademik', label: 'Akademik',   icon: '🎓' },
 ];
 const tabOrder = ['diri', 'ortu', 'akademik'];

@@ -235,8 +235,8 @@
 
             <div class="grid grid-cols-2 gap-2">
               <button @click="syncJurnal('kelas')" class="py-1.5 rounded-lg text-[11px] font-medium bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 transition-colors" :disabled="jurnalSyncing">🏫 Kelas</button>
-              <button @click="syncJurnal('siswa')" class="py-1.5 rounded-lg text-[11px] font-medium bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 transition-colors" :disabled="jurnalSyncing">👩‍🎓 Siswa</button>
-              <button @click="syncJurnal('guru')" class="py-1.5 rounded-lg text-[11px] font-medium bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 transition-colors" :disabled="jurnalSyncing">👨‍🏫 Guru</button>
+              <button @click="syncJurnal('siswa')" class="py-1.5 rounded-lg text-[11px] font-medium bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 transition-colors" :disabled="jurnalSyncing">🎓 Siswa</button>
+              <button @click="syncJurnal('guru')" class="py-1.5 rounded-lg text-[11px] font-medium bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 transition-colors" :disabled="jurnalSyncing">👨 Guru</button>
               <button @click="syncJurnal('mapel')" class="py-1.5 rounded-lg text-[11px] font-medium bg-pink-50 text-pink-600 hover:bg-pink-100 border border-pink-100 transition-colors" :disabled="jurnalSyncing">📚 Mapel</button>
             </div>
           </div>
@@ -260,11 +260,11 @@
 
           <div class="space-y-2">
             <div class="flex items-center justify-between text-sm">
-              <span class="text-gray-600">👨‍🏫 Data Guru</span>
+              <span class="text-gray-600">👨 Data Guru</span>
               <span class="text-xs text-emerald-600 font-medium">Otomas saat update</span>
             </div>
             <div class="flex items-center justify-between text-sm">
-              <span class="text-gray-600">👩‍🎓 Data Siswa</span>
+              <span class="text-gray-600">🎓 Data Siswa</span>
               <span class="text-xs text-emerald-600 font-medium">Otomas saat update</span>
             </div>
             <div class="flex items-center justify-between text-sm">
