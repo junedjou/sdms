@@ -10,7 +10,7 @@
       style="padding-bottom: max(env(safe-area-inset-bottom), 8px); padding-top: 6px;">
 
       <!-- Item kiri: menu dinamis sesuai role -->
-      <template v-for="item in leftItems" :key="item.to">
+      <template v-for="(item, idx) in leftItems" :key="`left-${idx}`">
         <RouterLink :to="item.to" custom v-slot="{ isActive, navigate }">
           <button @click="navigate"
             :class="['flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200 min-w-[56px]',
@@ -52,7 +52,7 @@
       </RouterLink>
 
       <!-- Item kanan: menu dinamis sesuai role -->
-      <template v-for="item in rightItems" :key="item.to">
+      <template v-for="(item, idx) in rightItems" :key="`right-${idx}`">
         <RouterLink :to="item.to" custom v-slot="{ isActive, navigate }">
           <button @click="navigate"
             :class="['flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200 min-w-[56px]',
@@ -119,40 +119,45 @@ const textColor = computed(() =>
 );
 
 // ── Menu item sesuai role ─────────────────────────────────────
-// 2 item kiri + home tengah + 2 item kanan = 5 total
-const allMenus = computed(() => {
+// Struktur: { left: [...], right: [...] } masing-masing max 2 item
+// Layout: left-1, left-2, [HOME tengah], right-1, right-2
+const navMenus = computed(() => {
   const role = authStore.userRole;
 
   if (role === 'siswa') {
-    return [
-      { to: '/app-hub',   icon: Squares2X2Icon,  label: 'App Hub' },
-      { to: '/profile',   icon: UserCircleIcon,  label: 'Profil' },
-      // Home di tengah
-      { to: '/app-hub',   icon: ChartBarIcon,    label: 'Rekap' },
-      { to: '/profile',   icon: UserCircleIcon,  label: 'Profil' },
-    ];
+    // Siswa: hanya App Hub dan Profil — simetris 1+home+1
+    return {
+      left:  [{ to: '/app-hub', icon: Squares2X2Icon, label: 'App Hub' }],
+      right: [{ to: '/profile',  icon: UserCircleIcon, label: 'Profil' }],
+    };
   }
 
   if (role === 'guru' || role === 'wali_kelas') {
-    return [
-      { to: '/app-hub',        icon: Squares2X2Icon, label: 'App Hub' },
-      { to: '/master/siswa',   icon: AcademicCapIcon, label: 'Siswa' },
-      // Home
-      { to: '/master/kelas',   icon: UserGroupIcon,  label: 'Kelas' },
-      { to: '/profile',        icon: UserCircleIcon, label: 'Profil' },
-    ];
+    return {
+      left:  [
+        { to: '/app-hub',      icon: Squares2X2Icon,  label: 'App Hub' },
+        { to: '/master/siswa', icon: AcademicCapIcon,  label: 'Siswa' },
+      ],
+      right: [
+        { to: '/master/kelas', icon: UserGroupIcon,   label: 'Kelas' },
+        { to: '/profile',      icon: UserCircleIcon,  label: 'Profil' },
+      ],
+    };
   }
 
   // Admin / super_admin / kepala_sekolah / pegawai
-  return [
-    { to: '/app-hub',       icon: Squares2X2Icon, label: 'App Hub' },
-    { to: '/master/guru',   icon: UserGroupIcon,  label: 'Guru' },
-    // Home
-    { to: '/master/siswa',  icon: AcademicCapIcon, label: 'Siswa' },
-    { to: '/profile',       icon: UserCircleIcon,  label: 'Profil' },
-  ];
+  return {
+    left:  [
+      { to: '/app-hub',      icon: Squares2X2Icon,  label: 'App Hub' },
+      { to: '/master/guru',  icon: UserGroupIcon,   label: 'Guru' },
+    ],
+    right: [
+      { to: '/master/siswa', icon: AcademicCapIcon, label: 'Siswa' },
+      { to: '/profile',      icon: UserCircleIcon,  label: 'Profil' },
+    ],
+  };
 });
 
-const leftItems  = computed(() => allMenus.value.slice(0, 2));
-const rightItems = computed(() => allMenus.value.slice(2, 4));
+const leftItems  = computed(() => navMenus.value.left);
+const rightItems = computed(() => navMenus.value.right);
 </script>
