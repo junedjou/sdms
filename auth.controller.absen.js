@@ -200,12 +200,14 @@ const ssoCallback = asyncHandler(async (req, res) => {
     });
   } else {
     // 4b. Update role agar selalu sinkron dengan SDMS
+    // Juga reaktivasi akun jika sebelumnya dinonaktifkan — SDMS adalah sumber kebenaran
     await prisma.user.update({
       where: { id: user.id },
-      data:  { role: absenRole, roles: allRoles },
+      data:  { role: absenRole, roles: allRoles, aktif: true },
     });
     user.role  = absenRole;
     user.roles = allRoles;
+    user.aktif = true;
   }
 
   if (!user.aktif) return unauthorized(res, 'Akun Anda tidak aktif di sistem Absen');

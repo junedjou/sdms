@@ -26,7 +26,7 @@ router.get('/sso/token',
     try {
       // Untuk siswa, ambil data lengkap dari DB dan tambahkan ke user object
       let userWithExtra = { ...req.user };
-      if (req.user.role === 'siswa') {
+      if (req.user.role?.toLowerCase() === 'siswa') {
         try {
           const { User, Siswa, Kelas, Jurusan, OrangTua } = require('../models');
 
@@ -76,7 +76,7 @@ router.get('/sso/token',
             };
           }
         } catch (e) {
-          logger.warn(`[SSO] Gagal ambil data siswa: ${e.message}`);
+          logger.error(`[SSO] Gagal ambil data siswa untuk user ${req.user.id}: ${e.message}`);
         }
       }
       const result = createSSOToken(userWithExtra, app.toLowerCase());
