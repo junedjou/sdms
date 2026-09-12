@@ -93,7 +93,17 @@ const createSSOToken = (user, appName) => {
   // Token sangat singkat — 5 menit cukup untuk redirect
   const sso_token = jwt.sign(payload, secret, { expiresIn: '5m' });
 
-  const redirect_url = `${appUrl}/sso/callback?token=${sso_token}&from=sdms`;
+  // Setiap aplikasi bisa punya path callback yang berbeda.
+  // absen (presensiku) → /api/auth/sso-callback?token=...  (API redirect ke /sso#access=...)
+  // lainnya            → /sso/callback?token=...&from=sdms (default)
+  const SSO_CALLBACK_PATHS = {
+    absen: '/api/auth/sso-callback',
+  };
+  const callbackPath = SSO_CALLBACK_PATHS[appName] || '/sso/callback';
+  const separator    = callbackPath.includes('?') ? '&' : '?';
+  const redirect_url = SSO_CALLBACK_PATHS[appName]
+    ? `${appUrl}${callbackPath}${separator}token=${sso_token}`
+    : `${appUrl}${callbackPath}?token=${sso_token}&from=sdms`;
 
   logger.info(`[SSO] Token dibuat untuk user ${user.username} → ${appName}`);
 
