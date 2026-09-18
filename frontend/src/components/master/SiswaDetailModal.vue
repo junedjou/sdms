@@ -107,7 +107,7 @@
               <FieldBox label="Nama Ayah"       :value="ortu.nama_ayah" />
               <FieldBox label="Pekerjaan Ayah"  :value="ortu.pekerjaan_ayah" />
               <FieldBox label="No. HP Ayah"     :value="ortu.no_hp_ayah" />
-              <FieldBox label="Penghasilan"     :value="ortu.penghasilan_ayah" />
+              <FieldBox label="Penghasilan"     :value="formatRupiah(ortu.penghasilan_ayah)" />
             </div>
           </div>
 
@@ -120,7 +120,7 @@
               <FieldBox label="Nama Ibu"        :value="ortu.nama_ibu" />
               <FieldBox label="Pekerjaan Ibu"   :value="ortu.pekerjaan_ibu" />
               <FieldBox label="No. HP Ibu"      :value="ortu.no_hp_ibu" />
-              <FieldBox label="Penghasilan"     :value="ortu.penghasilan_ibu" />
+              <FieldBox label="Penghasilan"     :value="formatRupiah(ortu.penghasilan_ibu)" />
             </div>
           </div>
 
@@ -327,6 +327,13 @@ const usia = (tanggal) => {
   if (!tanggal) return '';
   const age = Math.floor((Date.now() - new Date(tanggal)) / (365.25 * 24 * 60 * 60 * 1000));
   return `${age} tahun`;
+};
+
+const formatRupiah = (val) => {
+  const num = Number(val);
+  if (!val && val !== 0) return null;
+  if (isNaN(num)) return null;
+  return 'Rp ' + num.toLocaleString('id-ID');
 };
 
 const statusClass = (status) => ({
