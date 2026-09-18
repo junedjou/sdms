@@ -140,7 +140,7 @@ const getSiswa = async (req, res) => {
 const getSiswaById = async (req, res) => {
   const siswa = await findSiswaById(req.params.id, [
     { association: 'jurusan',   attributes: ['id', 'kode', 'nama'] },
-    { association: 'kelas',     attributes: ['id', 'nama', 'nama_kelas', 'tingkat'] },
+    { association: 'kelas',     attributes: ['id', 'nama', 'tingkat'] },
     { association: 'orangTua',  attributes: [
       'id','nama_ayah','no_hp_ayah','pekerjaan_ayah','penghasilan_ayah',
       'nama_ibu','no_hp_ibu','pekerjaan_ibu','penghasilan_ibu',
@@ -149,9 +149,9 @@ const getSiswaById = async (req, res) => {
     {
       association: 'riwayatKelas',
       include: [
-        { association: 'kelas',         attributes: ['id', 'nama', 'nama_kelas', 'tingkat'], required: false },
-        { association: 'tahunPelajaran', attributes: ['id', 'nama', 'tahun_mulai', 'tahun_selesai'], required: false },
-        { association: 'semester',      attributes: ['id', 'nama', 'urutan'], required: false },
+        { association: 'kelas',         attributes: ['id', 'nama', 'tingkat'], required: false },
+        { association: 'tahunPelajaran', attributes: ['id', 'nama'], required: false },
+        { association: 'semester',      attributes: ['id', 'nama'], required: false },
       ],
     },
     { association: 'user', attributes: ['id', 'username', 'is_active', 'last_login_at'] },
