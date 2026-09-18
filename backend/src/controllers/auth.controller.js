@@ -279,13 +279,10 @@ const updateMySiswaProfile = async (req, res) => {
 
   // ── Update tabel orang_tua jika ada field terkait ──────────
   const OT_FIELDS = [
-    'no_hp_ayah','pekerjaan_ayah','penghasilan_ayah',
-    'no_hp_ibu','pekerjaan_ibu','penghasilan_ibu',
+    'nama_ayah','no_hp_ayah','pekerjaan_ayah','penghasilan_ayah',
+    'nama_ibu','no_hp_ibu','pekerjaan_ibu','penghasilan_ibu',
   ];
   const otData = {};
-  // Ambil nama dari field shortcut di siswa jika dikirim
-  if (req.body.nama_ayah !== undefined) otData.nama_ayah = req.body.nama_ayah || null;
-  if (req.body.nama_ibu  !== undefined) otData.nama_ibu  = req.body.nama_ibu  || null;
   for (const key of OT_FIELDS) {
     if (req.body[key] !== undefined) {
       let val = req.body[key] === '' ? null : req.body[key];
@@ -297,17 +294,16 @@ const updateMySiswaProfile = async (req, res) => {
     }
   }
 
-  if (Object.keys(otData).length > 0) {
+  // Buat/update record orang_tua jika ada data yang dikirim
+  const otHasData = Object.values(otData).some(v => v !== null && v !== undefined && v !== '');
+  if (otHasData || Object.keys(otData).length > 0) {
     if (siswa.orang_tua_id) {
       await OrangTua.update(otData, { where: { id: siswa.orang_tua_id } });
-    } else {
-      // Buat record baru & kaitkan
-      const ot = await OrangTua.create({
-        nama_ayah: req.body.nama_ayah || null,
-        nama_ibu:  req.body.nama_ibu  || null,
-        ...otData,
-      });
+    } else if (otHasData) {
+      // Buat record baru & kaitkan ke siswa
+      const ot = await OrangTua.create(otData);
       await siswa.update({ orang_tua_id: ot.id });
+      siswa.orang_tua_id = ot.id; // update instance lokal agar buildData benar
     }
   }
 
@@ -350,7 +346,44 @@ const updateMySiswaProfile = async (req, res) => {
     newData: { ...data, ...otData },
   });
 
-  return success(res, siswa, 'Data pribadi berhasil diperbarui');
+  // Kembalikan data lengkap termasuk relasi orangTua
+  const SAFE = ['id','nisn','nis','nama','jenis_kelamin','kelas_id','jurusan_id',
+    'tahun_masuk','status','tempat_lahir','tanggal_lahir','agama',
+    'no_hp','alamat','email','orang_tua_id','created_at','updated_at'];
+  const FULL = [...SAFE, 'hp_ortu','nama_ayah','nama_ibu','pernah_dapat_bantuan'];
+
+  let updatedSiswa;
+  try {
+    updatedSiswa = await Siswa.findByPk(siswa.id, {
+      attributes: FULL,
+      include: [
+        { association: 'jurusan',  attributes: ['id', 'kode', 'nama'] },
+        { association: 'kelas',    attributes: ['id', 'nama'] },
+        { association: 'orangTua', attributes: [
+          'id','nama_ayah','no_hp_ayah','pekerjaan_ayah','penghasilan_ayah',
+          'nama_ibu','no_hp_ibu','pekerjaan_ibu','penghasilan_ibu',
+          'nama_wali','no_hp_wali','alamat',
+        ]},
+      ],
+    });
+  } catch (e) {
+    if (e.original?.code === 'ER_BAD_FIELD_ERROR') {
+      updatedSiswa = await Siswa.findByPk(siswa.id, {
+        attributes: SAFE,
+        include: [
+          { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
+          { association: 'kelas',   attributes: ['id', 'nama'] },
+          { association: 'orangTua', attributes: [
+            'id','nama_ayah','no_hp_ayah','pekerjaan_ayah','penghasilan_ayah',
+            'nama_ibu','no_hp_ibu','pekerjaan_ibu','penghasilan_ibu',
+            'nama_wali','no_hp_wali','alamat',
+          ]},
+        ],
+      });
+    } else { throw e; }
+  }
+
+  return success(res, updatedSiswa, 'Data pribadi berhasil diperbarui');
 };
 
 module.exports = { login, refreshToken, logout, getMe, changePassword, getMySiswaProfile, updateMySiswaProfile };

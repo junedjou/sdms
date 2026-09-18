@@ -380,9 +380,10 @@ const loadSiswaProfile = async () => {
 const handleUpdateSiswa = async () => {
   siswaSubmitting.value = true;
   try {
-    const res = await authService.updateMySiswaProfile(siswaForm.value);
-    siswaData.value = res.data.data || siswaData.value;
+    await authService.updateMySiswaProfile(siswaForm.value);
     notify.success('Data pribadi berhasil disimpan');
+    // Reload ulang dari server agar form menampilkan data terbaru (termasuk orangTua)
+    await loadSiswaProfile();
   } catch (err) {
     const msg = err.response?.data?.message || err.message || 'Gagal menyimpan data pribadi';
     const details = err.response?.data?.errors;

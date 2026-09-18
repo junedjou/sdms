@@ -139,7 +139,21 @@ const getSiswa = async (req, res) => {
 
 const getSiswaById = async (req, res) => {
   const siswa = await findSiswaById(req.params.id, [
-    'jurusan', 'kelas', 'orangTua', 'riwayatKelas',
+    { association: 'jurusan',   attributes: ['id', 'kode', 'nama'] },
+    { association: 'kelas',     attributes: ['id', 'nama', 'nama_kelas', 'tingkat'] },
+    { association: 'orangTua',  attributes: [
+      'id','nama_ayah','no_hp_ayah','pekerjaan_ayah','penghasilan_ayah',
+      'nama_ibu','no_hp_ibu','pekerjaan_ibu','penghasilan_ibu',
+      'nama_wali','no_hp_wali','alamat',
+    ]},
+    {
+      association: 'riwayatKelas',
+      include: [
+        { association: 'kelas',         attributes: ['id', 'nama', 'nama_kelas', 'tingkat'], required: false },
+        { association: 'tahunPelajaran', attributes: ['id', 'nama', 'tahun_mulai', 'tahun_selesai'], required: false },
+        { association: 'semester',      attributes: ['id', 'nama', 'urutan'], required: false },
+      ],
+    },
     { association: 'user', attributes: ['id', 'username', 'is_active', 'last_login_at'] },
   ]);
   if (!siswa) return notFound(res, 'Data siswa tidak ditemukan');
