@@ -38,9 +38,9 @@ router.get('/sso/token',
                            'tanggal_lahir', 'agama', 'tahun_masuk', 'foto', 'pernah_dapat_bantuan',
                            'nama_ayah', 'nama_ibu', 'hp_ortu'],
               include: [
-                { association: 'kelas',   attributes: ['id', 'nama_kelas', 'tingkat'] },
+                { association: 'kelas',   attributes: ['id', 'nama', 'tingkat'] },
                 { association: 'jurusan', attributes: ['id', 'nama', 'kode'] },
-                { association: 'orangTua', attributes: ['nama_ayah', 'nama_ibu', 'pekerjaan_ayah', 'pekerjaan_ibu', 'no_hp'] },
+                { association: 'orangTua', attributes: ['nama_ayah', 'nama_ibu', 'pekerjaan_ayah', 'pekerjaan_ibu', 'no_hp_ayah'] },
               ],
             }],
           }).catch(() => null);
@@ -62,7 +62,7 @@ router.get('/sso/token',
               pernah_dapat_bantuan: s.pernah_dapat_bantuan,
               // kelas & jurusan
               kelas_id:      s.kelas?.id,
-              kelas:         s.kelas?.nama_kelas,
+              kelas:         s.kelas?.nama,
               tingkat:       s.kelas?.tingkat,
               jurusan_id:    s.jurusan?.id,
               jurusan:       s.jurusan?.nama,
@@ -70,7 +70,7 @@ router.get('/sso/token',
               // orang tua
               nama_ayah:     s.orangTua?.nama_ayah  || s.nama_ayah,
               nama_ibu:      s.orangTua?.nama_ibu   || s.nama_ibu,
-              hp_ortu:       s.orangTua?.no_hp      || s.hp_ortu,
+              hp_ortu:       s.orangTua?.no_hp_ayah || s.hp_ortu,
               // siswa db id
               siswa_db_id:   s.id,
             };

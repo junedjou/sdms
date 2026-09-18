@@ -662,8 +662,9 @@ const launchApp = async (app) => {
         const msg    = ssoErr.response?.data?.message || ssoErr.message || '';
 
         if (status === 401 || status === 403) {
-          notify.error(`Sesi habis. Silakan login ulang ke SDMS.`);
-          return; // jangan buka fallback jika sesi tidak valid
+          // Token SDMS sendiri tidak valid — perlu login ulang ke SDMS
+          // Tapi JANGAN langsung blokir; coba fallback URL dulu
+          console.warn(`[SSO] Sesi tidak valid untuk ${app.name}: ${msg}`);
         } else if (status === 400) {
           // Aplikasi belum dikonfigurasi SSO di backend — buka langsung tanpa notif mengganggu
           console.warn(`[SSO] ${app.name} belum dikonfigurasi: ${msg}`);

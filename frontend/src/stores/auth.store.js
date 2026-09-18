@@ -72,8 +72,12 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const res = await authService.me();
       user.value = res.data.data;
-    } catch {
-      _clearAuth();
+    } catch (err) {
+      // Hanya hapus session jika token benar-benar ditolak (401)
+      // Error lain (network, timeout, 500) jangan paksa logout
+      if (err.response?.status === 401) {
+        _clearAuth();
+      }
     }
   };
 

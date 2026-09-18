@@ -44,6 +44,7 @@ const PERMISSIONS = [
   { name: 'lms:access',            label: 'Akses LMS',                 group: 'apps' },
   { name: 'jurnal:access',         label: 'Akses Jurnal Guru',         group: 'apps' },
   { name: 'piket:access',          label: 'Akses Piket',               group: 'apps' },
+  { name: 'absen:access',          label: 'Akses Absensi Siswa',       group: 'apps' },
   { name: 'sholat:access',         label: 'Akses Absensi Sholat',      group: 'apps' },
   { name: 'kegiatan:access',       label: 'Akses Kegiatan Sekolah',    group: 'apps' },
   { name: 'kelulusan:access',      label: 'Akses Kelulusan',           group: 'apps' },
@@ -88,7 +89,7 @@ const ROLE_PERMISSIONS = {
     'piket:access', 'sholat:access', 'kegiatan:access', 'kelulusan:access',
   ],
   siswa: [
-    'dashboard:view', 'lms:access',
+    'dashboard:view', 'lms:access', 'absen:access',
   ],
   operator: [
     'dashboard:view', 'piket:access', 'sholat:access',
