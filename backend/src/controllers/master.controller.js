@@ -80,7 +80,7 @@ const deleteGuru = async (req, res) => {
 // tapi jika DB belum punya kolom ini, gunakan safeAttrs saja.
 const SISWA_SAFE_ATTRS = ['id', 'nisn', 'nis', 'nama', 'jenis_kelamin',
   'kelas_id', 'jurusan_id', 'orang_tua_id', 'tahun_masuk', 'status',
-  'tempat_lahir', 'tanggal_lahir', 'agama', 'no_hp', 'alamat',
+  'tempat_lahir', 'tanggal_lahir', 'agama', 'no_hp', 'email', 'alamat',
   'created_at', 'updated_at'];
 
 const SISWA_FULL_ATTRS = [...SISWA_SAFE_ATTRS,
