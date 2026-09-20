@@ -67,6 +67,17 @@ const config = {
     dir:   process.env.LOG_DIR   || 'logs',
   },
 
+  // ── Email / SMTP (untuk fitur lupa password) ────────────
+  smtp: {
+    host:     process.env.SMTP_HOST     || 'smtp.gmail.com',
+    port:     parseInt(process.env.SMTP_PORT, 10) || 587,
+    secure:   process.env.SMTP_SECURE   === 'true', // true untuk port 465
+    user:     process.env.SMTP_USER     || '',
+    pass:     process.env.SMTP_PASS     || '',
+    from:     process.env.SMTP_FROM     || process.env.SMTP_USER || 'noreply@sdms.sch.id',
+    fromName: process.env.SMTP_FROM_NAME || process.env.APP_NAME || 'SDMS',
+  },
+
   // URL aplikasi eksternal (SSO redirect)
   apps: {
     lms:       process.env.LMS_URL       || 'http://localhost:4000',

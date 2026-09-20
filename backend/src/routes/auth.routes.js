@@ -39,6 +39,20 @@ router.patch('/change-password',
   asyncHandler(ctrl.changePassword)
 );
 
+// POST /api/v1/auth/forgot-password  — kirim link reset ke email (tidak perlu login)
+router.post('/forgot-password',
+  strictRateLimiter,
+  validate(schemas.forgotPassword),
+  asyncHandler(ctrl.forgotPassword)
+);
+
+// POST /api/v1/auth/reset-password  — reset password pakai token dari email (tidak perlu login)
+router.post('/reset-password',
+  strictRateLimiter,
+  validate(schemas.resetPassword),
+  asyncHandler(ctrl.resetPassword)
+);
+
 // GET  /api/v1/auth/profile/siswa  — baca data pribadi siswa yang login
 router.get('/profile/siswa',
   authenticate,

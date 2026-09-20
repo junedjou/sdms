@@ -62,6 +62,29 @@ const schemas = {
     }),
   }),
 
+  // Lupa password: kirim email berisi link reset
+  forgotPassword: Joi.object({
+    email: Joi.string().email().max(150).required().messages({
+      'string.email': 'Format email tidak valid',
+      'any.required': 'Email wajib diisi',
+    }),
+  }),
+
+  // Reset password: gunakan token dari link email + password baru
+  resetPassword: Joi.object({
+    token: Joi.string().min(32).required().messages({
+      'any.required': 'Token reset password wajib diisi',
+    }),
+    new_password: Joi.string().min(8).max(72).required().messages({
+      'string.min': 'Password minimal 8 karakter',
+      'any.required': 'Password baru wajib diisi',
+    }),
+    confirm_password: Joi.string().valid(Joi.ref('new_password')).required().messages({
+      'any.only': 'Konfirmasi password tidak cocok',
+      'any.required': 'Konfirmasi password wajib diisi',
+    }),
+  }),
+
   // Pagination query
   pagination: Joi.object({
     page: Joi.number().integer().min(1).default(1),

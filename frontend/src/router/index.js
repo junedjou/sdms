@@ -2,7 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.store';
 
 // ── Lazy load semua halaman ──────────────────────────────────
-const LoginView          = () => import('@/views/auth/LoginView.vue');
+const LoginView               = () => import('@/views/auth/LoginView.vue');
+const ForgotPasswordView      = () => import('@/views/auth/ForgotPasswordView.vue');
+const ResetPasswordView       = () => import('@/views/auth/ResetPasswordView.vue');
 const DashboardView      = () => import('@/views/dashboard/DashboardView.vue');
 const AppHubView         = () => import('@/views/dashboard/AppHubView.vue');
 
@@ -33,6 +35,18 @@ const routes = [
     name: 'Login',
     component: LoginView,
     meta: { requiresGuest: true, title: 'Login — SDMS' },
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPasswordView,
+    meta: { requiresGuest: true, title: 'Lupa Password — SDMS' },
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPasswordView,
+    meta: { requiresGuest: true, title: 'Reset Password — SDMS' },
   },
   {
     path: '/',

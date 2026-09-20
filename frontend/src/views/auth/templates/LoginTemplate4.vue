@@ -166,7 +166,13 @@
           </button>
         </form>
 
-        <p class="text-center text-xs text-slate-300 mt-8">Hubungi administrator jika mengalami kendala.</p>
+        <div class="text-center mt-5">
+          <router-link to="/forgot-password"
+            class="text-sm font-medium text-indigo-400 hover:text-indigo-600 transition-colors">
+            Lupa password?
+          </router-link>
+        </div>
+        <p class="text-center text-xs text-slate-300 mt-3">Hubungi administrator jika mengalami kendala.</p>
       </div>
     </div>
   </div>

@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { Op } = require('sequelize');
 const { User, Role, Permission, RolePermission, Siswa, OrangTua } = require('../models');
 const {
@@ -9,9 +10,11 @@ const {
 const { verifyPassword, hashPassword } = require('../utils/helpers');
 const { writeAuditLog } = require('../middleware/auditLog');
 const { getClientIp } = require('../utils/helpers');
-const { success, unauthorized, badRequest, error } = require('../utils/response');
+const { success, unauthorized, badRequest, error, notFound } = require('../utils/response');
 const { redisClient } = require('../config/database');
 const logger = require('../utils/logger');
+const { sendResetPasswordEmail } = require('../services/emailService');
+const config = require('../config');
 
 /**
  * Ambil permissions milik user dari role-nya
@@ -386,4 +389,114 @@ const updateMySiswaProfile = async (req, res) => {
   return success(res, updatedSiswa, 'Data pribadi berhasil diperbarui');
 };
 
-module.exports = { login, refreshToken, logout, getMe, changePassword, getMySiswaProfile, updateMySiswaProfile };
+// POST /api/v1/auth/forgot-password
+// Menerima email → generate token → kirim link reset ke email
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  const ip = getClientIp(req);
+
+  // Selalu kembalikan respons sukses meski email tidak ditemukan
+  // untuk mencegah user enumeration attack
+  const GENERIC_MSG = 'Jika email terdaftar, link reset password akan dikirim ke email Anda.';
+
+  try {
+    const user = await User.unscoped().findOne({
+      where: { email: email.toLowerCase().trim(), is_active: true },
+      attributes: ['id', 'email', 'full_name', 'username'],
+    });
+
+    if (!user) {
+      // Log percobaan tapi tetap kembalikan pesan generik
+      logger.warn(`[forgotPassword] Email tidak ditemukan: ${email} dari IP ${ip}`);
+      return success(res, null, GENERIC_MSG);
+    }
+
+    // Generate token kriptografis 48 byte → 96 karakter hex
+    const rawToken   = crypto.randomBytes(48).toString('hex');
+    const tokenHash  = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt  = new Date(Date.now() + 60 * 60 * 1000); // 1 jam
+
+    // Simpan hash token + waktu kadaluarsa ke DB
+    await user.update({
+      password_reset_token:   tokenHash,
+      password_reset_expires: expiresAt,
+    });
+
+    // Bangun URL reset yang berisi token mentah (bukan hash)
+    const resetUrl = `${config.app.frontendUrl}/reset-password?token=${rawToken}`;
+
+    // Kirim email (fire-and-forget agar tidak block response)
+    sendResetPasswordEmail({
+      to:            user.email,
+      fullName:      user.full_name || user.username,
+      resetUrl,
+      expireMinutes: 60,
+    }).catch((err) => {
+      logger.error(`[forgotPassword] Gagal kirim email ke ${user.email}: ${err.message}`);
+    });
+
+    await writeAuditLog({
+      userId:      user.id,
+      username:    user.username,
+      action:      'FORGOT_PASSWORD',
+      resource:    'auth',
+      description: `Permintaan reset password dari IP ${ip}`,
+      ipAddress:   ip,
+    });
+
+    return success(res, null, GENERIC_MSG);
+  } catch (err) {
+    logger.error(`[forgotPassword] Error: ${err.message}`);
+    return error(res, 'Terjadi kesalahan. Silakan coba lagi.');
+  }
+};
+
+// POST /api/v1/auth/reset-password
+// Menerima token (dari link email) + password baru → reset password
+const resetPassword = async (req, res) => {
+  const { token, new_password } = req.body;
+  const ip = getClientIp(req);
+
+  try {
+    // Hash token yang dikirim agar bisa dibandingkan dengan yang tersimpan di DB
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.unscoped().findOne({
+      where: {
+        password_reset_token:   tokenHash,
+        password_reset_expires: { [Op.gt]: new Date() }, // belum kadaluarsa
+        is_active:              true,
+      },
+      attributes: ['id', 'email', 'full_name', 'username'],
+    });
+
+    if (!user) {
+      return badRequest(res, 'Token tidak valid atau sudah kadaluarsa. Silakan minta link reset baru.');
+    }
+
+    const hashed = await hashPassword(new_password);
+
+    await user.update({
+      password:               hashed,
+      password_changed_at:    new Date(),
+      password_reset_token:   null,  // hapus token setelah dipakai
+      password_reset_expires: null,
+    });
+
+    await writeAuditLog({
+      userId:      user.id,
+      username:    user.username,
+      action:      'RESET_PASSWORD',
+      resource:    'auth',
+      description: `Password berhasil direset via link email dari IP ${ip}`,
+      ipAddress:   ip,
+    });
+
+    return success(res, null, 'Password berhasil direset. Silakan login dengan password baru Anda.');
+  } catch (err) {
+    logger.error(`[resetPassword] Error: ${err.message}`);
+    return error(res, 'Terjadi kesalahan. Silakan coba lagi.');
+  }
+};
+
+module.exports = { login, refreshToken, logout, getMe, changePassword, getMySiswaProfile, updateMySiswaProfile, forgotPassword, resetPassword };

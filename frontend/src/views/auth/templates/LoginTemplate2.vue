@@ -124,6 +124,17 @@
             </span>
             <span v-else class="relative">Masuk</span>
           </button>
+
+          <!-- Link lupa password -->
+          <div class="text-center mt-4">
+            <router-link to="/forgot-password"
+              class="text-sm font-medium transition-colors"
+              style="color: rgba(165,180,252,0.8);"
+              onmouseenter="this.style.color='rgba(199,210,254,1)'"
+              onmouseleave="this.style.color='rgba(165,180,252,0.8)'">
+              Lupa password?
+            </router-link>
+          </div>
         </form>
 
         <!-- Divider + info -->

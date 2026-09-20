@@ -150,7 +150,13 @@
             <span v-else class="relative">Masuk Sekarang</span>
           </button>
         </form>
-        <p class="text-center text-xs text-slate-300 mt-8">Hubungi administrator jika mengalami kendala akses.</p>
+        <div class="mt-6 text-center">
+          <router-link to="/forgot-password"
+            class="text-sm text-blue-500 hover:text-blue-700 font-medium transition-colors">
+            Lupa password?
+          </router-link>
+        </div>
+        <p class="text-center text-xs text-slate-300 mt-3">Hubungi administrator jika mengalami kendala akses.</p>
       </div>
     </div>
   </div>

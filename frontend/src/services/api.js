@@ -68,6 +68,10 @@ export const authService = {
   refresh:        (data) => api.post('/auth/refresh', data),
   me:             ()     => api.get('/auth/me'),
   changePassword: (data) => api.patch('/auth/change-password', data),
+  // Lupa password — kirim link reset ke email (tidak perlu login)
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  // Reset password — pakai token dari link email (tidak perlu login)
+  resetPassword:  (data) => api.post('/auth/reset-password', data),
   // Profil data pribadi siswa
   getMySiswaProfile:    ()     => api.get('/auth/profile/siswa'),
   updateMySiswaProfile: (data) => api.patch('/auth/profile/siswa', data),
