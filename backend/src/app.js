@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -74,9 +75,20 @@ app.use(`${API_PREFIX}/settings`,  settingsRoutes);
 app.use(`${API_PREFIX}/apihub`,    apiHubRoutes);
 app.use(`${API_PREFIX}/public/sync`, publicSyncRoutes);
 
-// 404 handler
-app.use((req, res) => {
+// ============================================================
+// Serve Frontend (Vue build)
+// ============================================================
+const frontendDist = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDist));
+
+// 404 handler untuk API
+app.use('/api', (req, res) => {
   res.status(404).json({ status: 'error', message: `Route ${req.method} ${req.path} tidak ditemukan` });
+});
+
+// SPA fallback — semua route non-API dikembalikan ke index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendDist, 'index.html'));
 });
 
 // Global error handler
