@@ -55,6 +55,23 @@
             :options="barOptions"
             class="max-h-56"
           />
+          <!-- Tabel ringkasan total per jurusan -->
+          <div v-if="!summaryLoading && barChartData.labels.length" class="mt-3 border-t border-slate-100 pt-3">
+            <div class="grid gap-1.5" :style="{ gridTemplateColumns: `repeat(${barChartData.labels.length}, 1fr)` }">
+              <div
+                v-for="(item, i) in summary?.siswa_per_jurusan"
+                :key="i"
+                class="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl bg-slate-50"
+              >
+                <span class="text-xs font-bold text-slate-700">{{ item.kode || item.jurusan }}</span>
+                <span class="text-xs font-semibold text-slate-900">{{ item.total }}</span>
+                <div class="flex gap-1 mt-0.5">
+                  <span class="text-[10px] text-indigo-500 font-medium">♂ {{ item.laki ?? 0 }}</span>
+                  <span class="text-[10px] text-pink-400 font-medium">♀ {{ item.perempuan ?? 0 }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
           <BaseEmpty v-else title="Belum ada data jurusan" />
         </div>
       </div>
@@ -310,9 +327,9 @@ const barOptions = {
       bodyFont: { weight: '600' },
       callbacks: {
         label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw} siswa`,
-        afterBody: (items) => {
+        footer: (items) => {
           const total = items.reduce((sum, i) => sum + i.raw, 0);
-          return items.length > 1 ? [`Total: ${total} siswa`] : [];
+          return `Total: ${total} siswa`;
         },
       },
     },
