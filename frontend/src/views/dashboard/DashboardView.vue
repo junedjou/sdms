@@ -259,15 +259,26 @@ const barChartData = computed(() => {
   const items = summary.value?.siswa_per_jurusan || [];
   return {
     labels: items.map((i) => i.kode || i.jurusan),
-    datasets: [{
-      label: 'Jumlah Siswa',
-      data: items.map((i) => i.total),
-      backgroundColor: chartColors.map(c => c + 'cc'),
-      hoverBackgroundColor: chartColorsBg,
-      borderRadius: 10,
-      borderWidth: 0,
-      borderSkipped: false,
-    }],
+    datasets: [
+      {
+        label: 'Laki-laki',
+        data: items.map((i) => i.laki ?? 0),
+        backgroundColor: '#818cf8cc',
+        hoverBackgroundColor: '#6366f1',
+        borderRadius: 6,
+        borderWidth: 0,
+        borderSkipped: false,
+      },
+      {
+        label: 'Perempuan',
+        data: items.map((i) => i.perempuan ?? 0),
+        backgroundColor: '#f472b6cc',
+        hoverBackgroundColor: '#ec4899',
+        borderRadius: 6,
+        borderWidth: 0,
+        borderSkipped: false,
+      },
+    ],
   };
 });
 
@@ -275,7 +286,17 @@ const barOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: { display: false },
+    legend: {
+      display: true,
+      position: 'top',
+      labels: {
+        font: { size: 11, weight: '500' },
+        boxWidth: 10,
+        padding: 12,
+        color: '#64748b',
+        usePointStyle: true,
+      },
+    },
     tooltip: {
       backgroundColor: '#ffffff',
       titleColor: '#475569',
@@ -287,7 +308,13 @@ const barOptions = {
       displayColors: true,
       boxPadding: 4,
       bodyFont: { weight: '600' },
-      callbacks: { label: (ctx) => ` ${ctx.raw} siswa` },
+      callbacks: {
+        label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw} siswa`,
+        afterBody: (items) => {
+          const total = items.reduce((sum, i) => sum + i.raw, 0);
+          return items.length > 1 ? [`Total: ${total} siswa`] : [];
+        },
+      },
     },
   },
   scales: {

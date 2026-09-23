@@ -85,12 +85,16 @@ const getAgenda = async (req, res) => {
 const getSummary = async (req, res) => {
   try {
     const summary = await withCache('dashboard:summary', async () => {
-      // Siswa per jurusan — gunakan sequelize fn() yang kompatibel semua dialect
+      // Siswa per jurusan + breakdown jenis kelamin
       const siswaPerJurusan = await Siswa.findAll({
-        attributes: ['jurusan_id', [fn('COUNT', col('Siswa.id')), 'total']],
+        attributes: [
+          'jurusan_id',
+          'jenis_kelamin',
+          [fn('COUNT', col('Siswa.id')), 'total'],
+        ],
         where: { status: 'Aktif' },
         include: [{ association: 'jurusan', attributes: ['nama', 'kode'], required: false }],
-        group: ['Siswa.jurusan_id', 'jurusan.id'],
+        group: ['Siswa.jurusan_id', 'Siswa.jenis_kelamin', 'jurusan.id'],
         raw: false,
       });
 
@@ -108,12 +112,28 @@ const getSummary = async (req, res) => {
         raw: true,
       });
 
+      // Gabungkan hasil query menjadi array per jurusan dengan breakdown L/P
+      const jurusanMap = {};
+      for (const s of siswaPerJurusan) {
+        const key    = s.dataValues.jurusan_id || 'unknown';
+        const jk     = s.dataValues.jenis_kelamin;
+        const total  = parseInt(s.dataValues.total) || 0;
+        if (!jurusanMap[key]) {
+          jurusanMap[key] = {
+            jurusan: s.jurusan?.nama || 'Tidak diketahui',
+            kode:    s.jurusan?.kode || '-',
+            total:   0,
+            laki:    0,
+            perempuan: 0,
+          };
+        }
+        jurusanMap[key].total     += total;
+        if (jk === 'L') jurusanMap[key].laki      += total;
+        if (jk === 'P') jurusanMap[key].perempuan += total;
+      }
+
       return {
-        siswa_per_jurusan: siswaPerJurusan.map((s) => ({
-          jurusan: s.jurusan?.nama || 'Tidak diketahui',
-          kode:    s.jurusan?.kode || '-',
-          total:   parseInt(s.dataValues.total) || 0,
-        })),
+        siswa_per_jurusan: Object.values(jurusanMap),
         guru_per_status: guruPerStatus.map((g) => ({
           status: g.status_kepegawaian || 'Tidak diketahui',
           total:  parseInt(g.total) || 0,
