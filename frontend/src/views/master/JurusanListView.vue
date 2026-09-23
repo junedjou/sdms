@@ -33,54 +33,73 @@
       <div
         v-for="item in items"
         :key="item.id"
-        class="card p-5 hover:shadow-md transition-all duration-200 group relative"
+        class="card hover:shadow-lg transition-all duration-200 group relative overflow-hidden"
         :class="isSelected(item.id) ? 'ring-2 ring-primary-400 bg-primary-50/30' : ''"
       >
-        <!-- Checkbox -->
-        <input
-          type="checkbox"
-          class="absolute top-3 left-3 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer z-10"
-          :checked="isSelected(item.id)"
-          @change="toggleOne(item.id)"
-        />
-        <!-- Top row -->
-        <div class="flex items-start justify-between mb-3">
-          <div class="w-12 h-12 rounded-xl bg-primary-50 border-2 border-primary-100 flex items-center justify-center">
-            <span class="text-base font-bold text-primary-700">{{ item.kode }}</span>
-          </div>
-          <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              v-if="authStore.hasPermission('jurusan:update')"
-              @click="openForm(item)"
-              class="btn-ghost btn-sm p-1.5"
-              title="Edit jurusan"
-            >
-              <PencilSquareIcon class="w-4 h-4 text-gray-500" />
-            </button>
-            <button
-              v-if="authStore.hasPermission('jurusan:delete')"
-              @click="confirmDelete(item)"
-              class="btn-ghost btn-sm p-1.5 text-red-500 hover:bg-red-50"
-              title="Nonaktifkan jurusan"
-            >
-              <TrashIcon class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        <!-- Accent bar atas -->
+        <div class="h-1.5 w-full bg-gradient-to-r from-primary-400 to-primary-600 rounded-t-2xl" />
 
-        <!-- Info -->
-        <h3 class="font-semibold text-gray-900">{{ item.nama }}</h3>
-        <p v-if="item.kepalaJurusan" class="text-xs text-gray-400 mt-1 flex items-center gap-1">
-          <UserGroupIcon class="w-3.5 h-3.5" />
-          Kajur: {{ item.kepalaJurusan.nama }}
-        </p>
-        <p v-if="item.deskripsi" class="text-xs text-gray-500 mt-2 line-clamp-2">{{ item.deskripsi }}</p>
+        <div class="p-5">
+          <!-- Checkbox -->
+          <input
+            type="checkbox"
+            class="absolute top-4 left-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer z-10"
+            :checked="isSelected(item.id)"
+            @change="toggleOne(item.id)"
+          />
 
-        <!-- Footer stats -->
-        <div class="mt-3 pt-3 border-t border-gray-50 flex items-center gap-3 text-xs text-gray-400">
-          <span>Kode: <strong class="text-gray-600">{{ item.kode }}</strong></span>
-          <span v-if="item.is_active" class="badge-green text-xs">Aktif</span>
-          <span v-else class="badge-red text-xs">Nonaktif</span>
+          <!-- Top row: badge kode + aksi -->
+          <div class="flex items-center justify-between mb-4 pl-6">
+            <!-- Badge kode — lebar adaptif -->
+            <div class="inline-flex items-center justify-center min-w-[3rem] px-3 h-10 rounded-xl bg-primary-50 border-2 border-primary-100">
+              <span class="text-sm font-extrabold text-primary-700 tracking-wide whitespace-nowrap">{{ item.kode }}</span>
+            </div>
+            <!-- Tombol aksi -->
+            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                v-if="authStore.hasPermission('jurusan:update')"
+                @click="openForm(item)"
+                class="btn-ghost btn-sm p-1.5"
+                title="Edit jurusan"
+              >
+                <PencilSquareIcon class="w-4 h-4 text-slate-500" />
+              </button>
+              <button
+                v-if="authStore.hasPermission('jurusan:delete')"
+                @click="confirmDelete(item)"
+                class="btn-ghost btn-sm p-1.5 text-red-400 hover:bg-red-50"
+                title="Nonaktifkan jurusan"
+              >
+                <TrashIcon class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Nama jurusan — selalu 1 baris tetap (truncate + tooltip) -->
+          <h3
+            class="font-bold text-slate-800 text-base leading-snug truncate"
+            :title="item.nama"
+          >{{ item.nama }}</h3>
+
+          <!-- Kepala jurusan -->
+          <p v-if="item.kepalaJurusan" class="text-xs text-slate-400 mt-1.5 flex items-center gap-1 truncate">
+            <UserGroupIcon class="w-3.5 h-3.5 flex-shrink-0" />
+            {{ item.kepalaJurusan.nama }}
+          </p>
+
+          <!-- Deskripsi -->
+          <p v-if="item.deskripsi" class="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
+            {{ item.deskripsi }}
+          </p>
+
+          <!-- Footer -->
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs text-slate-400">
+              Kode: <strong class="text-slate-600">{{ item.kode }}</strong>
+            </span>
+            <span v-if="item.is_active" class="badge-green text-xs">Aktif</span>
+            <span v-else class="badge-red text-xs">Nonaktif</span>
+          </div>
         </div>
       </div>
     </div>
