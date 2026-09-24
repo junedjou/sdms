@@ -221,6 +221,7 @@ const pushWebhook = async (target, envelope, attempt = 1) => {
         'Content-Type': 'application/json',
         'X-SDMS-Event': envelope.event,
         'X-API-Signature': signature,
+        'X-SDMS-Secret': target.secret,   // plain secret untuk kompatibilitas LMS lama
         'X-SDMS-Timestamp': envelope.meta.timestamp,
         ...(target.apiKey && { 'X-API-Key': target.apiKey }),
       },
