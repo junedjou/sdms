@@ -30,8 +30,10 @@ desktop.ini
 
 # ── Backup files ─────────────────────────────────────────────
 backup/files/
+db-backup/
 *.sql.gz
 *.tar.gz
+*.sql
 
 # ── Misc ─────────────────────────────────────────────────────
 *.swp
