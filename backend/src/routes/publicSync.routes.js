@@ -115,7 +115,7 @@ module.exports = router;
 // Dipanggil oleh LMS untuk meminta SDMS kirim bulk sync via webhook
 // Header: X-SDMS-Internal: <SDMS_WEBHOOK_SECRET>
 // ============================================================
-router.post('/lms/request-sync', asyncHandler(async (req, res) => {
+router.post('/request-sync', asyncHandler(async (req, res) => {
   const internalSecret = req.headers['x-sdms-internal'];
   const lmsSecret = process.env.LMS_WEBHOOK_SECRET || 'sdms_lms_secret';
 

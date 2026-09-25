@@ -83,7 +83,7 @@ app.use('/api/lms', publicSyncRoutes);
 const frontendDist = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDist));
 
-// 404 handler untuk API
+// 404 handler untuk API — harus setelah semua route API
 app.use('/api', (req, res) => {
   res.status(404).json({ status: 'error', message: `Route ${req.method} ${req.path} tidak ditemukan` });
 });
