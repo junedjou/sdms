@@ -109,3 +109,46 @@ router.get('/health', (req, res) => {
 });
 
 module.exports = router;
+
+// ============================================================
+// POST /api/v1/public/lms/request-sync
+// Dipanggil oleh LMS untuk meminta SDMS kirim bulk sync via webhook
+// Header: X-SDMS-Internal: <SDMS_WEBHOOK_SECRET>
+// ============================================================
+router.post('/lms/request-sync', asyncHandler(async (req, res) => {
+  const internalSecret = req.headers['x-sdms-internal'];
+  const lmsSecret = process.env.LMS_WEBHOOK_SECRET || 'sdms_lms_secret';
+
+  if (!internalSecret || internalSecret !== lmsSecret) {
+    return res.status(401).json({ ok: false, message: 'Unauthorized' });
+  }
+
+  // Balas dulu agar LMS tidak timeout
+  res.json({ ok: true, message: 'Bulk sync akan segera dikirim via webhook' });
+
+  // Trigger bulk sync di background
+  setImmediate(async () => {
+    try {
+      const { syncEvent } = require('../services/syncService');
+      const { Guru, Siswa, Kelas, MataPelajaran } = require('../models');
+
+      const [guru, siswa, kelas, mapel] = await Promise.all([
+        Guru.findAll({ where: { is_active: true } }),
+        Siswa.findAll({ where: { status: 'Aktif' } }),
+        Kelas.findAll({ where: { is_active: true } }),
+        MataPelajaran.findAll({ where: { is_active: true } }),
+      ]);
+
+      syncEvent('bulk.sync', {
+        guru:  guru.map(g => g.toJSON()),
+        siswa: siswa.map(s => s.toJSON()),
+        kelas: kelas.map(k => k.toJSON()),
+        mapel: mapel.map(m => m.toJSON()),
+      });
+
+      console.log(`[LMS-RequestSync] Bulk sync triggered: ${guru.length} guru, ${siswa.length} siswa, ${kelas.length} kelas`);
+    } catch (err) {
+      console.error(`[LMS-RequestSync] Error: ${err.message}`);
+    }
+  });
+}));

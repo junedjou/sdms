@@ -74,6 +74,8 @@ app.use(`${API_PREFIX}/gateway`,   gatewayRoutes);
 app.use(`${API_PREFIX}/settings`,  settingsRoutes);
 app.use(`${API_PREFIX}/apihub`,    apiHubRoutes);
 app.use(`${API_PREFIX}/public/sync`, publicSyncRoutes);
+// Alias untuk LMS yang memanggil /api/lms/request-sync
+app.use('/api/lms', publicSyncRoutes);
 
 // ============================================================
 // Serve Frontend (Vue build)
