@@ -133,6 +133,18 @@ const upsertGuru = async (data) => {
 
 const softDeleteGuru = async (sdmsId) => {
   await q(`UPDATE sdms_guru SET is_active=false, synced_at=NOW() WHERE sdms_id=$1`, [sdmsId]);
+  // Nonaktifkan akun login LMS guru (username = nip atau niy)
+  try {
+    const rows = await q(`SELECT nip, niy FROM sdms_guru WHERE sdms_id=$1`, [sdmsId]);
+    const guru = rows[0];
+    if (guru) {
+      const username = guru.nip || guru.niy;
+      if (username) {
+        await q(`UPDATE users SET is_active=false WHERE username=$1 AND role='TEACHER'`, [username]);
+        log(`Akun LMS guru dinonaktifkan: ${username}`);
+      }
+    }
+  } catch(e) { warn(`Gagal nonaktifkan akun guru: ${e.message}`); }
   log(`Guru deleted: ${sdmsId}`);
 };
 
@@ -167,6 +179,19 @@ const upsertSiswa = async (data) => {
 
 const softDeleteSiswa = async (sdmsId) => {
   await q(`UPDATE sdms_siswa SET is_active=false, synced_at=NOW() WHERE sdms_id=$1`, [sdmsId]);
+  // Nonaktifkan akun login LMS siswa (username = nisn atau nis)
+  try {
+    const rows = await q(`SELECT nisn, nis FROM sdms_siswa WHERE sdms_id=$1`, [sdmsId]);
+    const siswa = rows[0];
+    if (siswa) {
+      const username = siswa.nisn || siswa.nis;
+      if (username) {
+        await q(`UPDATE users SET is_active=false WHERE username=$1 AND role='STUDENT'`, [username]);
+        log(`Akun LMS siswa dinonaktifkan: ${username}`);
+      }
+    }
+  } catch(e) { warn(`Gagal nonaktifkan akun siswa: ${e.message}`); }
+  log(`Siswa deleted: ${sdmsId}`);
 };
 
 // ============================================================
