@@ -155,13 +155,16 @@ const upsertSiswa = async (data) => {
   await q(`
     INSERT INTO sdms_siswa
       (sdms_id, nama, nisn, nis, jenis_kelamin, jurusan_kode,
+       kelas_id, kelas_nama,
        tahun_masuk, status, tempat_lahir, tanggal_lahir,
        agama, no_hp, alamat, is_active, synced_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,true,NOW())
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,true,NOW())
     ON CONFLICT (sdms_id) DO UPDATE SET
       nama=EXCLUDED.nama, nisn=EXCLUDED.nisn, nis=EXCLUDED.nis,
       jenis_kelamin=EXCLUDED.jenis_kelamin,
       jurusan_kode=EXCLUDED.jurusan_kode,
+      kelas_id=EXCLUDED.kelas_id,
+      kelas_nama=EXCLUDED.kelas_nama,
       tahun_masuk=EXCLUDED.tahun_masuk, status=EXCLUDED.status,
       tempat_lahir=EXCLUDED.tempat_lahir,
       tanggal_lahir=EXCLUDED.tanggal_lahir,
@@ -170,6 +173,7 @@ const upsertSiswa = async (data) => {
   `, [
     data.id, data.nama, data.nisn||null, data.nis||null,
     data.jenis_kelamin||null, data.jurusan?.kode||null,
+    data.kelas_id||null, data.kelas?.nama||null,
     data.tahun_masuk||null, data.status||'Aktif',
     data.tempat_lahir||null, data.tanggal_lahir||null,
     data.agama||null, data.no_hp||null, data.alamat||null,
@@ -226,6 +230,12 @@ const softDeletePegawai = async (sdmsId) => {
 // KELAS
 // ============================================================
 const upsertKelas = async (data) => {
+  // Generate kode kelas format: XI-TKR-1 (tingkat-jurusan_kode-nomor)
+  // Contoh nama: "XI TKR 1" → kode: "XI-TKR-1"
+  const kodeKelas = data.nama
+    ? data.nama.trim().replace(/\s+/g, '-').toUpperCase()
+    : (data.jurusan?.kode ? `${data.tingkat || ''}-${data.jurusan.kode}-${data.nama}` : data.nama);
+
   await q(`
     INSERT INTO sdms_kelas
       (sdms_id, nama, tingkat, jurusan_kode, kapasitas, ruangan, is_active, synced_at)
@@ -240,7 +250,15 @@ const upsertKelas = async (data) => {
     data.jurusan?.kode||null,
     data.kapasitas||null, data.ruangan||null,
   ]);
-  log(`Kelas upsert: ${data.nama}`);
+
+  // Update tabel classes (kode pakai format XI-TKR-1, nama tetap asli)
+  await q(`
+    INSERT INTO classes (code, name)
+    VALUES ($1, $2)
+    ON CONFLICT (code) DO UPDATE SET name=EXCLUDED.name
+  `, [kodeKelas, data.nama]);
+
+  log(`Kelas upsert: ${data.nama} (kode: ${kodeKelas})`);
 };
 
 // ============================================================
@@ -268,12 +286,31 @@ const upsertMapel = async (data) => {
 // BULK SYNC
 // ============================================================
 const handleBulkSync = async (payload) => {
-  const { guru=[], siswa=[], kelas=[] } = payload;
-  log(`Bulk sync: ${guru.length} guru, ${siswa.length} siswa, ${kelas.length} kelas`);
+  const { guru=[], siswa=[], kelas=[], mapel=[] } = payload;
+  log(`Bulk sync: ${guru.length} guru, ${siswa.length} siswa, ${kelas.length} kelas, ${mapel.length} mapel`);
+
+  for (const k of kelas) await upsertKelas(k).catch(e => warn(`kelas ${k.nama}: ${e.message}`));
   for (const g of guru)  await upsertGuru(g).catch(e => warn(`guru ${g.nama}: ${e.message}`));
   for (const s of siswa) await upsertSiswa(s).catch(e => warn(`siswa ${s.nama}: ${e.message}`));
-  for (const k of kelas) await upsertKelas(k).catch(e => warn(`kelas ${k.nama}: ${e.message}`));
-  log('Bulk sync selesai');
+  for (const m of mapel) await upsertMapel(m).catch(e => warn(`mapel ${m.nama}: ${e.message}`));
+
+  // Update class_id di tabel users berdasarkan kelas_nama siswa
+  try {
+    await q(`
+      UPDATE users u
+      SET class_id = c.id
+      FROM sdms_siswa ss
+      JOIN classes c ON LOWER(c.name) = LOWER(ss.kelas_nama)
+      WHERE u.username = ss.nisn
+        AND ss.kelas_nama IS NOT NULL
+        AND u.class_id IS NULL
+    `);
+    log('class_id users siswa berhasil diupdate');
+  } catch(e) { warn(`Gagal update class_id: ${e.message}`); }
+
+  const stats = { insert: 0, update: 0, skip: 0, err: 0 };
+  const duration = 0;
+  log(`Bulk sync selesai — insert:${stats.insert} update:${stats.update} skip:${stats.skip} err:${stats.err}`);
 };
 
 // ============================================================

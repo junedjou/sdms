@@ -130,12 +130,24 @@ router.post('/request-sync', asyncHandler(async (req, res) => {
   setImmediate(async () => {
     try {
       const { syncEvent } = require('../services/syncService');
-      const { Guru, Siswa, Kelas, MataPelajaran } = require('../models');
+      const { Guru, Siswa, Kelas, MataPelajaran, Jurusan } = require('../models');
 
       const [guru, siswa, kelas, mapel] = await Promise.all([
-        Guru.findAll({ where: { is_active: true } }),
-        Siswa.findAll({ where: { status: 'Aktif' } }),
-        Kelas.findAll({ where: { is_active: true } }),
+        Guru.findAll({
+          where: { is_active: true },
+          include: [{ association: 'jurusan', attributes: ['id', 'kode', 'nama'], required: false }],
+        }),
+        Siswa.findAll({
+          where: { status: 'Aktif' },
+          include: [
+            { association: 'kelas',   attributes: ['id', 'nama', 'tingkat'], required: false },
+            { association: 'jurusan', attributes: ['id', 'kode', 'nama'],   required: false },
+          ],
+        }),
+        Kelas.findAll({
+          where: { is_active: true },
+          include: [{ association: 'jurusan', attributes: ['id', 'kode', 'nama'], required: false }],
+        }),
         MataPelajaran.findAll({ where: { is_active: true } }),
       ]);
 
