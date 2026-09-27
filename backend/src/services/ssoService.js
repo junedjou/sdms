@@ -99,6 +99,7 @@ const createSSOToken = (user, appName) => {
   // lainnya            → /sso/callback?token=...&from=sdms (default)
   const SSO_CALLBACK_PATHS = {
     absen: '/api/auth/sso-callback',
+    pkl:   '/api/auth/sso-callback',
   };
   const callbackPath = SSO_CALLBACK_PATHS[appName] || '/sso/callback';
   const separator    = callbackPath.includes('?') ? '&' : '?';
