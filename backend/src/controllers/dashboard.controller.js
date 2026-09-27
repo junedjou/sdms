@@ -167,7 +167,7 @@ const getAppHub = async (req, res) => {
     { id: 'website',      name: 'Website',       label: 'Website Sekolah',              icon: 'globe',             color: '#0891B2', url: config.apps.website,   permission: 'website:access',   description: 'Kelola konten website sekolah' },
     { id: 'inventaris',   name: 'Inventaris',    label: 'Inventaris Sekolah',           icon: 'archive',           color: '#64748B', url: null, permission: null, status: 'development', description: 'Manajemen aset dan inventaris' },
     { id: 'perpustakaan', name: 'Perpustakaan',  label: 'Perpustakaan Digital',         icon: 'library',           color: '#64748B', url: null, permission: null, status: 'development', description: 'Sistem informasi perpustakaan' },
-    { id: 'pkl',          name: 'PKL',           label: 'Praktik Kerja Lapangan',       icon: 'briefcase',         color: '#64748B', url: null, permission: null, status: 'development', description: 'Monitoring PKL dan magang siswa' },
+    { id: 'pkl',          name: 'PKL',           label: 'Praktik Kerja Lapangan',       icon: 'briefcase',         color: '#0369A1', url: config.apps.pkl,       permission: 'pkl:access',       description: 'Monitoring PKL dan magang siswa' },
     { id: 'alumni',       name: 'Alumni',        label: 'Data Alumni',                  icon: 'users',             color: '#64748B', url: null, permission: null, status: 'development', description: 'Manajemen data alumni' },
   ];
 
