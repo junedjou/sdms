@@ -513,6 +513,24 @@ const builtinApps = [
     app_url: 'https://pkl.smkn1kras.sch.id',
     status: 'unknown', latency: null,
   },
+  {
+    id: 'website-smk', name: 'Website SMK', slug: 'website-smk',
+    description: 'Website resmi SMK Negeri 1 Kras — informasi sekolah, berita, pengumuman',
+    gradient: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)',
+    icon: GlobeAltIcon, category: 'Publik',
+    sso_enabled: false, sync_enabled: false,
+    app_url: 'https://smkn1kras.sch.id',
+    status: 'unknown', latency: null,
+  },
+  {
+    id: 'supervisi', name: 'Supervisi', slug: 'supervisi',
+    description: 'Web supervisi pembelajaran — monitoring & penilaian kinerja guru',
+    gradient: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
+    icon: ClipboardDocumentListIcon, category: 'Akademik',
+    sso_enabled: false, sync_enabled: false,
+    app_url: 'https://supervisi.mritsmkn1kras.web.id',
+    status: 'unknown', latency: null,
+  },
 ];
 
 // ── State ───────────────────────────────────────────────────
