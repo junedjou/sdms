@@ -418,7 +418,7 @@ import {
   ArrowPathIcon, PlusIcon, ArrowTopRightOnSquareIcon, Squares2X2Icon,
   ExclamationTriangleIcon, Cog6ToothIcon,
   BookOpenIcon, ClipboardDocumentListIcon, MoonIcon,
-  CalendarDaysIcon, AcademicCapIcon, GlobeAltIcon, LinkIcon,
+  CalendarDaysIcon, AcademicCapIcon, GlobeAltIcon, LinkIcon, BriefcaseIcon,
   PencilIcon, TrashIcon, WrenchScrewdriverIcon, EyeIcon, EyeSlashIcon,
 } from '@heroicons/vue/24/outline';
 
@@ -502,6 +502,15 @@ const builtinApps = [
     gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
     icon: GlobeAltIcon, category: 'Publik',
     sso_enabled: false, sync_enabled: true,
+    status: 'unknown', latency: null,
+  },
+  {
+    id: 'pkl', name: 'PKL', slug: 'pkl',
+    description: 'Jurnal digital PKL — monitoring praktik kerja lapangan, jurnal harian, laporan',
+    gradient: 'linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%)',
+    icon: BriefcaseIcon, category: 'Akademik',
+    sso_enabled: true, sync_enabled: true,
+    app_url: 'https://pkl.smkn1kras.sch.id',
     status: 'unknown', latency: null,
   },
 ];
