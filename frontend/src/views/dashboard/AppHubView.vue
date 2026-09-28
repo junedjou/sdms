@@ -497,14 +497,6 @@ const builtinApps = [
     status: 'unknown', latency: null,
   },
   {
-    id: 'website', name: 'Website Sekolah', slug: 'website',
-    description: 'Portal website resmi sekolah',
-    gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-    icon: GlobeAltIcon, category: 'Publik',
-    sso_enabled: false, sync_enabled: true,
-    status: 'unknown', latency: null,
-  },
-  {
     id: 'pkl', name: 'PKL', slug: 'pkl',
     description: 'Jurnal digital PKL — monitoring praktik kerja lapangan, jurnal harian, laporan',
     gradient: 'linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%)',
