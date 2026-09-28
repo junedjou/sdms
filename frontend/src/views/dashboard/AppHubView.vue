@@ -523,6 +523,15 @@ const builtinApps = [
     app_url: 'https://supervisi.mritsmkn1kras.web.id',
     status: 'unknown', latency: null,
   },
+  {
+    id: 'kelulusan-web', name: 'Info Kelulusan', slug: 'kelulusan-web',
+    description: 'Informasi kelulusan siswa SMK Negeri 1 Kras — pengumuman, verifikasi ijazah',
+    gradient: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+    icon: AcademicCapIcon, category: 'Akademik',
+    sso_enabled: false, sync_enabled: false,
+    app_url: 'https://kelulusan.smkn1kras.sch.id',
+    status: 'unknown', latency: null,
+  },
 ];
 
 // ── State ───────────────────────────────────────────────────
