@@ -489,11 +489,12 @@ const builtinApps = [
     status: 'unknown', latency: null,
   },
   {
-    id: 'kelulusan', name: 'Kelulusan', slug: 'kelulusan',
-    description: 'Manajemen kelulusan, rapor, transkrip',
-    gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    icon: AcademicCapIcon, category: 'Akademik',
-    sso_enabled: true, sync_enabled: false,
+    id: 'antrian', name: 'Antrian', slug: 'antrian',
+    description: 'Sistem antrian digital SMK Negeri 1 Kras',
+    gradient: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+    icon: AcademicCapIcon, category: 'Layanan',
+    sso_enabled: false, sync_enabled: false,
+    app_url: 'https://antrian.smkn1kras.sch.id',
     status: 'unknown', latency: null,
   },
   {
