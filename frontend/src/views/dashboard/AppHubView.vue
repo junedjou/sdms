@@ -678,7 +678,15 @@ const launchApp = async (app) => {
           const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
           if (isMobile) {
             notify.success(`Membuka ${app.name}...`);
-            setTimeout(() => { window.location.href = redirect_url; }, 200);
+            // Gunakan <a> click trick agar browser eksternal yang handle,
+            // bukan in-app WebView — ini kunci agar localStorage absen bisa diakses
+            const a = document.createElement('a');
+            a.href = redirect_url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
           } else {
             // Desktop — buka tab baru, fallback same-tab jika diblokir
             const popup = window.open(redirect_url, '_blank', 'noopener,noreferrer');
