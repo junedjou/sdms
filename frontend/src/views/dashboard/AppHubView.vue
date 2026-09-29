@@ -673,13 +673,20 @@ const launchApp = async (app) => {
         const res = await gatewayService.ssoToken(app.slug);
         const { redirect_url } = res.data.data;
         if (redirect_url) {
-          // Buka popup dulu, baru notify — supaya browser tidak blok popup
-          const popup = window.open(redirect_url, '_blank', 'noopener,noreferrer');
-          if (popup) {
-            notify.success(`Membuka ${app.name} via SSO...`);
+          // Di mobile (Android/iOS) — popup sering blank atau diblokir
+          // Langsung redirect same-tab agar lebih reliable
+          const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
+          if (isMobile) {
+            notify.success(`Membuka ${app.name}...`);
+            setTimeout(() => { window.location.href = redirect_url; }, 200);
           } else {
-            // Popup diblokir browser (Android) — redirect same-tab tanpa notif kuning
-            setTimeout(() => { window.location.href = redirect_url; }, 300);
+            // Desktop — buka tab baru, fallback same-tab jika diblokir
+            const popup = window.open(redirect_url, '_blank', 'noopener,noreferrer');
+            if (popup) {
+              notify.success(`Membuka ${app.name} via SSO...`);
+            } else {
+              setTimeout(() => { window.location.href = redirect_url; }, 300);
+            }
           }
           return;
         }
