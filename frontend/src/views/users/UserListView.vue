@@ -211,6 +211,10 @@
             <table class="table">
               <thead>
                 <tr>
+                  <th class="w-10">
+                    <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      :checked="guruIsAllSelected" :indeterminate="guruIsPartialSelected" @change="guruToggleAll" />
+                  </th>
                   <th>Guru</th>
                   <th>Username</th>
                   <th>NIP</th>
@@ -222,7 +226,12 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in guruItems" :key="item.id">
+                <tr v-for="item in guruItems" :key="item.id" :class="isSelected(item.id) ? 'bg-primary-50/50' : ''">
+                  <td>
+                    <input type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      :checked="isSelected(item.id)" @change="toggleOne(item.id)"
+                      :disabled="item.id === authStore.user?.id" />
+                  </td>
                   <td>
                     <div class="flex items-center gap-3">
                       <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
@@ -1163,12 +1172,31 @@ const toggleOne     = (id) => {
 };
 const clearSelected = () => { selected.value = []; };
 
+// ── Selection khusus tab Guru ────────────────────────────────
+const guruIsAllSelected = computed(() =>
+  guruItems.value.length > 0 && guruItems.value.every(i => selected.value.includes(i.id))
+);
+const guruIsPartialSelected = computed(() =>
+  selected.value.length > 0 && !guruIsAllSelected.value &&
+  guruItems.value.some(i => selected.value.includes(i.id))
+);
+const guruToggleAll = () => {
+  if (guruIsAllSelected.value) {
+    const pageIds = guruItems.value.map(i => i.id);
+    selected.value = selected.value.filter(id => !pageIds.includes(id));
+  } else {
+    const merged = new Set([...selected.value, ...guruItems.value.map(i => i.id)]);
+    selected.value = Array.from(merged);
+  }
+};
+
 const executeBulkDelete = async () => {
   bulkDeleting.value = true;
   try {
     await Promise.all(selected.value.map(id => userService.delete(id)));
     notify.success(`${selected.value.length} user berhasil dihapus`);
     clearSelected(); showBulkConfirm.value = false; fetchData();
+    if (activeTab.value === 'guru') fetchGuruData();
   } catch (err) {
     notify.error(err.response?.data?.message || 'Gagal menghapus user');
   } finally { bulkDeleting.value = false; }
