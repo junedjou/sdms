@@ -49,6 +49,7 @@ router.get('/piket',                requirePermission('user:view'),   asyncHandl
 router.get('/bk',                   requirePermission('user:view'),   asyncHandler(ctrl.getUsersBK));
 router.get('/wali-kelas',           requirePermission('user:view'),   asyncHandler(ctrl.getUsersWaliKelas));
 router.get('/kepala-sekolah',       requirePermission('user:view'),   asyncHandler(ctrl.getUsersKepalaSekolah));
+router.get('/guru',                 requirePermission('user:view'),   asyncHandler(ctrl.getUsersGuru));
 router.get('/',                     requirePermission('user:view'),   asyncHandler(ctrl.getUsers));
 router.get('/:id',                  requirePermission('user:view'),   asyncHandler(ctrl.getUserById));
 router.post('/',                    requirePermission('user:create'), validate(createUserSchema), asyncHandler(ctrl.createUser));

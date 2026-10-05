@@ -96,7 +96,8 @@ export const userService = {
   export:        (params) => api.get('/users/export', { params, responseType: 'blob' }),
   template:      ()       => api.get('/users/template', { responseType: 'blob' }),
   // Guru Piket
-  guruSearch:       (params) => api.get('/users/guru-search', { params }),
+  guruSearch:         (params) => api.get('/users/guru-search', { params }),
+  guruUsers:          (params) => api.get('/users/guru', { params }),
   piketUsers:         (params) => api.get('/users/piket', { params }),
   bkUsers:            (params) => api.get('/users/bk', { params }),
   waliKelasUsers:     (params) => api.get('/users/wali-kelas', { params }),

@@ -35,6 +35,10 @@
         @click="switchTab(t.key)"
       >
         {{ t.label }}
+        <span v-if="t.key === 'guru' && guruTotal > 0"
+          class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
+          {{ guruTotal }}
+        </span>
         <span v-if="t.key === 'piket' && piketTotal > 0"
           class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">
           {{ piketTotal }}
@@ -164,6 +168,117 @@
 
     </template>
     <!-- END TAB: SEMUA USER -->
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- TAB: GURU                                             -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <template v-if="activeTab === 'guru'">
+
+      <!-- Info banner -->
+      <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex gap-3">
+        <div class="flex-shrink-0 w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+          <AcademicCapIcon class="w-5 h-5 text-emerald-600" />
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-emerald-800">Guru — Akun Login Tenaga Pendidik</p>
+          <p class="text-xs text-emerald-700 mt-0.5">
+            Daftar akun user dengan role <strong>Guru</strong>. Username biasanya = NIP. Akun guru bisa dibuat dari
+            <RouterLink to="/master/guru" class="underline font-semibold">Data Guru</RouterLink> melalui tombol Buat Akun.
+          </p>
+        </div>
+      </div>
+
+      <!-- Filter guru -->
+      <div class="card p-4 flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input v-model="guruSearch" @input="debouncedFetchGuru" type="search"
+            placeholder="Cari nama, username..." class="form-input pl-9" />
+        </div>
+        <button @click="openForm()" v-if="authStore.hasPermission('user:create')"
+          class="btn-primary whitespace-nowrap">
+          <PlusIcon class="w-4 h-4" /> Tambah User Guru
+        </button>
+      </div>
+
+      <!-- Tabel Guru -->
+      <div class="card overflow-hidden">
+        <div v-if="guruLoading" class="p-8 flex justify-center">
+          <div class="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
+        </div>
+        <template v-else-if="guruItems.length">
+          <div class="table-wrapper border-0">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Guru</th>
+                  <th>Username</th>
+                  <th>NIP</th>
+                  <th>Jabatan</th>
+                  <th>Mata Pelajaran</th>
+                  <th>Login Terakhir</th>
+                  <th>Status</th>
+                  <th class="text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in guruItems" :key="item.id">
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                           :class="getAvatarColor(item.full_name)">
+                        {{ getInitials(item.full_name) }}
+                      </div>
+                      <p class="font-medium text-gray-900">{{ item.full_name }}</p>
+                    </div>
+                  </td>
+                  <td class="font-mono text-sm text-gray-700">{{ item.username }}</td>
+                  <td class="font-mono text-xs text-gray-600">{{ item.guru?.nip || item.guru?.niy || '—' }}</td>
+                  <td class="text-sm text-gray-700">{{ item.guru?.jabatan || '—' }}</td>
+                  <td class="text-sm text-gray-700">{{ item.guru?.mata_pelajaran || '—' }}</td>
+                  <td class="text-sm text-gray-500">{{ formatDateTime(item.last_login_at) }}</td>
+                  <td>
+                    <span class="badge" :class="item.is_active ? 'badge-green' : 'badge-red'">
+                      {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex items-center justify-end gap-1">
+                      <button v-if="authStore.hasPermission('user:update')"
+                        @click="openForm(item)" class="btn-ghost btn-sm p-1.5" title="Edit">
+                        <PencilSquareIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.isAdmin"
+                        @click="openResetPw(item)" class="btn-ghost btn-sm p-1.5 text-yellow-600 hover:bg-yellow-50" title="Reset Password">
+                        <KeyIcon class="w-4 h-4" />
+                      </button>
+                      <button v-if="authStore.hasPermission('user:delete') && item.id !== authStore.user?.id"
+                        @click="confirmDelete(item)" class="btn-ghost btn-sm p-1.5 text-red-500 hover:bg-red-50" title="Hapus">
+                        <TrashIcon class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-4 py-3 border-t border-gray-50">
+            <BasePagination
+              :current-page="guruPage" :total-pages="guruTotalPages"
+              :total="guruTotal" :limit="guruLimit"
+              @change="(p) => { guruPage = p; fetchGuruData(); }"
+              @limit-change="(l) => { guruLimit = l; guruPage = 1; fetchGuruData(); }"
+            />
+          </div>
+        </template>
+        <BaseEmpty v-else
+          title="Belum ada akun guru"
+          description="Buat akun dari menu Data Guru atau tambah manual di sini"
+          icon="inbox" />
+      </div>
+
+    </template>
+    <!-- END TAB: GURU -->
 
     <!-- ══════════════════════════════════════════════════════ -->
     <!-- TAB: GURU PIKET                                        -->
@@ -956,7 +1071,7 @@ import {
   PlusIcon, PencilSquareIcon, TrashIcon,
   MagnifyingGlassIcon, KeyIcon,
   ArrowDownTrayIcon, ArrowUpTrayIcon,
-  ShieldCheckIcon, XMarkIcon,
+  ShieldCheckIcon, XMarkIcon, AcademicCapIcon,
 } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
@@ -966,6 +1081,7 @@ uiStore.setBreadcrumbs([{ label: 'Administrasi' }, { label: 'Manajemen User' }])
 // ── Tabs ──────────────────────────────────────────────────────
 const tabs = [
   { key: 'semua',          label: 'Semua User' },
+  { key: 'guru',           label: 'Guru' },
   { key: 'piket',          label: 'Guru Piket' },
   { key: 'bk',             label: 'Guru BK' },
   { key: 'wali_kelas',     label: 'Wali Kelas' },
@@ -975,10 +1091,11 @@ const activeTab = ref('semua');
 
 const switchTab = (key) => {
   activeTab.value = key;
-  if (key === 'piket' && piketItems.value.length === 0) fetchPiketData();
-  if (key === 'bk' && bkItems.value.length === 0) fetchBKData();
-  if (key === 'wali_kelas' && waliItems.value.length === 0) fetchWaliData();
-  if (key === 'kepala_sekolah' && kepalaItems.value.length === 0) fetchKepalaData();
+  if (key === 'guru'          && guruItems.value.length === 0)   fetchGuruData();
+  if (key === 'piket'         && piketItems.value.length === 0)  fetchPiketData();
+  if (key === 'bk'            && bkItems.value.length === 0)     fetchBKData();
+  if (key === 'wali_kelas'    && waliItems.value.length === 0)   fetchWaliData();
+  if (key === 'kepala_sekolah'&& kepalaItems.value.length === 0) fetchKepalaData();
 };
 
 // ── State Semua User ──────────────────────────────────────────
@@ -986,6 +1103,12 @@ const items      = ref([]); const loading   = ref(true); const roles     = ref([
 const page       = ref(1);  const limit     = ref(10);   const total     = ref(0);
 const totalPages = computed(() => Math.ceil(total.value / limit.value));
 const search     = ref(''); const filterRole = ref('');
+
+// ── State Guru ────────────────────────────────────────────────
+const guruItems      = ref([]); const guruLoading    = ref(false);
+const guruPage       = ref(1);  const guruLimit      = ref(20);
+const guruTotal      = ref(0);  const guruSearch     = ref('');
+const guruTotalPages = computed(() => Math.ceil(guruTotal.value / guruLimit.value));
 
 // ── State Guru Piket ──────────────────────────────────────────
 const piketItems      = ref([]); const piketLoading    = ref(false);
@@ -1200,6 +1323,18 @@ const fetchBKData = async () => {
   } catch { notify.error('Gagal memuat data guru BK'); } finally { bkLoading.value = false; }
 };
 
+const fetchGuruData = async () => {
+  guruLoading.value = true;
+  try {
+    const res = await userService.guruUsers({
+      page: guruPage.value, limit: guruLimit.value,
+      search: guruSearch.value,
+    });
+    guruItems.value = res.data.data || [];
+    guruTotal.value = res.data.meta?.total || 0;
+  } catch { notify.error('Gagal memuat data guru'); } finally { guruLoading.value = false; }
+};
+
 const fetchWaliData = async () => {
   waliLoading.value = true;
   try {
@@ -1229,6 +1364,7 @@ const fetchRoles = async () => {
 };
 
 const debouncedFetch       = debounce(() => { page.value = 1; fetchData(); });
+const debouncedFetchGuru   = debounce(() => { guruPage.value = 1; fetchGuruData(); });
 const debouncedFetchPiket  = debounce(() => { piketPage.value = 1; fetchPiketData(); });
 const debouncedFetchBK     = debounce(() => { bkPage.value = 1; fetchBKData(); });
 const debouncedFetchWali   = debounce(() => { waliPage.value = 1; fetchWaliData(); });
@@ -1279,7 +1415,8 @@ const submitForm = async () => {
     }
     showForm.value = false;
     fetchData();
-    if (activeTab.value === 'piket') fetchPiketData();
+    if (activeTab.value === 'guru')           fetchGuruData();
+    if (activeTab.value === 'piket')         fetchPiketData();
     if (activeTab.value === 'bk') fetchBKData();
     if (activeTab.value === 'wali_kelas') fetchWaliData();
     if (activeTab.value === 'kepala_sekolah') fetchKepalaData();
@@ -1315,7 +1452,8 @@ const executeDelete = async () => {
     notify.success('User berhasil dihapus');
     showConfirm.value = false;
     fetchData();
-    if (activeTab.value === 'piket') fetchPiketData();
+    if (activeTab.value === 'guru')           fetchGuruData();
+    if (activeTab.value === 'piket')         fetchPiketData();
     if (activeTab.value === 'bk') fetchBKData();
     if (activeTab.value === 'wali_kelas') fetchWaliData();
     if (activeTab.value === 'kepala_sekolah') fetchKepalaData();

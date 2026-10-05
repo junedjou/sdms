@@ -388,4 +388,41 @@ const getUsersKepalaSekolah = async (req, res) => {
   return paginated(res, paged, { total, page: parseInt(page), limit: lim });
 };
 
-module.exports = { getUsers, getUserById, createUser, updateUser, deleteUser, resetPassword, getRoles, getGuruSearch, getUsersPiket, getUsersBK, getUsersWaliKelas, getUsersKepalaSekolah };
+// GET /api/v1/users/guru
+// Daftar user dengan role utama 'guru' (termasuk yang merangkap wali_kelas, bk, dll.)
+const getUsersGuru = async (req, res) => {
+  const { page = 1, limit = 20, search = '' } = req.query;
+  const { limit: lim, offset } = getPagination(page, limit);
+
+  const roleGuru = await Role.findOne({ where: { name: 'guru' } });
+
+  const searchWhere = {};
+  if (search.trim()) {
+    searchWhere[Op.or] = [
+      { username:  { [Op.like]: `%${search.trim()}%` } },
+      { full_name: { [Op.like]: `%${search.trim()}%` } },
+      { email:     { [Op.like]: `%${search.trim()}%` } },
+    ];
+  }
+
+  const allUsers = await User.findAll({
+    where: searchWhere,
+    include: [
+      { model: Role, as: 'role', attributes: ['id', 'name', 'label'] },
+      { model: Guru, as: 'guru', attributes: ['id', 'nama', 'nip', 'niy', 'jabatan', 'mata_pelajaran', 'foto'] },
+    ],
+    order: [['full_name', 'ASC']],
+  });
+
+  // Filter: role utama guru ATAU extra_roles berisi guru-related roles
+  const guruUsers = allUsers.filter(u => {
+    return roleGuru && u.role_id === roleGuru.id;
+  });
+
+  const total = guruUsers.length;
+  const paged = guruUsers.slice(offset, offset + lim);
+
+  return paginated(res, paged, { total, page: parseInt(page), limit: lim });
+};
+
+module.exports = { getUsers, getUserById, createUser, updateUser, deleteUser, resetPassword, getRoles, getGuruSearch, getUsersPiket, getUsersBK, getUsersWaliKelas, getUsersKepalaSekolah, getUsersGuru };
