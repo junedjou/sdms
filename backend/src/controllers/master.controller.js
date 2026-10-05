@@ -1067,7 +1067,7 @@ const bulkResetPegawaiPassword = async (req, res) => {
   return success(res, results, `${results.berhasil.length} password berhasil direset, ${results.gagal.length} gagal`);
 };
 
-
+module.exports = {
   // Guru
   getGuru, getGuruById, createGuru, updateGuru, deleteGuru, bulkDeleteGuru,
   createGuruUser, bulkCreateGuruUser, resetGuruPassword, bulkResetGuruPassword,
