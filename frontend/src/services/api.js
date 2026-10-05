@@ -115,6 +115,10 @@ export const masterService = {
   guruExport:   ()       => api.get('/master/guru/export', { responseType: 'blob' }),
   guruTemplate: ()       => api.get('/master/guru/template', { responseType: 'blob' }),
   guruImport:   (fd)     => api.post('/master/guru/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  guruCreateUser:       (id)     => api.post(`/master/guru/${id}/create-user`),
+  guruBulkCreateUser:   (data)   => api.post('/master/guru/bulk-create-user', data),
+  guruResetPassword:    (id, d)  => api.post(`/master/guru/${id}/reset-password`, d),
+  guruBulkResetPassword:(data)   => api.post('/master/guru/bulk-reset-password', data),
 
   // Siswa
   siswaList:     (params) => api.get('/master/siswa', { params }),
@@ -140,6 +144,10 @@ export const masterService = {
   pegawaiExport:   ()       => api.get('/master/pegawai/export', { responseType: 'blob' }),
   pegawaiTemplate: ()       => api.get('/master/pegawai/template', { responseType: 'blob' }),
   pegawaiImport:   (fd)     => api.post('/master/pegawai/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  pegawaiCreateUser:       (id)     => api.post(`/master/pegawai/${id}/create-user`),
+  pegawaiBulkCreateUser:   (data)   => api.post('/master/pegawai/bulk-create-user', data),
+  pegawaiResetPassword:    (id, d)  => api.post(`/master/pegawai/${id}/reset-password`, d),
+  pegawaiBulkResetPassword:(data)   => api.post('/master/pegawai/bulk-reset-password', data),
 
   // Jurusan
   jurusanList:     (params) => api.get('/master/jurusan', { params }),

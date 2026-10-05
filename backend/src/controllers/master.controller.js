@@ -773,13 +773,309 @@ const bulkDeleteMapel = async (req, res) => {
   return success(res, { deleted: ids.length }, `${ids.length} mata pelajaran berhasil dihapus permanen`);
 };
 
-module.exports = {
+// ============================================================
+// GURU — AKUN LOGIN
+// ============================================================
+
+// POST /master/guru/:id/create-user
+const createGuruUser = async (req, res) => {
+  const { Op } = require('sequelize');
+  const guru = await Guru.findByPk(req.params.id);
+  if (!guru) return notFound(res, 'Data guru tidak ditemukan');
+  if (!guru.nip && !guru.niy) return badRequest(res, 'Guru belum memiliki NIP/NIY. Isi NIP/NIY terlebih dahulu');
+
+  const existing = await User.unscoped().findOne({ where: { guru_id: guru.id } });
+  if (existing) return conflict(res, `Akun login sudah ada (username: ${existing.username})`);
+
+  const role = await Role.findOne({ where: { name: 'guru' } });
+  if (!role) return badRequest(res, "Role 'guru' belum ada di sistem");
+
+  const username = (guru.nip || guru.niy).trim();
+  const email    = `${username}@sekolah.sch.id`;
+  const password = 'smkn1kras';
+
+  const dupUser = await User.unscoped().findOne({ where: { [Op.or]: [{ username }, { email }] } });
+  if (dupUser) return conflict(res, `Username ${username} sudah digunakan user lain`);
+
+  const hashed = await hashPassword(password);
+  const user = await User.create({
+    username,
+    email,
+    full_name: guru.nama,
+    role_id:   role.id,
+    password:  hashed,
+    guru_id:   guru.id,
+    is_active: true,
+  });
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'CREATE', resource: 'users', resourceId: user.id,
+    description: `Akun guru dibuat: ${username} (${guru.nama})`,
+  });
+
+  return created(res, {
+    username,
+    full_name: guru.nama,
+    role: role.label || role.name,
+    note: 'Password default: smkn1kras — minta guru segera ganti password',
+  }, 'Akun login guru berhasil dibuat');
+};
+
+// POST /master/guru/bulk-create-user
+const bulkCreateGuruUser = async (req, res) => {
+  const { Op } = require('sequelize');
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) return badRequest(res, 'ids harus berupa array');
+
+  const role = await Role.findOne({ where: { name: 'guru' } });
+  if (!role) return badRequest(res, "Role 'guru' belum ada di sistem");
+
+  const password = 'smkn1kras';
+  const hashed   = await hashPassword(password);
+  const results  = { berhasil: [], gagal: [] };
+
+  for (const id of ids) {
+    const guru = await Guru.findByPk(id);
+    if (!guru) { results.gagal.push({ id, alasan: 'Guru tidak ditemukan' }); continue; }
+    if (!guru.nip && !guru.niy) { results.gagal.push({ id, nama: guru.nama, alasan: 'Belum punya NIP/NIY' }); continue; }
+
+    const username = (guru.nip || guru.niy).trim();
+    const email    = `${username}@sekolah.sch.id`;
+
+    const existByGuru = await User.unscoped().findOne({ where: { guru_id: guru.id } });
+    if (existByGuru) { results.gagal.push({ id, nama: guru.nama, alasan: `Akun sudah ada (${existByGuru.username})` }); continue; }
+
+    const existByLogin = await User.unscoped().findOne({ where: { [Op.or]: [{ username }, { email }] } });
+    if (existByLogin) { results.gagal.push({ id, nama: guru.nama, alasan: `Username ${username} sudah dipakai` }); continue; }
+
+    try {
+      await User.create({ username, email, full_name: guru.nama, role_id: role.id, password: hashed, guru_id: guru.id, is_active: true });
+      results.berhasil.push({ id, nama: guru.nama, username });
+    } catch (e) {
+      results.gagal.push({ id, nama: guru.nama, alasan: e.message });
+    }
+  }
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'BULK_CREATE', resource: 'users',
+    description: `Bulk create akun guru: ${results.berhasil.length} berhasil, ${results.gagal.length} gagal`,
+  });
+
+  return success(res, results, `${results.berhasil.length} akun berhasil dibuat, ${results.gagal.length} gagal`);
+};
+
+// POST /master/guru/:id/reset-password
+const resetGuruPassword = async (req, res) => {
+  const guru = await Guru.findByPk(req.params.id);
+  if (!guru) return notFound(res, 'Data guru tidak ditemukan');
+
+  const userAkun = await User.unscoped().findOne({ where: { guru_id: guru.id } });
+  if (!userAkun) return notFound(res, 'Guru ini belum memiliki akun login');
+
+  const newPassword = req.body.new_password || 'smkn1kras';
+  const hashed = await hashPassword(newPassword);
+  await userAkun.update({ password: hashed, password_changed_at: new Date() });
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'UPDATE', resource: 'users', resourceId: userAkun.id,
+    description: `Password guru ${guru.nama} (${userAkun.username}) direset oleh ${req.user.username}`,
+  });
+
+  return success(res, { username: userAkun.username }, `Password akun ${userAkun.username} berhasil direset`);
+};
+
+// POST /master/guru/bulk-reset-password
+const bulkResetGuruPassword = async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) return badRequest(res, 'ids harus berupa array');
+
+  const newPassword = req.body.new_password || 'smkn1kras';
+  const hashed = await hashPassword(newPassword);
+  const results = { berhasil: [], gagal: [] };
+
+  for (const id of ids) {
+    const guru = await Guru.findByPk(id);
+    if (!guru) { results.gagal.push({ id, alasan: 'Guru tidak ditemukan' }); continue; }
+
+    const userAkun = await User.unscoped().findOne({ where: { guru_id: guru.id } });
+    if (!userAkun) { results.gagal.push({ id, nama: guru.nama, alasan: 'Belum punya akun login' }); continue; }
+
+    try {
+      await userAkun.update({ password: hashed, password_changed_at: new Date() });
+      results.berhasil.push({ id, nama: guru.nama, username: userAkun.username });
+    } catch (e) {
+      results.gagal.push({ id, nama: guru.nama, alasan: e.message });
+    }
+  }
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'BULK_UPDATE', resource: 'users',
+    description: `Bulk reset password guru: ${results.berhasil.length} berhasil, ${results.gagal.length} gagal`,
+  });
+
+  return success(res, results, `${results.berhasil.length} password berhasil direset, ${results.gagal.length} gagal`);
+};
+
+// ============================================================
+// PEGAWAI — AKUN LOGIN
+// ============================================================
+
+// POST /master/pegawai/:id/create-user
+const createPegawaiUser = async (req, res) => {
+  const { Op } = require('sequelize');
+  const pegawai = await Pegawai.findByPk(req.params.id);
+  if (!pegawai) return notFound(res, 'Data pegawai tidak ditemukan');
+  if (!pegawai.nip) return badRequest(res, 'Pegawai belum memiliki NIP. Isi NIP terlebih dahulu');
+
+  const existing = await User.unscoped().findOne({ where: { pegawai_id: pegawai.id } });
+  if (existing) return conflict(res, `Akun login sudah ada (username: ${existing.username})`);
+
+  const role = await Role.findOne({ where: { name: 'pegawai' } });
+  if (!role) return badRequest(res, "Role 'pegawai' belum ada di sistem");
+
+  const username = pegawai.nip.trim();
+  const email    = `${username}@sekolah.sch.id`;
+  const password = 'smkn1kras';
+
+  const dupUser = await User.unscoped().findOne({ where: { [Op.or]: [{ username }, { email }] } });
+  if (dupUser) return conflict(res, `Username ${username} sudah digunakan user lain`);
+
+  const hashed = await hashPassword(password);
+  const user = await User.create({
+    username,
+    email,
+    full_name: pegawai.nama,
+    role_id:   role.id,
+    password:  hashed,
+    pegawai_id: pegawai.id,
+    is_active: true,
+  });
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'CREATE', resource: 'users', resourceId: user.id,
+    description: `Akun pegawai dibuat: ${username} (${pegawai.nama})`,
+  });
+
+  return created(res, {
+    username,
+    full_name: pegawai.nama,
+    role: role.label || role.name,
+    note: 'Password default: smkn1kras — minta pegawai segera ganti password',
+  }, 'Akun login pegawai berhasil dibuat');
+};
+
+// POST /master/pegawai/bulk-create-user
+const bulkCreatePegawaiUser = async (req, res) => {
+  const { Op } = require('sequelize');
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) return badRequest(res, 'ids harus berupa array');
+
+  const role = await Role.findOne({ where: { name: 'pegawai' } });
+  if (!role) return badRequest(res, "Role 'pegawai' belum ada di sistem");
+
+  const password = 'smkn1kras';
+  const hashed   = await hashPassword(password);
+  const results  = { berhasil: [], gagal: [] };
+
+  for (const id of ids) {
+    const pegawai = await Pegawai.findByPk(id);
+    if (!pegawai) { results.gagal.push({ id, alasan: 'Pegawai tidak ditemukan' }); continue; }
+    if (!pegawai.nip) { results.gagal.push({ id, nama: pegawai.nama, alasan: 'Belum punya NIP' }); continue; }
+
+    const username = pegawai.nip.trim();
+    const email    = `${username}@sekolah.sch.id`;
+
+    const existByPegawai = await User.unscoped().findOne({ where: { pegawai_id: pegawai.id } });
+    if (existByPegawai) { results.gagal.push({ id, nama: pegawai.nama, alasan: `Akun sudah ada (${existByPegawai.username})` }); continue; }
+
+    const existByLogin = await User.unscoped().findOne({ where: { [Op.or]: [{ username }, { email }] } });
+    if (existByLogin) { results.gagal.push({ id, nama: pegawai.nama, alasan: `Username ${username} sudah dipakai` }); continue; }
+
+    try {
+      await User.create({ username, email, full_name: pegawai.nama, role_id: role.id, password: hashed, pegawai_id: pegawai.id, is_active: true });
+      results.berhasil.push({ id, nama: pegawai.nama, username });
+    } catch (e) {
+      results.gagal.push({ id, nama: pegawai.nama, alasan: e.message });
+    }
+  }
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'BULK_CREATE', resource: 'users',
+    description: `Bulk create akun pegawai: ${results.berhasil.length} berhasil, ${results.gagal.length} gagal`,
+  });
+
+  return success(res, results, `${results.berhasil.length} akun berhasil dibuat, ${results.gagal.length} gagal`);
+};
+
+// POST /master/pegawai/:id/reset-password
+const resetPegawaiPassword = async (req, res) => {
+  const pegawai = await Pegawai.findByPk(req.params.id);
+  if (!pegawai) return notFound(res, 'Data pegawai tidak ditemukan');
+
+  const userAkun = await User.unscoped().findOne({ where: { pegawai_id: pegawai.id } });
+  if (!userAkun) return notFound(res, 'Pegawai ini belum memiliki akun login');
+
+  const newPassword = req.body.new_password || 'smkn1kras';
+  const hashed = await hashPassword(newPassword);
+  await userAkun.update({ password: hashed, password_changed_at: new Date() });
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'UPDATE', resource: 'users', resourceId: userAkun.id,
+    description: `Password pegawai ${pegawai.nama} (${userAkun.username}) direset oleh ${req.user.username}`,
+  });
+
+  return success(res, { username: userAkun.username }, `Password akun ${userAkun.username} berhasil direset`);
+};
+
+// POST /master/pegawai/bulk-reset-password
+const bulkResetPegawaiPassword = async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) return badRequest(res, 'ids harus berupa array');
+
+  const newPassword = req.body.new_password || 'smkn1kras';
+  const hashed = await hashPassword(newPassword);
+  const results = { berhasil: [], gagal: [] };
+
+  for (const id of ids) {
+    const pegawai = await Pegawai.findByPk(id);
+    if (!pegawai) { results.gagal.push({ id, alasan: 'Pegawai tidak ditemukan' }); continue; }
+
+    const userAkun = await User.unscoped().findOne({ where: { pegawai_id: pegawai.id } });
+    if (!userAkun) { results.gagal.push({ id, nama: pegawai.nama, alasan: 'Belum punya akun login' }); continue; }
+
+    try {
+      await userAkun.update({ password: hashed, password_changed_at: new Date() });
+      results.berhasil.push({ id, nama: pegawai.nama, username: userAkun.username });
+    } catch (e) {
+      results.gagal.push({ id, nama: pegawai.nama, alasan: e.message });
+    }
+  }
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'BULK_UPDATE', resource: 'users',
+    description: `Bulk reset password pegawai: ${results.berhasil.length} berhasil, ${results.gagal.length} gagal`,
+  });
+
+  return success(res, results, `${results.berhasil.length} password berhasil direset, ${results.gagal.length} gagal`);
+};
+
+
   // Guru
   getGuru, getGuruById, createGuru, updateGuru, deleteGuru, bulkDeleteGuru,
+  createGuruUser, bulkCreateGuruUser, resetGuruPassword, bulkResetGuruPassword,
   // Siswa
   getSiswa, getSiswaById, createSiswa, updateSiswa, deleteSiswa, bulkDeleteSiswa, createSiswaUser, bulkCreateSiswaUser, resetSiswaPassword, bulkResetSiswaPassword,
   // Pegawai
   getPegawai, createPegawai, updatePegawai, deletePegawai, bulkDeletePegawai,
+  createPegawaiUser, bulkCreatePegawaiUser, resetPegawaiPassword, bulkResetPegawaiPassword,
   // Jurusan
   getJurusan, createJurusan, updateJurusan, bulkDeleteJurusan,
   // Kelas

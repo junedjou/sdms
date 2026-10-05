@@ -6,7 +6,6 @@
         <p class="page-subtitle">Kelola data tenaga pendidik sekolah</p>
       </div>
       <div class="flex items-center gap-2 flex-wrap justify-end">
-        <!-- Export & Import buttons -->
         <div class="flex items-center gap-1.5">
           <button @click="doExport" :disabled="exporting" class="btn-secondary btn-sm gap-1.5">
             <ArrowDownTrayIcon class="w-3.5 h-3.5" />
@@ -54,7 +53,7 @@
                 <th>Jurusan</th>
                 <th>Status</th>
                 <th>Mata Pelajaran</th>
-                <th>No. HP</th>
+                <th>Akun</th>
                 <th class="text-right">Aksi</th>
               </tr>
             </thead>
@@ -87,12 +86,41 @@
                   </span>
                 </td>
                 <td class="text-gray-600 text-sm">{{ item.mata_pelajaran || '—' }}</td>
-                <td class="text-gray-600 text-sm">{{ item.no_hp || '—' }}</td>
+                <!-- Kolom Akun -->
+                <td>
+                  <span v-if="item.user"
+                    :title="item.user.is_active ? `Sudah punya akun (${item.user.username})` : `Akun nonaktif (${item.user.username})`">
+                    <CheckCircleIcon class="w-4 h-4" :class="item.user.is_active ? 'text-emerald-500' : 'text-gray-300'" />
+                  </span>
+                  <span v-else class="text-xs text-gray-300">—</span>
+                </td>
                 <td class="text-right">
                   <div class="flex items-center justify-end gap-1">
+                    <!-- Buat Akun -->
+                    <button v-if="authStore.hasPermission('guru:update')"
+                      @click="openCreateUser(item)"
+                      :title="item.user ? `Akun sudah ada (${item.user.username})` : 'Buat Akun Login'"
+                      :disabled="!!item.user"
+                      :class="item.user
+                        ? 'btn-ghost btn-sm p-1.5 text-gray-300 cursor-not-allowed'
+                        : 'btn-ghost btn-sm p-1.5 text-emerald-600 hover:bg-emerald-50'">
+                      <UserPlusIcon class="w-4 h-4" />
+                    </button>
+                    <!-- Reset Password -->
+                    <button v-if="authStore.hasPermission('guru:update')"
+                      @click="openResetPassword(item)"
+                      :title="item.user ? `Reset password (${item.user.username})` : 'Belum punya akun'"
+                      :class="item.user
+                        ? 'btn-ghost btn-sm p-1.5 text-amber-500 hover:bg-amber-50'
+                        : 'btn-ghost btn-sm p-1.5 text-gray-300 cursor-not-allowed'"
+                      :disabled="!item.user">
+                      <KeyIcon class="w-4 h-4" />
+                    </button>
+                    <!-- Edit -->
                     <button v-if="authStore.hasPermission('guru:update')" @click="openForm(item)" class="btn-ghost btn-sm p-1.5" title="Edit">
                       <PencilSquareIcon class="w-4 h-4" />
                     </button>
+                    <!-- Hapus -->
                     <button v-if="authStore.hasPermission('guru:delete')" @click="confirmDelete(item)" class="btn-ghost btn-sm p-1.5 text-red-500 hover:bg-red-50" title="Nonaktifkan">
                       <TrashIcon class="w-4 h-4" />
                     </button>
@@ -114,36 +142,43 @@
       <BaseEmpty v-else :title="search ? 'Guru tidak ditemukan' : 'Belum ada data guru'" :icon="search ? 'search' : 'inbox'" />
     </div>
 
-    <!-- Import Modal -->
-    <ImportExcelModal
-      v-model="showImport"
-      title="Guru"
-      :import-fn="importFn"
-      @download-template="doTemplate"
-      @imported="handleImported"
-    />
+    <!-- ── Bulk Action Bar ── -->
+    <Transition enter-active-class="transition-all duration-300 ease-out" enter-from-class="opacity-0 translate-y-4"
+      enter-to-class="opacity-100 translate-y-0" leave-active-class="transition-all duration-200 ease-in"
+      leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-4">
+      <div v-if="selected.length > 0"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-gray-900 text-white rounded-2xl shadow-2xl ring-1 ring-white/10">
+        <div class="flex items-center gap-2 pr-3 border-r border-white/20">
+          <span class="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-xs font-bold">{{ selected.length }}</span>
+          <span class="text-sm font-medium">guru dipilih</span>
+        </div>
+        <button v-if="authStore.hasPermission('guru:update')" @click="openBulkCreateUser"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-sm font-medium transition-colors">
+          <UserGroupIcon class="w-4 h-4" /> Buat Akun
+        </button>
+        <button v-if="authStore.hasPermission('guru:update')" @click="openBulkResetPassword"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-sm font-medium transition-colors">
+          <KeyIcon class="w-4 h-4" /> Reset Password
+        </button>
+        <button v-if="authStore.hasPermission('guru:delete')" @click="openBulkConfirm" :disabled="bulkDeleting"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-sm font-medium transition-colors disabled:opacity-60">
+          <TrashIcon class="w-4 h-4" /> {{ bulkDeleting ? 'Menghapus...' : 'Hapus' }}
+        </button>
+        <button @click="clearSelected" class="p-1.5 rounded-lg hover:bg-white/10 transition-colors" title="Batalkan seleksi">
+          <XMarkIcon class="w-4 h-4" />
+        </button>
+      </div>
+    </Transition>
 
-    <!-- Bulk delete confirm -->
-    <BaseConfirm
-      v-model="showBulkConfirm"
-      title="Hapus Massal Guru"
-      :message="`Nonaktifkan ${selected.length} guru yang dipilih? Tindakan ini tidak dapat dibatalkan.`"
-      confirm-label="Ya, Hapus Semua"
-      :danger-mode="true"
-      :loading="bulkDeleting"
-      @confirm="executeBulkDelete"
-    />
+    <ImportExcelModal v-model="showImport" title="Guru" :import-fn="importFn"
+      @download-template="doTemplate" @imported="handleImported" />
 
-    <!-- Floating bulk action bar -->
-    <BulkDeleteBar
-      :count="selected.length"
-      label="guru"
-      :deleting="bulkDeleting"
-      @delete="openBulkConfirm"
-      @clear="clearSelected"
-    />
+    <BaseConfirm v-model="showBulkConfirm" title="Hapus Massal Guru"
+      :message="`Nonaktifkan ${selected.length} guru yang dipilih?`"
+      confirm-label="Ya, Hapus Semua" :danger-mode="true" :loading="bulkDeleting"
+      @confirm="executeBulkDelete" />
 
-    <!-- Form Modal -->
+    <!-- ── Form Modal ── -->
     <BaseModal v-model="showForm" :title="editItem ? 'Edit Data Guru' : 'Tambah Guru'" size="lg">
       <form @submit.prevent="submitForm" class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
         <div class="form-group sm:col-span-2">
@@ -226,15 +261,201 @@
     </BaseModal>
 
     <!-- Konfirmasi hapus -->
-    <BaseConfirm
-      v-model="showConfirm"
-      title="Nonaktifkan Guru"
+    <BaseConfirm v-model="showConfirm" title="Nonaktifkan Guru"
       :message="`Nonaktifkan guru ${deleteTarget?.nama}?`"
-      confirm-label="Ya, Nonaktifkan"
-      :danger-mode="true"
-      :loading="formLoading"
-      @confirm="executeDelete"
-    />
+      confirm-label="Ya, Nonaktifkan" :danger-mode="true" :loading="formLoading"
+      @confirm="executeDelete" />
+
+    <!-- ── Modal Buat Akun 1 Guru ── -->
+    <BaseModal v-model="showCreateUserConfirm" title="Buat Akun Login Guru" size="sm">
+      <div class="space-y-4">
+        <div class="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+          <UserPlusIcon class="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+          <div class="text-sm text-emerald-800">
+            <p class="font-semibold mb-1">Akun akan dibuat dengan:</p>
+            <ul class="space-y-1">
+              <li>• <span class="font-medium">Username:</span> {{ createUserTarget?.nip || createUserTarget?.niy || '—' }}</li>
+              <li>• <span class="font-medium">Password default:</span> smkn1kras</li>
+            </ul>
+          </div>
+        </div>
+        <div v-if="!createUserTarget?.nip && !createUserTarget?.niy"
+          class="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-800">
+          <span class="font-semibold">⚠</span>
+          <span>Guru ini belum memiliki NIP/NIY. Isi NIP/NIY terlebih dahulu.</span>
+        </div>
+        <p class="text-sm text-gray-600">
+          Buat akun login untuk <span class="font-semibold">{{ createUserTarget?.nama }}</span>?
+        </p>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="showCreateUserConfirm = false">Batal</button>
+        <button class="btn-primary bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+          :disabled="creatingUser || (!createUserTarget?.nip && !createUserTarget?.niy)"
+          @click="executeCreateUser">
+          <span v-if="creatingUser" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          <UserPlusIcon v-else class="w-4 h-4" />
+          Buat Akun
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- ── Modal Reset Password 1 Guru ── -->
+    <BaseModal v-model="showResetPassword" title="Reset Password Guru" size="sm">
+      <div class="space-y-4">
+        <div class="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
+          <KeyIcon class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div class="text-sm text-amber-800">
+            <p class="font-semibold mb-1">Reset password untuk:</p>
+            <p class="font-medium">{{ resetPasswordTarget?.nama }}</p>
+            <p v-if="resetPasswordTarget?.user" class="text-xs mt-1">
+              Username: <span class="font-mono font-semibold">{{ resetPasswordTarget?.user?.username }}</span>
+            </p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password Baru <span class="text-gray-400 text-xs">(kosong = smkn1kras)</span></label>
+          <input v-model="resetPasswordValue" type="text" class="form-input font-mono" placeholder="smkn1kras" />
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="showResetPassword = false">Tutup</button>
+        <button class="btn-primary bg-amber-600 hover:bg-amber-700 focus:ring-amber-500"
+          :disabled="resettingPassword" @click="executeResetPassword">
+          <span v-if="resettingPassword" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          <KeyIcon v-else class="w-4 h-4" />
+          Reset Password
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- ── Modal Buat Akun Massal ── -->
+    <BaseModal v-model="showBulkCreateUser" title="Buat Akun Login Massal" size="md">
+      <div v-if="!bulkCreateResult" class="space-y-4">
+        <div class="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+          <UserGroupIcon class="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+          <div class="text-sm text-emerald-800">
+            <p class="font-semibold mb-1">Akan dibuatkan akun untuk <span class="text-emerald-900">{{ selected.length }} guru</span></p>
+            <ul class="space-y-0.5 text-emerald-700">
+              <li>• Username = NIP/NIY masing-masing guru</li>
+              <li>• Password default: <span class="font-mono font-semibold">smkn1kras</span></li>
+              <li>• Guru tanpa NIP/NIY akan dilewati otomatis</li>
+              <li>• Akun yang sudah ada tidak akan ditimpa</li>
+            </ul>
+          </div>
+        </div>
+        <div v-if="bulkCreatingUser" class="flex flex-col items-center gap-3 py-4">
+          <div class="w-10 h-10 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+          <p class="text-sm text-gray-500">Sedang membuat akun...</p>
+        </div>
+      </div>
+      <div v-else class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
+            <p class="text-2xl font-bold text-emerald-700">{{ bulkCreateResult.berhasil.length }}</p>
+            <p class="text-xs text-emerald-600 mt-0.5">Akun berhasil dibuat</p>
+          </div>
+          <div class="p-4 rounded-xl border text-center" :class="bulkCreateResult.gagal.length ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'">
+            <p class="text-2xl font-bold" :class="bulkCreateResult.gagal.length ? 'text-red-600' : 'text-gray-400'">{{ bulkCreateResult.gagal.length }}</p>
+            <p class="text-xs mt-0.5" :class="bulkCreateResult.gagal.length ? 'text-red-500' : 'text-gray-400'">Dilewati / Gagal</p>
+          </div>
+        </div>
+        <div v-if="bulkCreateResult.berhasil.length" class="space-y-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Berhasil dibuat</p>
+          <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+            <div v-for="r in bulkCreateResult.berhasil" :key="r.id"
+              class="flex items-center justify-between px-3 py-1.5 bg-emerald-50 rounded-lg text-sm">
+              <span class="text-gray-800 truncate">{{ r.nama }}</span>
+              <span class="font-mono text-xs text-emerald-700 flex-shrink-0 ml-2">{{ r.username }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="bulkCreateResult.gagal.length" class="space-y-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dilewati / Gagal</p>
+          <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+            <div v-for="r in bulkCreateResult.gagal" :key="r.id"
+              class="flex items-center justify-between px-3 py-1.5 bg-red-50 rounded-lg text-sm">
+              <span class="text-gray-800 truncate">{{ r.nama || r.id }}</span>
+              <span class="text-xs text-red-500 flex-shrink-0 ml-2">{{ r.alasan }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="closeBulkCreateUser">{{ bulkCreateResult ? 'Tutup' : 'Batal' }}</button>
+        <button v-if="!bulkCreateResult" class="btn-primary bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+          :disabled="bulkCreatingUser" @click="executeBulkCreateUser">
+          <span v-if="bulkCreatingUser" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          <UserGroupIcon v-else class="w-4 h-4" />
+          Buat {{ selected.length }} Akun
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- ── Modal Reset Password Massal ── -->
+    <BaseModal v-model="showBulkResetPassword" title="Reset Password Massal" size="md">
+      <div v-if="!bulkResetResult" class="space-y-4">
+        <div class="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
+          <KeyIcon class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div class="text-sm text-amber-800">
+            <p class="font-semibold mb-1">Reset password untuk <span class="text-amber-900">{{ selected.length }} guru</span></p>
+            <ul class="space-y-0.5 text-amber-700">
+              <li>• Hanya guru yang sudah punya akun yang direset</li>
+              <li>• Guru tanpa akun akan dilewati otomatis</li>
+            </ul>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password Baru <span class="text-gray-400 text-xs">(kosong = smkn1kras)</span></label>
+          <input v-model="bulkResetPasswordValue" type="text" class="form-input font-mono" placeholder="smkn1kras" />
+        </div>
+        <div v-if="bulkResettingPassword" class="flex flex-col items-center gap-3 py-4">
+          <div class="w-10 h-10 border-4 border-amber-100 border-t-amber-600 rounded-full animate-spin" />
+          <p class="text-sm text-gray-500">Sedang mereset password...</p>
+        </div>
+      </div>
+      <div v-else class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
+            <p class="text-2xl font-bold text-emerald-700">{{ bulkResetResult.berhasil.length }}</p>
+            <p class="text-xs text-emerald-600 mt-0.5">Password berhasil direset</p>
+          </div>
+          <div class="p-4 rounded-xl border text-center" :class="bulkResetResult.gagal.length ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'">
+            <p class="text-2xl font-bold" :class="bulkResetResult.gagal.length ? 'text-red-600' : 'text-gray-400'">{{ bulkResetResult.gagal.length }}</p>
+            <p class="text-xs mt-0.5" :class="bulkResetResult.gagal.length ? 'text-red-500' : 'text-gray-400'">Dilewati / Gagal</p>
+          </div>
+        </div>
+        <div v-if="bulkResetResult.berhasil.length" class="space-y-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Berhasil direset</p>
+          <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+            <div v-for="r in bulkResetResult.berhasil" :key="r.id"
+              class="flex items-center justify-between px-3 py-1.5 bg-emerald-50 rounded-lg text-sm">
+              <span class="text-gray-800 truncate">{{ r.nama }}</span>
+              <span class="font-mono text-xs text-emerald-700 flex-shrink-0 ml-2">{{ r.username }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="bulkResetResult.gagal.length" class="space-y-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dilewati / Gagal</p>
+          <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+            <div v-for="r in bulkResetResult.gagal" :key="r.id"
+              class="flex items-center justify-between px-3 py-1.5 bg-red-50 rounded-lg text-sm">
+              <span class="text-gray-800 truncate">{{ r.nama || r.id }}</span>
+              <span class="text-xs text-red-500 flex-shrink-0 ml-2">{{ r.alasan }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="closeBulkResetPassword">{{ bulkResetResult ? 'Tutup' : 'Batal' }}</button>
+        <button v-if="!bulkResetResult" class="btn-primary bg-amber-600 hover:bg-amber-700 focus:ring-amber-500"
+          :disabled="bulkResettingPassword" @click="executeBulkResetPassword">
+          <span v-if="bulkResettingPassword" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          <KeyIcon v-else class="w-4 h-4" />
+          Reset {{ selected.length }} Password
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -253,15 +474,18 @@ import BaseConfirm from '@/components/common/BaseConfirm.vue';
 import BasePagination from '@/components/common/BasePagination.vue';
 import BaseEmpty from '@/components/common/BaseEmpty.vue';
 import ImportExcelModal from '@/components/common/ImportExcelModal.vue';
-import BulkDeleteBar from '@/components/common/BulkDeleteBar.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
+import {
+  PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon,
+  ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon,
+  UserPlusIcon, UserGroupIcon, KeyIcon, CheckCircleIcon,
+} from '@heroicons/vue/24/outline';
 
 const authStore   = useAuthStore();
 const masterStore = useMasterStore();
 const uiStore     = useUIStore();
 uiStore.setBreadcrumbs([{ label: 'Master Data' }, { label: 'Data Guru' }]);
 
-// ── State (harus di atas composable yang pakai items) ────────
+// ── State ────────────────────────────────────────────────────
 const items = ref([]); const loading = ref(true);
 const page = ref(1); const limit = ref(10); const total = ref(0);
 const totalPages = computed(() => Math.ceil(total.value / limit.value));
@@ -270,6 +494,7 @@ const showForm = ref(false); const editItem = ref(null);
 const showConfirm = ref(false); const deleteTarget = ref(null);
 const formLoading = ref(false);
 
+// ── Excel IO ─────────────────────────────────────────────────
 const { exporting, showImport, doExport, doTemplate, importFn, handleImported } = useExcelIO({
   exportFn:   masterService.guruExport,
   templateFn: masterService.guruTemplate,
@@ -278,6 +503,7 @@ const { exporting, showImport, doExport, doTemplate, importFn, handleImported } 
   onImported: () => fetchData(),
 });
 
+// ── Bulk Delete ───────────────────────────────────────────────
 const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggleOne,
   clearSelected, openBulkConfirm, executeBulkDelete, bulkDeleting, showBulkConfirm,
 } = useBulkDelete({
@@ -286,41 +512,159 @@ const { selected, isAllSelected, isPartialSelected, isSelected, toggleAll, toggl
   onDeleted: (count) => { notify.success(`${count} guru berhasil dihapus`); fetchData(); },
 });
 
-const emptyForm = () => ({ nama: '', nip: '', niy: '', jenis_kelamin: '', status_kepegawaian: '', jurusan_id: '', jabatan: '', mata_pelajaran: '', no_hp: '', email: '', tempat_lahir: '', tanggal_lahir: '', agama: '', alamat: '' });
+// ── Akun — Buat 1 Guru ───────────────────────────────────────
+const showCreateUserConfirm = ref(false);
+const createUserTarget      = ref(null);
+const creatingUser          = ref(false);
+
+const openCreateUser = (item) => { createUserTarget.value = item; showCreateUserConfirm.value = true; };
+
+const executeCreateUser = async () => {
+  creatingUser.value = true;
+  try {
+    await masterService.guruCreateUser(createUserTarget.value.id);
+    notify.success(`Akun berhasil dibuat untuk ${createUserTarget.value.nama}`);
+    showCreateUserConfirm.value = false;
+    fetchData();
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal membuat akun');
+  } finally { creatingUser.value = false; }
+};
+
+// ── Akun — Reset Password 1 Guru ─────────────────────────────
+const showResetPassword    = ref(false);
+const resetPasswordTarget  = ref(null);
+const resetPasswordValue   = ref('');
+const resettingPassword    = ref(false);
+
+const openResetPassword = (item) => {
+  resetPasswordTarget.value = item;
+  resetPasswordValue.value  = '';
+  showResetPassword.value   = true;
+};
+
+const executeResetPassword = async () => {
+  resettingPassword.value = true;
+  try {
+    await masterService.guruResetPassword(resetPasswordTarget.value.id, {
+      new_password: resetPasswordValue.value || undefined,
+    });
+    notify.success(`Password akun ${resetPasswordTarget.value.user?.username} berhasil direset`);
+    showResetPassword.value = false;
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal reset password');
+  } finally { resettingPassword.value = false; }
+};
+
+// ── Akun — Buat Massal ────────────────────────────────────────
+const showBulkCreateUser = ref(false);
+const bulkCreatingUser   = ref(false);
+const bulkCreateResult   = ref(null);
+
+const openBulkCreateUser = () => { bulkCreateResult.value = null; showBulkCreateUser.value = true; };
+const closeBulkCreateUser = () => {
+  showBulkCreateUser.value = false;
+  if (bulkCreateResult.value?.berhasil?.length) { fetchData(); clearSelected(); }
+  bulkCreateResult.value = null;
+};
+
+const executeBulkCreateUser = async () => {
+  bulkCreatingUser.value = true;
+  try {
+    const res = await masterService.guruBulkCreateUser({ ids: selected.value });
+    bulkCreateResult.value = res.data.data;
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal membuat akun massal');
+  } finally { bulkCreatingUser.value = false; }
+};
+
+// ── Akun — Reset Password Massal ─────────────────────────────
+const showBulkResetPassword    = ref(false);
+const bulkResettingPassword    = ref(false);
+const bulkResetResult          = ref(null);
+const bulkResetPasswordValue   = ref('');
+
+const openBulkResetPassword = () => { bulkResetResult.value = null; bulkResetPasswordValue.value = ''; showBulkResetPassword.value = true; };
+const closeBulkResetPassword = () => {
+  showBulkResetPassword.value = false;
+  if (bulkResetResult.value?.berhasil?.length) clearSelected();
+  bulkResetResult.value = null;
+};
+
+const executeBulkResetPassword = async () => {
+  bulkResettingPassword.value = true;
+  try {
+    const res = await masterService.guruBulkResetPassword({
+      ids: selected.value,
+      new_password: bulkResetPasswordValue.value || undefined,
+    });
+    bulkResetResult.value = res.data.data;
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal reset password massal');
+  } finally { bulkResettingPassword.value = false; }
+};
+
+// ── Form CRUD ─────────────────────────────────────────────────
+const emptyForm = () => ({
+  nama: '', nip: '', niy: '', jenis_kelamin: '', status_kepegawaian: '',
+  jurusan_id: '', jabatan: '', mata_pelajaran: '', no_hp: '', email: '',
+  tempat_lahir: '', tanggal_lahir: '', agama: '', alamat: '',
+});
 const form = ref(emptyForm());
 
 const fetchData = async () => {
   loading.value = true;
   try {
-    const res = await masterService.guruList({ page: page.value, limit: limit.value, search: search.value, jurusan_id: filterJurusan.value || undefined });
+    const res = await masterService.guruList({
+      page: page.value, limit: limit.value,
+      search: search.value, jurusan_id: filterJurusan.value || undefined,
+    });
     items.value = res.data.data || [];
     total.value = res.data.meta?.total || 0;
-  } catch { notify.error('Gagal memuat data guru'); } finally { loading.value = false; }
+  } catch { notify.error('Gagal memuat data guru'); }
+  finally { loading.value = false; }
 };
 
 const debouncedFetch = debounce(() => { page.value = 1; fetchData(); });
 
 const openForm = (item = null) => {
   editItem.value = item;
-  form.value = item ? { nama: item.nama, nip: item.nip || '', niy: item.niy || '', jenis_kelamin: item.jenis_kelamin || '', status_kepegawaian: item.status_kepegawaian || '', jurusan_id: item.jurusan_id || '', jabatan: item.jabatan || '', mata_pelajaran: item.mata_pelajaran || '', no_hp: item.no_hp || '', email: item.email || '', tempat_lahir: item.tempat_lahir || '', tanggal_lahir: item.tanggal_lahir || '', agama: item.agama || '', alamat: item.alamat || '' } : emptyForm();
+  form.value = item ? {
+    nama: item.nama, nip: item.nip || '', niy: item.niy || '',
+    jenis_kelamin: item.jenis_kelamin || '', status_kepegawaian: item.status_kepegawaian || '',
+    jurusan_id: item.jurusan_id || '', jabatan: item.jabatan || '',
+    mata_pelajaran: item.mata_pelajaran || '', no_hp: item.no_hp || '',
+    email: item.email || '', tempat_lahir: item.tempat_lahir || '',
+    tanggal_lahir: item.tanggal_lahir || '', agama: item.agama || '', alamat: item.alamat || '',
+  } : emptyForm();
   showForm.value = true;
 };
 
 const submitForm = async () => {
   formLoading.value = true;
   try {
-    if (editItem.value) { await masterService.guruUpdate(editItem.value.id, form.value); notify.success('Data guru berhasil diperbarui'); }
-    else { await masterService.guruCreate(form.value); notify.success('Guru berhasil ditambahkan'); }
+    if (editItem.value) {
+      await masterService.guruUpdate(editItem.value.id, form.value);
+      notify.success('Data guru berhasil diperbarui');
+    } else {
+      await masterService.guruCreate(form.value);
+      notify.success('Guru berhasil ditambahkan');
+    }
     showForm.value = false; fetchData();
-  } catch (err) { notify.error(err.response?.data?.message || 'Gagal menyimpan data'); } finally { formLoading.value = false; }
+  } catch (err) { notify.error(err.response?.data?.message || 'Gagal menyimpan data'); }
+  finally { formLoading.value = false; }
 };
 
 const confirmDelete = (item) => { deleteTarget.value = item; showConfirm.value = true; };
 const executeDelete = async () => {
   formLoading.value = true;
-  try { await masterService.guruDelete(deleteTarget.value.id); notify.success('Guru berhasil dinonaktifkan'); showConfirm.value = false; fetchData(); }
-  catch (err) { notify.error(err.response?.data?.message || 'Gagal menghapus data'); } finally { formLoading.value = false; }
+  try {
+    await masterService.guruDelete(deleteTarget.value.id);
+    notify.success('Guru berhasil dinonaktifkan');
+    showConfirm.value = false; fetchData();
+  } catch (err) { notify.error(err.response?.data?.message || 'Gagal menghapus data'); }
+  finally { formLoading.value = false; }
 };
 
-onMounted(fetchData);
+onMounted(() => { masterStore.fetchJurusan(); fetchData(); });
 </script>

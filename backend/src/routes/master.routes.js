@@ -14,10 +14,14 @@ router.get('/guru/export',         requirePermission('guru:view'),   asyncHandle
 router.get('/guru/template',       requirePermission('guru:create'), asyncHandler(ie.templateGuru));
 router.post('/guru/import',        requirePermission('guru:create'), upload.single('file'), asyncHandler(ie.importGuru));
 router.delete('/guru/bulk',        requirePermission('guru:delete'), asyncHandler(ctrl.bulkDeleteGuru));
+router.post('/guru/bulk-create-user',    requirePermission('guru:update'), asyncHandler(ctrl.bulkCreateGuruUser));
+router.post('/guru/bulk-reset-password', requirePermission('guru:update'), asyncHandler(ctrl.bulkResetGuruPassword));
 router.get('/guru/:id',            requirePermission('guru:view'),   asyncHandler(ctrl.getGuruById));
 router.post('/guru',               requirePermission('guru:create'), asyncHandler(ctrl.createGuru));
 router.put('/guru/:id',            requirePermission('guru:update'), asyncHandler(ctrl.updateGuru));
 router.delete('/guru/:id',         requirePermission('guru:delete'), asyncHandler(ctrl.deleteGuru));
+router.post('/guru/:id/create-user',    requirePermission('guru:update'), asyncHandler(ctrl.createGuruUser));
+router.post('/guru/:id/reset-password', requirePermission('guru:update'), asyncHandler(ctrl.resetGuruPassword));
 
 // ── Siswa ─────────────────────────────────────────────────────
 router.get('/siswa',               requirePermission('siswa:view'),   asyncHandler(ctrl.getSiswa));
@@ -40,9 +44,13 @@ router.get('/pegawai/export',      requirePermission('pegawai:view'),   asyncHan
 router.get('/pegawai/template',    requirePermission('pegawai:create'), asyncHandler(ie.templatePegawai));
 router.post('/pegawai/import',     requirePermission('pegawai:create'), upload.single('file'), asyncHandler(ie.importPegawai));
 router.delete('/pegawai/bulk',     requirePermission('pegawai:delete'), asyncHandler(ctrl.bulkDeletePegawai));
+router.post('/pegawai/bulk-create-user',    requirePermission('pegawai:update'), asyncHandler(ctrl.bulkCreatePegawaiUser));
+router.post('/pegawai/bulk-reset-password', requirePermission('pegawai:update'), asyncHandler(ctrl.bulkResetPegawaiPassword));
 router.post('/pegawai',            requirePermission('pegawai:create'), asyncHandler(ctrl.createPegawai));
 router.put('/pegawai/:id',         requirePermission('pegawai:update'), asyncHandler(ctrl.updatePegawai));
 router.delete('/pegawai/:id',      requirePermission('pegawai:delete'), asyncHandler(ctrl.deletePegawai));
+router.post('/pegawai/:id/create-user',    requirePermission('pegawai:update'), asyncHandler(ctrl.createPegawaiUser));
+router.post('/pegawai/:id/reset-password', requirePermission('pegawai:update'), asyncHandler(ctrl.resetPegawaiPassword));
 
 // ── Jurusan ───────────────────────────────────────────────────
 router.get('/jurusan',             requirePermission('jurusan:view'),   asyncHandler(ctrl.getJurusan));
