@@ -275,7 +275,7 @@
             <p class="font-semibold mb-1">Akun akan dibuat dengan:</p>
             <ul class="space-y-1">
               <li>• <span class="font-medium">Username:</span> {{ createUserTarget?.nip || createUserTarget?.niy || '—' }}</li>
-              <li>• <span class="font-medium">Password default:</span> smkn1kras</li>
+              <li>• <span class="font-medium">Password default:</span> NIP/NIY</li>
             </ul>
           </div>
         </div>
@@ -314,8 +314,8 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Password Baru <span class="text-gray-400 text-xs">(kosong = smkn1kras)</span></label>
-          <input v-model="resetPasswordValue" type="text" class="form-input font-mono" placeholder="smkn1kras" />
+          <label class="form-label">Password Baru <span class="text-gray-400 text-xs">(kosong = NIP/NIY)</span></label>
+          <input v-model="resetPasswordValue" type="text" class="form-input font-mono" placeholder="NIP/NIY" />
         </div>
       </div>
       <template #footer>
@@ -338,7 +338,7 @@
             <p class="font-semibold mb-1">Akan dibuatkan akun untuk <span class="text-emerald-900">{{ selected.length }} guru</span></p>
             <ul class="space-y-0.5 text-emerald-700">
               <li>• Username = NIP/NIY masing-masing guru</li>
-              <li>• Password default: <span class="font-mono font-semibold">smkn1kras</span></li>
+              <li>• Password default: <span class="font-mono font-semibold">NIP/NIY</span></li>
               <li>• Guru tanpa NIP/NIY akan dilewati otomatis</li>
               <li>• Akun yang sudah ada tidak akan ditimpa</li>
             </ul>
@@ -406,8 +406,8 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Password Baru <span class="text-gray-400 text-xs">(kosong = smkn1kras)</span></label>
-          <input v-model="bulkResetPasswordValue" type="text" class="form-input font-mono" placeholder="smkn1kras" />
+          <label class="form-label">Password Baru <span class="text-gray-400 text-xs">(kosong = NIP/NIY)</span></label>
+          <input v-model="bulkResetPasswordValue" type="text" class="form-input font-mono" placeholder="NIP/NIY" />
         </div>
         <div v-if="bulkResettingPassword" class="flex flex-col items-center gap-3 py-4">
           <div class="w-10 h-10 border-4 border-amber-100 border-t-amber-600 rounded-full animate-spin" />

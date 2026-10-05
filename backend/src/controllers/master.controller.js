@@ -20,14 +20,22 @@ const getGuru = async (req, res) => {
   if (jurusan_id) where.jurusan_id = jurusan_id;
   const { count, rows } = await Guru.findAndCountAll({
     where, limit: lim, offset,
-    include: [{ association: 'jurusan', attributes: ['id', 'kode', 'nama'] }],
+    include: [
+      { association: 'jurusan', attributes: ['id', 'kode', 'nama'] },
+      { association: 'user', attributes: ['id', 'username', 'is_active'] },
+    ],
     order: [['nama', 'ASC']],
   });
   return paginated(res, rows, { total: count, page: parseInt(page), limit: lim });
 };
 
 const getGuruById = async (req, res) => {
-  const guru = await Guru.findByPk(req.params.id, { include: ['jurusan'] });
+  const guru = await Guru.findByPk(req.params.id, {
+    include: [
+      'jurusan',
+      { association: 'user', attributes: ['id', 'username', 'is_active'] },
+    ],
+  });
   if (!guru) return notFound(res, 'Data guru tidak ditemukan');
   return success(res, guru);
 };
@@ -454,7 +462,11 @@ const getPegawai = async (req, res) => {
   const { limit: lim, offset } = getPagination(page, limit);
   const where = { is_active: true };
   if (search) where[Op.or] = [{ nama: { [Op.like]: `%${search}%` } }, { nip: { [Op.like]: `%${search}%` } }];
-  const { count, rows } = await Pegawai.findAndCountAll({ where, limit: lim, offset, order: [['nama', 'ASC']] });
+  const { count, rows } = await Pegawai.findAndCountAll({
+    where, limit: lim, offset,
+    include: [{ association: 'user', attributes: ['id', 'username', 'is_active'] }],
+    order: [['nama', 'ASC']],
+  });
   return paginated(res, rows, { total: count, page: parseInt(page), limit: lim });
 };
 
@@ -792,7 +804,7 @@ const createGuruUser = async (req, res) => {
 
   const username = (guru.nip || guru.niy).trim();
   const email    = `${username}@sekolah.sch.id`;
-  const password = 'smkn1kras';
+  const password = username; // password default = NIP/NIY
 
   const dupUser = await User.unscoped().findOne({ where: { [Op.or]: [{ username }, { email }] } });
   if (dupUser) return conflict(res, `Username ${username} sudah digunakan user lain`);
@@ -818,7 +830,7 @@ const createGuruUser = async (req, res) => {
     username,
     full_name: guru.nama,
     role: role.label || role.name,
-    note: 'Password default: smkn1kras — minta guru segera ganti password',
+    note: 'Password default = NIP/NIY — minta guru segera ganti password',
   }, 'Akun login guru berhasil dibuat');
 };
 
@@ -831,8 +843,6 @@ const bulkCreateGuruUser = async (req, res) => {
   const role = await Role.findOne({ where: { name: 'guru' } });
   if (!role) return badRequest(res, "Role 'guru' belum ada di sistem");
 
-  const password = 'smkn1kras';
-  const hashed   = await hashPassword(password);
   const results  = { berhasil: [], gagal: [] };
 
   for (const id of ids) {
@@ -842,6 +852,7 @@ const bulkCreateGuruUser = async (req, res) => {
 
     const username = (guru.nip || guru.niy).trim();
     const email    = `${username}@sekolah.sch.id`;
+    const password = username; // password default = NIP/NIY
 
     const existByGuru = await User.unscoped().findOne({ where: { guru_id: guru.id } });
     if (existByGuru) { results.gagal.push({ id, nama: guru.nama, alasan: `Akun sudah ada (${existByGuru.username})` }); continue; }
@@ -850,6 +861,7 @@ const bulkCreateGuruUser = async (req, res) => {
     if (existByLogin) { results.gagal.push({ id, nama: guru.nama, alasan: `Username ${username} sudah dipakai` }); continue; }
 
     try {
+      const hashed = await hashPassword(password);
       await User.create({ username, email, full_name: guru.nama, role_id: role.id, password: hashed, guru_id: guru.id, is_active: true });
       results.berhasil.push({ id, nama: guru.nama, username });
     } catch (e) {
@@ -874,7 +886,8 @@ const resetGuruPassword = async (req, res) => {
   const userAkun = await User.unscoped().findOne({ where: { guru_id: guru.id } });
   if (!userAkun) return notFound(res, 'Guru ini belum memiliki akun login');
 
-  const newPassword = req.body.new_password || 'smkn1kras';
+  // Default reset = NIP/NIY (username), bukan smkn1kras
+  const newPassword = req.body.new_password || userAkun.username;
   const hashed = await hashPassword(newPassword);
   await userAkun.update({ password: hashed, password_changed_at: new Date() });
 
@@ -892,8 +905,7 @@ const bulkResetGuruPassword = async (req, res) => {
   const { ids } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) return badRequest(res, 'ids harus berupa array');
 
-  const newPassword = req.body.new_password || 'smkn1kras';
-  const hashed = await hashPassword(newPassword);
+  const newPassword = req.body.new_password; // kosong = reset ke username (NIP) masing-masing
   const results = { berhasil: [], gagal: [] };
 
   for (const id of ids) {
@@ -904,6 +916,8 @@ const bulkResetGuruPassword = async (req, res) => {
     if (!userAkun) { results.gagal.push({ id, nama: guru.nama, alasan: 'Belum punya akun login' }); continue; }
 
     try {
+      const pwd = newPassword || userAkun.username; // default = NIP
+      const hashed = await hashPassword(pwd);
       await userAkun.update({ password: hashed, password_changed_at: new Date() });
       results.berhasil.push({ id, nama: guru.nama, username: userAkun.username });
     } catch (e) {
@@ -939,7 +953,7 @@ const createPegawaiUser = async (req, res) => {
 
   const username = pegawai.nip.trim();
   const email    = `${username}@sekolah.sch.id`;
-  const password = 'smkn1kras';
+  const password = username; // password default = NIP
 
   const dupUser = await User.unscoped().findOne({ where: { [Op.or]: [{ username }, { email }] } });
   if (dupUser) return conflict(res, `Username ${username} sudah digunakan user lain`);
@@ -965,7 +979,7 @@ const createPegawaiUser = async (req, res) => {
     username,
     full_name: pegawai.nama,
     role: role.label || role.name,
-    note: 'Password default: smkn1kras — minta pegawai segera ganti password',
+    note: 'Password default = NIP — minta pegawai segera ganti password',
   }, 'Akun login pegawai berhasil dibuat');
 };
 
@@ -978,8 +992,6 @@ const bulkCreatePegawaiUser = async (req, res) => {
   const role = await Role.findOne({ where: { name: 'pegawai' } });
   if (!role) return badRequest(res, "Role 'pegawai' belum ada di sistem");
 
-  const password = 'smkn1kras';
-  const hashed   = await hashPassword(password);
   const results  = { berhasil: [], gagal: [] };
 
   for (const id of ids) {
@@ -989,6 +1001,7 @@ const bulkCreatePegawaiUser = async (req, res) => {
 
     const username = pegawai.nip.trim();
     const email    = `${username}@sekolah.sch.id`;
+    const password = username; // password default = NIP
 
     const existByPegawai = await User.unscoped().findOne({ where: { pegawai_id: pegawai.id } });
     if (existByPegawai) { results.gagal.push({ id, nama: pegawai.nama, alasan: `Akun sudah ada (${existByPegawai.username})` }); continue; }
@@ -997,6 +1010,7 @@ const bulkCreatePegawaiUser = async (req, res) => {
     if (existByLogin) { results.gagal.push({ id, nama: pegawai.nama, alasan: `Username ${username} sudah dipakai` }); continue; }
 
     try {
+      const hashed = await hashPassword(password);
       await User.create({ username, email, full_name: pegawai.nama, role_id: role.id, password: hashed, pegawai_id: pegawai.id, is_active: true });
       results.berhasil.push({ id, nama: pegawai.nama, username });
     } catch (e) {
@@ -1021,7 +1035,8 @@ const resetPegawaiPassword = async (req, res) => {
   const userAkun = await User.unscoped().findOne({ where: { pegawai_id: pegawai.id } });
   if (!userAkun) return notFound(res, 'Pegawai ini belum memiliki akun login');
 
-  const newPassword = req.body.new_password || 'smkn1kras';
+  // Default reset = NIP (username)
+  const newPassword = req.body.new_password || userAkun.username;
   const hashed = await hashPassword(newPassword);
   await userAkun.update({ password: hashed, password_changed_at: new Date() });
 
@@ -1039,8 +1054,7 @@ const bulkResetPegawaiPassword = async (req, res) => {
   const { ids } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) return badRequest(res, 'ids harus berupa array');
 
-  const newPassword = req.body.new_password || 'smkn1kras';
-  const hashed = await hashPassword(newPassword);
+  const newPassword = req.body.new_password; // kosong = reset ke username (NIP) masing-masing
   const results = { berhasil: [], gagal: [] };
 
   for (const id of ids) {
@@ -1051,6 +1065,8 @@ const bulkResetPegawaiPassword = async (req, res) => {
     if (!userAkun) { results.gagal.push({ id, nama: pegawai.nama, alasan: 'Belum punya akun login' }); continue; }
 
     try {
+      const pwd = newPassword || userAkun.username; // default = NIP
+      const hashed = await hashPassword(pwd);
       await userAkun.update({ password: hashed, password_changed_at: new Date() });
       results.berhasil.push({ id, nama: pegawai.nama, username: userAkun.username });
     } catch (e) {

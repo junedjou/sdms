@@ -55,6 +55,10 @@ User.belongsTo(Guru,    { foreignKey: 'guru_id',    as: 'guru' });
 User.belongsTo(Siswa,   { foreignKey: 'siswa_id',   as: 'siswa' });
 User.belongsTo(Pegawai, { foreignKey: 'pegawai_id', as: 'pegawai' });
 
+// Reverse: agar Guru/Pegawai bisa include data user (akun login)
+Guru.hasOne(User,    { foreignKey: 'guru_id',    as: 'user' });
+Pegawai.hasOne(User, { foreignKey: 'pegawai_id', as: 'user' });
+
 // Guru -> Jurusan
 Guru.belongsTo(Jurusan,    { foreignKey: 'jurusan_id', as: 'jurusan' });
 Jurusan.hasMany(Guru,      { foreignKey: 'jurusan_id', as: 'guru' });
