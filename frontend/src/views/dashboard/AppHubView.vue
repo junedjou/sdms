@@ -673,29 +673,17 @@ const launchApp = async (app) => {
         const res = await gatewayService.ssoToken(app.slug);
         const { redirect_url } = res.data.data;
         if (redirect_url) {
-          // Di mobile (Android/iOS) — popup sering blank atau diblokir
-          // Langsung redirect same-tab agar lebih reliable
-          const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
-          if (isMobile) {
-            notify.success(`Membuka ${app.name}...`);
-            // Gunakan <a> click trick agar browser eksternal yang handle,
-            // bukan in-app WebView — ini kunci agar localStorage absen bisa diakses
-            const a = document.createElement('a');
-            a.href = redirect_url;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          } else {
-            // Desktop — buka tab baru, fallback same-tab jika diblokir
-            const popup = window.open(redirect_url, '_blank', 'noopener,noreferrer');
-            if (popup) {
-              notify.success(`Membuka ${app.name} via SSO...`);
-            } else {
-              setTimeout(() => { window.location.href = redirect_url; }, 300);
-            }
-          }
+          notify.success(`Membuka ${app.name} via SSO...`);
+          // Gunakan <a> click trick untuk semua platform (mobile & desktop).
+          // window.open() setelah await sering diblokir browser sebagai popup,
+          // sedangkan <a target="_blank"> selalu dianggap user gesture.
+          const a = document.createElement('a');
+          a.href = redirect_url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
           return;
         }
         // redirect_url kosong tapi tidak error — buka URL langsung
