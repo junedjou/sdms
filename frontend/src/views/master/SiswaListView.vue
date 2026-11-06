@@ -220,6 +220,15 @@
           <TrashIcon class="w-4 h-4" />
           {{ bulkDeleting ? 'Menghapus...' : 'Hapus' }}
         </button>
+        <!-- Luluskan Massal -->
+        <button
+          v-if="authStore.hasPermission('siswa:update')"
+          @click="openBulkLuluskan"
+          :disabled="bulkLuluskan.loading"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-sm font-medium transition-colors disabled:opacity-60">
+          <AcademicCapIcon class="w-4 h-4" />
+          {{ bulkLuluskan.loading ? 'Memproses...' : 'Luluskan' }}
+        </button>
         <!-- Batal -->
         <button @click="clearSelected" class="p-1.5 rounded-lg hover:bg-white/10 transition-colors" title="Batalkan seleksi">
           <XMarkIcon class="w-4 h-4" />
@@ -473,6 +482,80 @@
       @close="showDetail = false"
     />
 
+    <!-- ── Modal Luluskan Massal ── -->
+    <BaseModal v-model="bulkLuluskan.show" title="Luluskan Siswa Massal" size="md">
+      <!-- Sebelum proses -->
+      <div v-if="!bulkLuluskan.result" class="space-y-4">
+        <div class="flex items-start gap-3 p-4 bg-sky-50 rounded-xl border border-sky-100">
+          <AcademicCapIcon class="w-5 h-5 text-sky-600 mt-0.5 flex-shrink-0" />
+          <div class="text-sm text-sky-800">
+            <p class="font-semibold mb-1">Luluskan <span class="text-sky-900">{{ selected.length }} siswa</span> yang dipilih?</p>
+            <ul class="space-y-0.5 text-sky-700">
+              <li>• Status siswa akan diubah menjadi <span class="font-semibold">Lulus</span></li>
+              <li>• Siswa akan dikeluarkan dari kelas aktifnya</li>
+              <li>• Siswa yang sudah berstatus Lulus akan dilewati</li>
+              <li>• Akun login siswa tidak akan dihapus</li>
+            </ul>
+          </div>
+        </div>
+        <div class="p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-800 flex items-start gap-2">
+          <span class="font-bold flex-shrink-0">⚠</span>
+          <span>Pastikan kamu sudah memfilter dan memilih hanya siswa <strong>Kelas 12</strong> yang akan diluluskan.</span>
+        </div>
+        <div v-if="bulkLuluskan.loading" class="flex flex-col items-center gap-3 py-4">
+          <div class="w-10 h-10 border-4 border-sky-100 border-t-sky-600 rounded-full animate-spin" />
+          <p class="text-sm text-gray-500">Sedang memproses kelulusan...</p>
+        </div>
+      </div>
+      <!-- Hasil -->
+      <div v-else class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
+            <p class="text-2xl font-bold text-emerald-700">{{ bulkLuluskan.result.berhasil.length }}</p>
+            <p class="text-xs text-emerald-600 mt-0.5">Siswa berhasil diluluskan</p>
+          </div>
+          <div class="p-4 rounded-xl border text-center" :class="bulkLuluskan.result.gagal.length ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'">
+            <p class="text-2xl font-bold" :class="bulkLuluskan.result.gagal.length ? 'text-red-600' : 'text-gray-400'">
+              {{ bulkLuluskan.result.gagal.length }}
+            </p>
+            <p class="text-xs mt-0.5" :class="bulkLuluskan.result.gagal.length ? 'text-red-500' : 'text-gray-400'">Dilewati / Gagal</p>
+          </div>
+        </div>
+        <div v-if="bulkLuluskan.result.berhasil.length" class="space-y-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Berhasil diluluskan</p>
+          <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+            <div v-for="r in bulkLuluskan.result.berhasil" :key="r.id"
+              class="flex items-center justify-between px-3 py-1.5 bg-emerald-50 rounded-lg text-sm">
+              <span class="text-gray-800 truncate">{{ r.nama }}</span>
+              <span class="font-mono text-xs text-emerald-700 flex-shrink-0 ml-2">{{ r.nisn || '—' }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="bulkLuluskan.result.gagal.length" class="space-y-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dilewati / Gagal</p>
+          <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+            <div v-for="r in bulkLuluskan.result.gagal" :key="r.id"
+              class="flex items-center justify-between px-3 py-1.5 bg-red-50 rounded-lg text-sm">
+              <span class="text-gray-800 truncate">{{ r.nama || r.id }}</span>
+              <span class="text-xs text-red-500 flex-shrink-0 ml-2">{{ r.alasan }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="closeBulkLuluskan">
+          {{ bulkLuluskan.result ? 'Tutup' : 'Batal' }}
+        </button>
+        <button v-if="!bulkLuluskan.result"
+          class="btn-primary bg-sky-600 hover:bg-sky-700 focus:ring-sky-500"
+          :disabled="bulkLuluskan.loading" @click="executeBulkLuluskan">
+          <span v-if="bulkLuluskan.loading" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          <AcademicCapIcon v-else class="w-4 h-4" />
+          Luluskan {{ selected.length }} Siswa
+        </button>
+      </template>
+    </BaseModal>
+
   </div>
 </template>
 
@@ -497,6 +580,7 @@ import {
   PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon,
   ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon,
   UserPlusIcon, UserGroupIcon, KeyIcon, CheckCircleIcon, EyeIcon,
+  AcademicCapIcon,
 } from '@heroicons/vue/24/outline';
 
 const authStore = useAuthStore();
@@ -738,6 +822,33 @@ const executeBulkResetPassword = async () => {
   } catch (err) {
     notify.error(err.response?.data?.message || 'Gagal reset password massal');
   } finally { bulkResettingPassword.value = false; }
+};
+
+// ── Luluskan Massal ───────────────────────────────────────────
+const bulkLuluskan = ref({ show: false, loading: false, result: null });
+
+const openBulkLuluskan = () => {
+  bulkLuluskan.value.result = null;
+  bulkLuluskan.value.show = true;
+};
+
+const closeBulkLuluskan = () => {
+  const hadResult = !!bulkLuluskan.value.result;
+  bulkLuluskan.value = { show: false, loading: false, result: null };
+  if (hadResult) { clearSelected(); fetchData(); }
+};
+
+const executeBulkLuluskan = async () => {
+  bulkLuluskan.value.loading = true;
+  try {
+    const res = await masterService.siswaBulkLuluskan({ ids: selected.value });
+    bulkLuluskan.value.result = res.data.data;
+    const { berhasil, gagal } = bulkLuluskan.value.result;
+    if (berhasil.length) notify.success(`${berhasil.length} siswa berhasil diluluskan`);
+    if (gagal.length) notify.warning?.(`${gagal.length} siswa dilewati`);
+  } catch (err) {
+    notify.error(err.response?.data?.message || 'Gagal memproses kelulusan');
+  } finally { bulkLuluskan.value.loading = false; }
 };
 
 onMounted(() => { fetchData(); loadKelas(); masterStore.fetchJurusan(); });

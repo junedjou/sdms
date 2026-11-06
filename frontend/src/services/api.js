@@ -134,6 +134,7 @@ export const masterService = {
   siswaBulkCreateUser: (data) => api.post('/master/siswa/bulk-create-user', data),
   siswaResetPassword: (id, data) => api.post(`/master/siswa/${id}/reset-password`, data),
   siswaBulkResetPassword: (data) => api.post('/master/siswa/bulk-reset-password', data),
+  siswaBulkLuluskan:      (data) => api.post('/master/siswa/bulk-luluskan', data),
   siswaImport:   (fd)     => api.post('/master/siswa/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
   // Pegawai

@@ -1083,12 +1083,54 @@ const bulkResetPegawaiPassword = async (req, res) => {
   return success(res, results, `${results.berhasil.length} password berhasil direset, ${results.gagal.length} gagal`);
 };
 
+// ============================================================
+// BULK LULUSKAN SISWA
+// POST /master/siswa/bulk-luluskan
+// Body: { ids: [...] }
+// ============================================================
+const bulkLuluskanSiswa = async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) return badRequest(res, 'ids harus berupa array');
+
+  const results = { berhasil: [], gagal: [] };
+
+  for (const id of ids) {
+    const siswa = await Siswa.findByPk(id);
+    if (!siswa) { results.gagal.push({ id, alasan: 'Siswa tidak ditemukan' }); continue; }
+    if (siswa.status === 'Lulus') { results.gagal.push({ id, nama: siswa.nama, alasan: 'Sudah berstatus Lulus' }); continue; }
+
+    try {
+      // 1. Ubah status siswa jadi Lulus, kosongkan kelas_id
+      await siswa.update({ status: 'Lulus', kelas_id: null });
+
+      // 2. Nonaktifkan semua penempatan kelas (siswa_kelas)
+      await SiswaKelas.update(
+        { is_aktif: false },
+        { where: { siswa_id: id, is_aktif: true } }
+      );
+
+      results.berhasil.push({ id, nama: siswa.nama, nisn: siswa.nisn });
+    } catch (e) {
+      results.gagal.push({ id, nama: siswa.nama, alasan: e.message });
+    }
+  }
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'BULK_UPDATE', resource: 'siswa',
+    description: `Bulk luluskan siswa: ${results.berhasil.length} berhasil, ${results.gagal.length} gagal`,
+  });
+
+  return success(res, results, `${results.berhasil.length} siswa berhasil diluluskan, ${results.gagal.length} gagal`);
+};
+
 module.exports = {
   // Guru
   getGuru, getGuruById, createGuru, updateGuru, deleteGuru, bulkDeleteGuru,
   createGuruUser, bulkCreateGuruUser, resetGuruPassword, bulkResetGuruPassword,
   // Siswa
   getSiswa, getSiswaById, createSiswa, updateSiswa, deleteSiswa, bulkDeleteSiswa, createSiswaUser, bulkCreateSiswaUser, resetSiswaPassword, bulkResetSiswaPassword,
+  bulkLuluskanSiswa,
   // Pegawai
   getPegawai, createPegawai, updatePegawai, deletePegawai, bulkDeletePegawai,
   createPegawaiUser, bulkCreatePegawaiUser, resetPegawaiPassword, bulkResetPegawaiPassword,
