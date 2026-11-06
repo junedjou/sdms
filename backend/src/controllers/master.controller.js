@@ -1084,6 +1084,58 @@ const bulkResetPegawaiPassword = async (req, res) => {
 };
 
 // ============================================================
+// NAIK KELAS MASSAL
+// POST /master/siswa/naik-kelas
+// Body: { mapping: [{ dari_kelas_id, ke_kelas_id }, ...] }
+// ============================================================
+const naikKelasMassal = async (req, res) => {
+  const { mapping } = req.body;
+  if (!Array.isArray(mapping) || mapping.length === 0)
+    return badRequest(res, 'mapping harus berupa array [{ dari_kelas_id, ke_kelas_id }]');
+
+  const results = { berhasil: [], gagal: [], total_siswa: 0 };
+
+  for (const item of mapping) {
+    const { dari_kelas_id, ke_kelas_id } = item;
+    if (!dari_kelas_id || !ke_kelas_id) {
+      results.gagal.push({ dari_kelas_id, ke_kelas_id, alasan: 'dari_kelas_id dan ke_kelas_id wajib diisi' });
+      continue;
+    }
+
+    const kelasAsal   = await Kelas.findByPk(dari_kelas_id);
+    const kelasTujuan = await Kelas.findByPk(ke_kelas_id);
+    if (!kelasAsal)   { results.gagal.push({ dari_kelas_id, ke_kelas_id, alasan: 'Kelas asal tidak ditemukan' }); continue; }
+    if (!kelasTujuan) { results.gagal.push({ dari_kelas_id, ke_kelas_id, alasan: 'Kelas tujuan tidak ditemukan' }); continue; }
+
+    // Ambil semua siswa aktif di kelas asal
+    const siswaDiKelas = await Siswa.findAll({ where: { kelas_id: dari_kelas_id, status: 'Aktif' } });
+    if (siswaDiKelas.length === 0) {
+      results.gagal.push({ dari: kelasAsal.nama, ke: kelasTujuan.nama, alasan: 'Tidak ada siswa aktif di kelas ini' });
+      continue;
+    }
+
+    const ids = siswaDiKelas.map(s => s.id);
+
+    // Update kelas_id semua siswa ke kelas tujuan
+    await Siswa.update({ kelas_id: ke_kelas_id }, { where: { id: ids } });
+
+    // Nonaktifkan siswa_kelas lama, buat entri baru
+    await SiswaKelas.update({ is_aktif: false }, { where: { siswa_id: ids, is_aktif: true } });
+
+    results.berhasil.push({ dari: kelasAsal.nama, ke: kelasTujuan.nama, jumlah: siswaDiKelas.length });
+    results.total_siswa += siswaDiKelas.length;
+  }
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'BULK_UPDATE', resource: 'siswa',
+    description: `Naik kelas massal: ${results.total_siswa} siswa dari ${results.berhasil.length} kelas`,
+  });
+
+  return success(res, results, `${results.total_siswa} siswa berhasil dinaikkan kelas`);
+};
+
+// ============================================================
 // BULK LULUSKAN SISWA
 // POST /master/siswa/bulk-luluskan
 // Body: { ids: [...] }
@@ -1131,6 +1183,7 @@ module.exports = {
   // Siswa
   getSiswa, getSiswaById, createSiswa, updateSiswa, deleteSiswa, bulkDeleteSiswa, createSiswaUser, bulkCreateSiswaUser, resetSiswaPassword, bulkResetSiswaPassword,
   bulkLuluskanSiswa,
+  naikKelasMassal,
   // Pegawai
   getPegawai, createPegawai, updatePegawai, deletePegawai, bulkDeletePegawai,
   createPegawaiUser, bulkCreatePegawaiUser, resetPegawaiPassword, bulkResetPegawaiPassword,
