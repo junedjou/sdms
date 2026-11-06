@@ -98,6 +98,23 @@ const getSummary = async (req, res) => {
         raw: false,
       });
 
+      // Siswa per jurusan per tingkat (X, XI, XII)
+      const tahunAktif = await TahunPelajaran.findOne({ where: { is_aktif: true } });
+      const siswaPerTingkat = tahunAktif ? await Siswa.findAll({
+        attributes: [
+          'jurusan_id',
+          [fn('COUNT', col('Siswa.id')), 'total'],
+        ],
+        where: { status: 'Aktif', kelas_id: { [Op.ne]: null } },
+        include: [
+          { association: 'jurusan', attributes: ['nama', 'kode'], required: false },
+          { association: 'kelas', attributes: ['tingkat'], required: true,
+            where: { tahun_pelajaran_id: tahunAktif.id, is_active: true } },
+        ],
+        group: ['Siswa.jurusan_id', 'jurusan.id', 'kelas.tingkat'],
+        raw: false,
+      }) : [];
+
       const guruPerStatus = await Guru.findAll({
         attributes: ['status_kepegawaian', [fn('COUNT', col('id')), 'total']],
         where: { is_active: true },
@@ -130,6 +147,18 @@ const getSummary = async (req, res) => {
         jurusanMap[key].total     += total;
         if (jk === 'L') jurusanMap[key].laki      += total;
         if (jk === 'P') jurusanMap[key].perempuan += total;
+      }
+
+      // Gabungkan data per tingkat ke dalam jurusanMap
+      for (const s of siswaPerTingkat) {
+        const key    = s.dataValues.jurusan_id || 'unknown';
+        const tingkat = s.kelas?.tingkat;
+        const total   = parseInt(s.dataValues.total) || 0;
+        if (jurusanMap[key] && tingkat) {
+          if (tingkat === 'X')   jurusanMap[key].kelas_10  = (jurusanMap[key].kelas_10  || 0) + total;
+          if (tingkat === 'XI')  jurusanMap[key].kelas_11  = (jurusanMap[key].kelas_11  || 0) + total;
+          if (tingkat === 'XII') jurusanMap[key].kelas_12  = (jurusanMap[key].kelas_12  || 0) + total;
+        }
       }
 
       return {

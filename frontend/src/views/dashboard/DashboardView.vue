@@ -69,6 +69,21 @@
                   <span class="text-[10px] text-indigo-500 font-medium">♂ {{ item.laki ?? 0 }}</span>
                   <span class="text-[10px] text-pink-400 font-medium">♀ {{ item.perempuan ?? 0 }}</span>
                 </div>
+                <!-- Breakdown per tingkat -->
+                <div class="flex flex-col gap-0.5 mt-1.5 w-full border-t border-slate-200 pt-1.5">
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-[9px] font-semibold px-1 py-0.5 rounded bg-blue-100 text-blue-700">X</span>
+                    <span class="text-[10px] font-semibold text-slate-700">{{ item.kelas_10 ?? 0 }}</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-[9px] font-semibold px-1 py-0.5 rounded bg-violet-100 text-violet-700">XI</span>
+                    <span class="text-[10px] font-semibold text-slate-700">{{ item.kelas_11 ?? 0 }}</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-[9px] font-semibold px-1 py-0.5 rounded bg-emerald-100 text-emerald-700">XII</span>
+                    <span class="text-[10px] font-semibold text-slate-700">{{ item.kelas_12 ?? 0 }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
