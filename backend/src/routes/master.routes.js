@@ -69,6 +69,7 @@ router.get('/kelas/export',        requirePermission('kelas:view'),   asyncHandl
 router.get('/kelas/template',      requirePermission('kelas:create'), asyncHandler(ie.templateKelas));
 router.post('/kelas/import',       requirePermission('kelas:create'), upload.single('file'), asyncHandler(ie.importKelas));
 router.delete('/kelas/bulk',       requirePermission('kelas:delete'), asyncHandler(ctrl.bulkDeleteKelas));
+router.post('/kelas/salin-struktur', requirePermission('kelas:create'), asyncHandler(ctrl.salinStrukturKelas));
 router.post('/kelas',              requirePermission('kelas:create'), asyncHandler(ctrl.createKelas));
 router.put('/kelas/:id',           requirePermission('kelas:update'), asyncHandler(ctrl.updateKelas));
 

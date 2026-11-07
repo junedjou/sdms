@@ -558,6 +558,65 @@ const createKelas = async (req, res) => {
   return created(res, kelas, 'Kelas berhasil dibuat');
 };
 
+// POST /master/kelas/salin-struktur
+// Body: { dari_tahun_pelajaran_id, ke_tahun_pelajaran_id, salin_wali_kelas }
+const salinStrukturKelas = async (req, res) => {
+  const { dari_tahun_pelajaran_id, ke_tahun_pelajaran_id, salin_wali_kelas = true } = req.body;
+  if (!dari_tahun_pelajaran_id || !ke_tahun_pelajaran_id)
+    return badRequest(res, 'dari_tahun_pelajaran_id dan ke_tahun_pelajaran_id wajib diisi');
+  if (dari_tahun_pelajaran_id === ke_tahun_pelajaran_id)
+    return badRequest(res, 'Tahun pelajaran asal dan tujuan tidak boleh sama');
+
+  const tpTujuan = await TahunPelajaran.findByPk(ke_tahun_pelajaran_id);
+  if (!tpTujuan) return notFound(res, 'Tahun pelajaran tujuan tidak ditemukan');
+
+  // Ambil semua kelas dari TP asal
+  const kelasAsal = await Kelas.findAll({
+    where: { tahun_pelajaran_id: dari_tahun_pelajaran_id, is_active: true },
+  });
+  if (kelasAsal.length === 0)
+    return badRequest(res, 'Tidak ada kelas aktif di tahun pelajaran asal');
+
+  const results = { dibuat: [], dilewati: [] };
+
+  for (const k of kelasAsal) {
+    // Cek apakah kelas dengan nama + tingkat + jurusan + TP tujuan sudah ada
+    const existing = await Kelas.findOne({
+      where: {
+        nama: k.nama,
+        tingkat: k.tingkat,
+        tahun_pelajaran_id: ke_tahun_pelajaran_id,
+      },
+    });
+    if (existing) {
+      results.dilewati.push({ nama: k.nama, alasan: 'Sudah ada di tahun pelajaran tujuan' });
+      continue;
+    }
+
+    const kelasBaruData = {
+      nama:               k.nama,
+      tingkat:            k.tingkat,
+      jurusan_id:         k.jurusan_id,
+      tahun_pelajaran_id: ke_tahun_pelajaran_id,
+      kapasitas:          k.kapasitas,
+      ruangan:            k.ruangan,
+      wali_kelas_id:      salin_wali_kelas ? k.wali_kelas_id : null,
+    };
+
+    const kelasBaru = await Kelas.create(kelasBaruData);
+    syncEvent('kelas.created', kelasBaru.toJSON());
+    results.dibuat.push({ id: kelasBaru.id, nama: kelasBaru.nama, tingkat: kelasBaru.tingkat });
+  }
+
+  await writeAuditLog({
+    userId: req.user.id, username: req.user.username,
+    action: 'BULK_CREATE', resource: 'kelas',
+    description: `Salin struktur kelas ke TP ${tpTujuan.nama}: ${results.dibuat.length} dibuat, ${results.dilewati.length} dilewati`,
+  });
+
+  return success(res, results, `${results.dibuat.length} kelas berhasil disalin ke ${tpTujuan.nama}`);
+};
+
 const updateKelas = async (req, res) => {
   const kelas = await Kelas.findByPk(req.params.id);
   if (!kelas) return notFound(res, 'Kelas tidak ditemukan');
@@ -1190,7 +1249,7 @@ module.exports = {
   // Jurusan
   getJurusan, createJurusan, updateJurusan, bulkDeleteJurusan,
   // Kelas
-  getKelas, createKelas, updateKelas, bulkDeleteKelas,
+  getKelas, createKelas, updateKelas, bulkDeleteKelas, salinStrukturKelas,
   // Mapel
   getMapel, createMapel, updateMapel, bulkDeleteMapel,
   // Tahun Pelajaran & Semester

@@ -166,6 +166,7 @@ export const masterService = {
   kelasCreate:   (data)   => api.post('/master/kelas', data),
   kelasUpdate:   (id, d)  => api.put(`/master/kelas/${id}`, d),
   kelasBulkDelete: (data) => api.delete('/master/kelas/bulk', { data }),
+  kelasSalinStruktur: (data) => api.post('/master/kelas/salin-struktur', data),
   kelasExport:   ()       => api.get('/master/kelas/export', { responseType: 'blob' }),
   kelasTemplate: ()       => api.get('/master/kelas/template', { responseType: 'blob' }),
   kelasImport:   (fd)     => api.post('/master/kelas/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
