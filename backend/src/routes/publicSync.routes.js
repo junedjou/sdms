@@ -39,6 +39,7 @@ router.get('/data', asyncHandler(async (req, res) => {
       attributes: ['id', 'nama', 'tingkat'],
       include: [
         { model: Jurusan, as: 'jurusan', attributes: ['nama'], required: false },
+        { model: Guru,    as: 'waliKelas', attributes: ['nama'], required: false },
       ],
     }),
     MataPelajaran.findAll({
@@ -81,6 +82,7 @@ router.get('/data', asyncHandler(async (req, res) => {
     nama: k.nama,
     tingkat: k.tingkat,
     jurusan: k.jurusan?.nama || '',
+    waliKelas: k.waliKelas?.nama || '',
   }));
 
   const mapel = mapelList.map(m => ({
